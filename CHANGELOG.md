@@ -1,3 +1,9 @@
+## version 1.0.1
+- Minor consistency and bug fixes and improved integrity of metafiles.
+- updated documentation 
+- Removed replacements directory since its content was not needed for Matlab
+after release 2010b and Octave after 4.0.
+
 ## version 1.0
 Compared to the predecessor lyapack a couple of things have changed.
 - The user supplied functions are now managed by an operator manager

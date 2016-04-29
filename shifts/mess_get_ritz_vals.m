@@ -1,4 +1,4 @@
-function [rw,  Hp, Hm, Vp, Vm] = mess_get_ritz_vals(eqn,opts,oper)
+function [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_get_ritz_vals(eqn,opts,oper)
 %% check data
 
 %

@@ -31,9 +31,4 @@ addpath(genpath(sprintf('%s/DEMOS/',s)));
 
 addpath(genpath(sprintf('%s/shifts',s)));
 
-%add replacements for older matlab version support
-if ~exist('ismatrix','builtin')
-        addpath(genpath(sprintf('%s/replacements/',s)));
-end
-
 clear s;

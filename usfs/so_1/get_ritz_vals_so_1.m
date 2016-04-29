@@ -1,6 +1,6 @@
-function [rw,  Hp, Hm, Vp, Vm] = get_ritz_vals_so_1(eqn, opts, oper, U, W, p_old)
+function [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = get_ritz_vals_so_1(eqn, opts, oper, U, W, p_old)
 
-% function [rw,  Hp, Hm, Vp, Vm] = get_ritz_vals_so_1(eqn,opts,oper)
+% function [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = get_ritz_vals_so_1(eqn,opts,oper)
 %
 % The second order system
 %

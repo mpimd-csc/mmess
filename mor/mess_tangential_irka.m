@@ -1,4 +1,4 @@
-function [Er,Ar,Br,Cr,S] = mess_tangential_irka(E,A,B,C,r,maxiter,tol)
+function [Er,Ar,Br,Cr,S] = mess_tangential_irka(E,A,B,C,r,maxiter,tol,verbose)
 % The tangential IRKA method with automatic selection of initial shifts and
 % tangential directions.
 %
@@ -12,6 +12,8 @@ function [Er,Ar,Br,Cr,S] = mess_tangential_irka(E,A,B,C,r,maxiter,tol)
 %  maxiter    maximum iteration number for the IRKA iteration
 %  tol        bound for the relative change of the IRKA shifts used as
 %             stopping criterion (usually 1e-2 to 1e-4 is sufficient)
+%  verbose    1 : compute and show the sigma and error plots
+%             0 : skip plotting (default)
 %
 % Outputs:
 %  Er,Ar,Br,Cr,Dr   The reduced system matrices.
@@ -40,6 +42,8 @@ function [Er,Ar,Br,Cr,S] = mess_tangential_irka(E,A,B,C,r,maxiter,tol)
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
 %               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+
+if nargin<8, verbose=0; end
 
 oper = operatormanager('default');
 eqn.A_ = A;
@@ -96,21 +100,28 @@ for iter = 1:maxiter
    
     %% Update interpolation points/tangential directions
     [T,S] = eig(Ar,Er);
-    S = - diag(S);
+    S = cplxpair(- diag(S), 1000*eps); % increased default pairing
+                                       % tolerance since Octave
+                                       % seems to give to
+                                       % inaccurate egenvalues 
     b = (T\(Er\Br)).';
     c = Cr*T;
     
     %% Check for convergence
     err = norm(sort(S)-sort(S_old))/norm(S_old);
     %% comment out for non-verbose mode %%
-    fprintf('IRKA step %d, conv. crit. = %e \n', iter, err)
+    fprintf('IRKA step %3d, conv. crit. = %e \n', iter, err)
 
     if(err < tol)        
         break
     end
 end
-if (iter == maxiter && err > tol),
-  fprintf('IRKA: No convergence in %d iterations.\n', maxiter)
+if ((iter == maxiter) && (err > tol)),
+  warning('MESS:convergence','IRKA: No convergence in %d iterations.\n', maxiter)
+end
+
+if verbose
+    mess_sigma_plot(eqn,opts,oper,Er,Ar,Br,Cr,[],-8,8,100);
 end
 
 [eqn, opts, oper] = oper.mul_A_post(eqn, opts, oper);
