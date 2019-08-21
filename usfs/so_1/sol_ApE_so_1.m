@@ -1,4 +1,4 @@
-function X=sol_ApE_so_1(eqn, opts,opA,p,opE,C,opC)
+function X=sol_ApE_so_1(eqn, opts,opA,p,opE,C,opC)%#ok<INUSL>
 
 % function X=sol_ApE_so_1(eqn, opts,opA,p,opE,C,opC)
 %
@@ -29,12 +29,14 @@ function X=sol_ApE_so_1(eqn, opts,opA,p,opE,C,opC)
 % Matrix K has full rank.
 %
 %
-% This function returns X =(A+p*E)\C, where matrices A and E given by structure eqn and input matrix C could be transposed.
-% Matrices A and E are assumed to be quadratic.
+% This function returns X =(A+p*E)\C, where matrices A and E given
+% by structure eqn and input matrix C could be transposed. Matrices
+% A and E are assumed to be quadratic. 
 %
 %   Inputs:
 %
-%   eqn     structure containing data for matrices A (fields 'K_' and 'D_') and E (fields 'K_' and 'M_')
+%   eqn     structure containing data for matrices A 
+%           (fields 'K_' and 'E_') and E (fields 'K_' and 'M_')
 %   opts    structure containing parameters for the algorithm
 %   opA     character specifying the shape of A
 %           opA = 'N' solves (A + p* opE(E))*X = opC(C) 
@@ -72,59 +74,58 @@ function X=sol_ApE_so_1(eqn, opts,opA,p,opE,C,opC)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 
 
 %% check input parameters
-if (~ischar(opA) || ~ischar(opE) || ~ischar(opC))
+if (not(ischar(opA)) || not(ischar(opE)) || not(ischar(opC)))
     error('MESS:error_arguments', 'opA, opE or opC is not a char');
 end
 
 opA = upper(opA); opE = upper(opE); opC = upper(opC);
 
-if(~(opA=='N' || opA=='T'))
+if(not((opA=='N' || opA=='T')))
     error('MESS:error_arguments','opA is not ''N'' or ''T''');
 end
 
-if(~(opE=='N' || opE=='T'))
+if(not((opE=='N' || opE=='T')))
     error('MESS:error_arguments','opE is not ''N'' or ''T''');
 end
 
-if(~(opC=='N' || opC=='T'))
+if(not((opC=='N' || opC=='T')))
     error('MESS:error_arguments','opC is not ''N'' or ''T''');
 end
 
-if(~isnumeric(p))
+if(not(isnumeric(p)))
     error('MESS:error_arguments','p is not numeric');
 end
 
-if (~isnumeric(C)) || (~ismatrix(C))
+if (not(isnumeric(C))) || (not(ismatrix(C)))
     error('MESS:error_arguments','C has to ba a matrix');
 end
 
 
 %% check data in eqn structure
-if ~isfield(eqn, 'haveE'), eqn.haveE = 0; end
+if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
 if(eqn.haveE ==1)
-    if(~isfield(eqn,'M_') || ~isnumeric(eqn.M_) || ~isfield(eqn,'D_') || ...
-            ~isnumeric(eqn.D_) || ~isfield(eqn,'K_') || ~isnumeric(eqn.K_))
+    if(not(isfield(eqn,'M_')) || not(isnumeric(eqn.M_)) || not(isfield(eqn,'E_')) || ...
+            not(isnumeric(eqn.E_)) || not(isfield(eqn,'K_')) || not(isnumeric(eqn.K_)))
         error('MESS:error_arguments',...
-            'field eqn.M_, eqn.D_ or eqn.K_ is not defined or corrupted');
+            'field eqn.M_, eqn.E_ or eqn.K_ is not defined or corrupted');
     end
 else
-    if~isfield(eqn,'D_') || ~isnumeric(eqn.D_) ||...
-            ~isfield(eqn,'K_') || ~isnumeric(eqn.K_)
+    if not(isfield(eqn,'E_')) || not(isnumeric(eqn.E_)) ||...
+            not(isfield(eqn,'K_')) || not(isnumeric(eqn.K_))
         error('MESS:error_arguments',...
-            'field eqn.K_ or eqn.D_ is not defined or corrupted');
+            'field eqn.K_ or eqn.E_ is not defined or corrupted');
     end
 end
 
 
 [rowK, colK] = size(eqn.K_);
 rowA = 2*rowK;
-colA = 2*colK;
 
 
 if(eqn.haveE==1)
@@ -136,10 +137,11 @@ if(eqn.haveE==1)
         case 'N'
             
             if (rowA ~= size(C,1))
-                error('MESS:error_arguments','number of rows of A differs with number of rows of C');
+                error('MESS:error_arguments',['number of rows of A ' ...
+                                    'differs with number of rows of C']); 
             end
             
-            X2=(p^2*eqn.M_-eqn.D_*p+eqn.K_)\(p*C(rowK+1:end,:)-C(1:rowK,:));
+            X2=(p^2*eqn.M_-eqn.E_*p+eqn.K_)\(p*C(rowK+1:end,:)-C(1:rowK,:));
             X1=(-p*eqn.K_)\(C(1:rowK,:)+eqn.K_*X2);
             X=[X1;X2];
             
@@ -147,10 +149,11 @@ if(eqn.haveE==1)
         case 'T'
             
             if (rowA ~= size(C,2))
-                error('MESS:error_arguments','number of rows of A differs with number of columns of C');
+                error('MESS:error_arguments',['number of rows of A ' ...
+                                    'differs with number of columns of C']);
             end
             
-            X2=(p^2*eqn.M_-eqn.D_*p+eqn.K_)\(p*C(:,rowK+1:end)'-C(:,1:rowK)');
+            X2=(p^2*eqn.M_-eqn.E_*p+eqn.K_)\(p*C(:,rowK+1:end)'-C(:,1:rowK)');
             X1=(-p*eqn.K_)\(C(:,1:rowK)'+eqn.K_*X2);
             X=[X1;X2];
     end
@@ -164,10 +167,13 @@ elseif(eqn.haveE==0)
                 case 'N'
                     
                     if (rowA ~= size(C,1))
-                        error('MESS:error_arguments','number of rows of A differs with number of rows of C');
+                        error('MESS:error_arguments',['number of ' ...
+                                            'rows of A differs with ' ...
+                                            'number of rows of C']);
                     end
                     
-                    X2=(-(eqn.K_^2) -p*eqn.D_ +p^2*speye(rowK,colK))\(p*C(rowK+1:end,:)+eqn.K_*C(1:rowK,:));
+                    X2=(-(eqn.K_^2) -p*eqn.E_ +p^2*speye(rowK,colK)) ...
+                       \(p*C(rowK+1:end,:)+eqn.K_*C(1:rowK,:));
                     X1=(C(1:rowK,:)+eqn.K_*X2)/p;                    
                     X=[X1;X2];
         
@@ -175,10 +181,13 @@ elseif(eqn.haveE==0)
                 case 'T'
                     
                     if (rowA ~= size(C,2))
-                        error('MESS:error_arguments','number of rows of A differs with number of columns of C');
+                        error('MESS:error_arguments',['number of ' ...
+                                            'rows of A differs with ' ...
+                                            'number of columns of C']);
                     end
                     
-                    X2=(-(eqn.K_^2) -p*eqn.D_ +p^2*speye(rowK,colK))\(p*C(:,rowK+1:end)'+eqn.K_*C(:,1:rowK)');
+                    X2=(-(eqn.K_^2) -p*eqn.E_ +p^2*speye(rowK,colK)) ...
+                       \(p*C(:,rowK+1:end)'+eqn.K_*C(:,1:rowK)');
                     X1=(C(:,1:rowK)'+eqn.K_*X2)/p;                    
                     X=[X1;X2];      
     end

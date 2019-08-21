@@ -1,17 +1,18 @@
-function [ W, res0 ] = init_res_dae_2( eqn, opts, RHS)
+function [ W, res0, eqn, opts, oper ] = init_res_dae_2( eqn, opts, oper, RHS)
 %% function init_res initializes the low rank residual W and res0
+% function [ W, res0, eqn, opts, oper ] = init_res_dae_2( eqn, opts, oper, RHS)
 % 
-%  Input: 
-%     eqn     structure contains data for A, B and C
-%     
-%     opts    structure contains parameters for the algorithm
+%   Input/Output:
 %
-%     RHS     right hand side matrix
-%   
-%  Output:
-%  
-%    W 
-%    res0
+%   eqn        structure containing data for G or B or C
+%   opts       structure containing parameters for the algorithm
+%   oper       struct contains function handles for operation with A and E
+%   RHS        right hand side matrix
+%
+%   Outputs:
+%
+%   W          matrix given by ADI to compute residuum
+%   res0       initial residuum norm
 %
 %   uses no other dae_2 function
 
@@ -30,29 +31,23 @@ function [ W, res0 ] = init_res_dae_2( eqn, opts, RHS)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %% check data
-if ~isfield(eqn,'A_') || ~isnumeric(eqn.A_)
+if not(isfield(eqn,'A_')) || not(isnumeric(eqn.A_))
     error('MESS:equation_data',...
-      'Empty or Corrupted field A detected in equation structure.')
+      'Empty or Corrupted field A detected in equation structure.');
 end
-if ~isfield(eqn, 'st')    || ~isnumeric(eqn.st)
+if not(isfield(eqn, 'st'))    || not(isnumeric(eqn.st))
     error('MESS:st',...
-    'Missing or Corrupted st field detected in equation structure.')
+    'Missing or Corrupted st field detected in equation structure.');
 end
-if ~isfield(eqn,'type')
-  eqn.type='N';
-  warning('MESS:equation_type',['Unable to determine type of equation.'...
-    'Falling back to type ''N''']);
-end
-if ~isfield(eqn,'E_') || ~isnumeric(eqn.E_)
+if not(isfield(eqn,'E_')) || not(isnumeric(eqn.E_))
     error('MESS:equation_data',...
-      'Empty or Corrupted field E detected in equation structure.')
+      'Empty or Corrupted field E detected in equation structure.');
 end
-n=size(eqn.A_,1);
-if (~isnumeric(RHS)) || (~ismatrix(RHS))
+if (not(isnumeric(RHS))) || (not(ismatrix(RHS)))
     error('MESS:error_arguments','RHS has to ba a matrix');
 end
 if (eqn.st ~= size(RHS, 1))
@@ -60,28 +55,22 @@ if (eqn.st ~= size(RHS, 1))
 end
 
 %% compute low rank residual
-    
+  
+W = mul_Pi(eqn,'N',RHS,'N');
 
-if eqn.type=='N'
-    S = eqn.A_;
-    S(1:eqn.st,1:eqn.st) = eqn.E_(1:eqn.st,1:eqn.st);
-    % S = [ E -J']
-    %     [ J  0 ]
-    W = eqn.E_ * full( S \ [RHS; sparse(n-eqn.st,size(RHS, 2))]);
-    W = W(1:eqn.st,:);
-else
-    S = eqn.A_';
-    S(1:eqn.st,1:eqn.st) = eqn.E_(1:eqn.st,1:eqn.st)';
-    % S = [  E' J']
-    %     [ -J  0 ]
-    W = eqn.E_' * full( S \ [RHS; sparse(n-eqn.st,size(RHS, 2))]);
-    W = W(1:eqn.st,:);
-end
 %% compute res0
-if opts.adi.LDL_T
-    res0 = max(abs(eig(W' * W * eqn.S)));
+if isfield(opts, 'nm') && isfield(opts.nm, 'res0')
+    res0 = opts.nm.res0;
 else
-    res0 = norm(W' * W, 2);
+    if opts.LDL_T
+        if opts.norm == 2
+            res0 = max(abs(eig(RHS' * RHS * diag(eqn.S_diag))));
+        else
+            res0 = norm(eig(RHS' * RHS * diag(eqn.S_diag)), 'fro');
+        end
+    else
+        res0 = norm(full(RHS' * RHS), opts.norm); %opts.norm == 2 needs dense matrix
+    end
 end
 
 end

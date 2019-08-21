@@ -42,9 +42,9 @@ v = zeros(n2,1);
 i = 0;
 
 for iy = 1:n0
-  y = iy*h;
+  y = iy*h; %#ok<NASGU> potentially used as part of f_str
   for ix = 1:n0
-    x = ix*h;
+    x = ix*h;%#ok<NASGU> potentially used as part of f_str
     i = i+1;
     v(i) = eval(f_str);
   end

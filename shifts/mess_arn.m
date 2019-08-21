@@ -29,7 +29,7 @@ function [H,V] = mess_arn(eqn, opts, oper, opA)
 %      V'*V = eye(k+1),
 %      F*V(:,1:k) = V*H.
 %
-%    b0 = opts.adi.shifts.b0
+%    b0 = opts.shifts.b0
 %
 %  Remark:
 %
@@ -52,44 +52,60 @@ function [H,V] = mess_arn(eqn, opts, oper, opA)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 
 % Input data not completely checked!e
 %% check input data
-if ~isfield(opts,'adi') || ~isstruct(opts.adi)
-    error('MESS:control_data','ADI control structure opts.ADI missing.');
-end
-if ~isfield(opts.adi,'shifts') || ~isstruct(opts.adi.shifts)
-    error('MESS:control_data','shift parameter control structure missing.');
+if not(isfield(opts,'shifts')) || not(isstruct(opts.shifts))
+    warning('MESS:control_data',['shift parameter control structure missing.', ...
+        'Switching to default num_desired = 25, num_Ritz = 50, num_hRitz = 25.']);
+    opts.shifts.num_desired = 25;
+    opts.shifts.num_Ritz = 50;
+    opts.shifts.num_hRitz = 25;
 else
-    if~isfield(opts.adi.shifts,'l0')||...
-            ~isfield(opts.adi.shifts,'kp')||...
-            ~isfield(opts.adi.shifts,'km')
-        error('MESS:shifts', ...
-            'Incomplete input parameters for shift computation.');
+    if not(isfield(opts.shifts,'num_desired'))||not(isnumeric(opts.shifts.num_desired))
+        warning('MESS:control_data',...
+            ['Missing or Corrupted opts.shifts.num_desired field.', ...
+            'Switching to default: 25']);
+        opts.shifts.num_desired = 25;
+    end
+    if strcmp(opts.shifts.method,'heur')&&...
+       (not(isfield(opts.shifts,'num_Ritz'))||not(isnumeric(opts.shifts.num_Ritz)))
+        warning('MESS:control_data',...
+            ['Missing or Corrupted opts.shifts.num_Ritz field.', ...
+            'Switching to default: 50']);
+        opts.shifts.num_Ritz = 50;
+    end
+    if strcmp(opts.shifts.method,'heur')&&...
+       (not(isfield(opts.shifts,'num_hRitz'))||not(isnumeric(opts.shifts.num_hRitz)))
+        warning('MESS:control_data',...
+            ['Missing or Corrupted opts.shifts.num_hRitz field.', ...
+            'Switching to default: 25']);
+        opts.shifts.num_hRitz = 25;
     end
 end
-if ~isfield(eqn, 'haveE'), eqn.haveE = 0; end
-[eqn, erg] = oper.init(eqn, opts, 'A','E');
-if ~erg
+
+if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
+[result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
+if not(result)
     error('MESS:control_data', 'system data is not completely defined or corrupted');
 end
 if isfield(eqn, 'haveUV') && eqn.haveUV
-    if ~isfield(eqn,'U') || isempty(eqn.U) || ~isfield(eqn,'V') || isempty(eqn.V)...
-            || ~(size(eqn.U,1)==size(eqn.V,1) && size(eqn.U,2)==size(eqn.V,2))
+    if not(isfield(eqn,'U')) || isempty(eqn.U) || not(isfield(eqn,'V')) || isempty(eqn.V)...
+            || not((size(eqn.U,1))==size(eqn.V,1) && size(eqn.U,2)==size(eqn.V,2))
         error('MESS:SMW','Inappropriate data of low rank updated opertor (eqn.U and eqn.V)');
     end
 end
-if ~isfield(opts,'rosenbrock'), opts.rosenbrock=[]; end
+if not(isfield(opts,'rosenbrock')), opts.rosenbrock=[]; end
 if isstruct(opts.rosenbrock)&&isfield(opts.rosenbrock,'tau')
     rosenbrock = 1;
     pc = -1 / (2 * opts.rosenbrock.tau);
 else
     rosenbrock = 0;
 end
-if ~isfield(opts,'bdf'), opts.bdf=[]; end
+if not(isfield(opts,'bdf')), opts.bdf=[]; end
 if isstruct(opts.bdf) && isfield(opts.bdf, 'tau') && isfield(opts.bdf, 'beta')
     bdf = 1;
     pc = -1 / (2 * opts.bdf.tau * opts.bdf.beta);
@@ -98,12 +114,12 @@ else
 end
 
 %% check input Paramters
-if ~ischar(opA)
+if not(ischar(opA))
     error('MESS:error_arguments', 'opA is not a char');
 end
 
 opA = upper(opA);
-if(~(opA == 'N' || opA == 'I'))
+if(not((opA == 'N' || opA == 'I')))
     error('MESS:error_arguments','opA is not ''N'' or ''I''');
 end
 
@@ -111,17 +127,17 @@ end
 n = oper.size(eqn, opts);
 
 if opA == 'I'
-    k = opts.adi.shifts.km;
+    k = opts.shifts.num_hRitz;
 else
-    k = opts.adi.shifts.kp;
+    k = opts.shifts.num_Ritz;
 end
 
 if k >= n - 1, error('k must be smaller than the order of A!'); end
 %% initialize data
-if (~isfield(opts.adi.shifts, 'b0') || isempty(opts.adi.shifts.b0))
+if (not(isfield(opts.shifts, 'b0')) || isempty(opts.shifts.b0))
     b0 = ones(n,1);
 else
-    b0 = opts.adi.shifts.b0;
+    b0 = opts.shifts.b0;
 end
 
 V = zeros(length(b0), k + 1);
@@ -134,13 +150,9 @@ beta = 0;
 for j = 1 : k
     
     if j > 1
-        V(:, j) = (1.0 / beta) * b0;
+        V(:, j) = (1.0 / beta) * w;
     end
-    
-    if (mod(j, 5) == 0)
-        V(:, 1 : j) = mgs(V(:, 1 : j));
-    end
-    
+       
     % no eqn.type cases needed, eigenvalues are the same for transposed
     % operator
     if opA == 'I' %Perform inverse Arnodi
@@ -158,7 +170,7 @@ for j = 1 : k
                 end
                 AV = AB(:,1);
                 AU = AB(:, 2 : end);
-                w = AV + AU * ((speye(size(eqn.U, 2)) - eqn.V' * AU) \ (eqn.V' * AV));
+                w = AV - AU * ((speye(size(eqn.U, 2)) + eqn.V' * AU) \ (eqn.V' * AV));
             else
                 if bdf
                     w = oper.sol_ApE(eqn, opts, 'N', pc, 'N', ...
@@ -181,7 +193,7 @@ for j = 1 : k
                 end
                 AV = AB(:,1);
                 AU = AB(:, 2 : end);
-                w = AV + AU * ((speye(size(eqn.U, 2)) - eqn.V' * AU) \ (eqn.V' * AV));
+                w = AV - AU * ((speye(size(eqn.U, 2)) + eqn.V' * AU) \ (eqn.V' * AV));
             else
                 if bdf
                     w = oper.sol_ApE(eqn, opts, 'N', pc, 'N', ...
@@ -199,15 +211,15 @@ for j = 1 : k
                     w = oper.sol_E(eqn, opts, 'N',...
                         oper.mul_ApE(eqn, opts, 'N', pc, 'N', ...
                         (opts.bdf.tau * opts.bdf.beta) * ...
-                        V(:, j), 'N') - eqn.U * (eqn.V' * V(:, j)), 'N');
+                        V(:, j), 'N') + eqn.U * (eqn.V' * V(:, j)), 'N');
                 elseif rosenbrock
                     w = oper.sol_E(eqn, opts, 'N',...
                         oper.mul_ApE(eqn, opts, 'N', pc, 'N', V(:, j), 'N')...
-                        - eqn.U * (eqn.V' * V(:, j)), 'N');
+                        + eqn.U * (eqn.V' * V(:, j)), 'N');
                 else
                     w = oper.sol_E(eqn, opts, 'N',...
                         oper.mul_A(eqn, opts, 'N', V(:, j), 'N')...
-                        - eqn.U * (eqn.V' * V(:, j)), 'N');
+                        + eqn.U * (eqn.V' * V(:, j)), 'N');
                 end
             else
                 if bdf
@@ -223,12 +235,12 @@ for j = 1 : k
                 if bdf
                     w = (opts.bdf.tau * opts.bdf.beta) * ...
                         oper.mul_ApE(eqn, opts, 'N', pc, 'N', V(:, j), 'N') ...
-                        - eqn.U * (eqn.V' * V(:, j));
+                        + eqn.U * (eqn.V' * V(:, j));
                 elseif rosenbrock
                     w = oper.mul_ApE(eqn, opts, 'N', pc, 'N', V(:, j), 'N') ...
-                        - eqn.U * (eqn.V' * V(:, j));
+                        + eqn.U * (eqn.V' * V(:, j));
                 else
-                    w = oper.mul_A(eqn, opts, 'N', V(:, j), 'N') - eqn.U * (eqn.V' * V(:, j));
+                    w = oper.mul_A(eqn, opts, 'N', V(:, j), 'N') + eqn.U * (eqn.V' * V(:, j));
                 end
             else
                 if bdf
@@ -242,18 +254,20 @@ for j = 1 : k
     end
     
     
-    b0 = w;
-    for i = 1 : j
-        H(i, j) = V(:, i)' * w;
-        b0 = b0 - H(i, j) * V(:, i);
+%     b0 = w;
+    for k=1:2 %repeated MGS
+        for i = 1 : j
+            g = V(:, i)' * w;
+            H(i, j) = H(i, j) + g;
+            w = w -   V(:, i) * g; 
+        end
     end
-    
-    beta = norm(b0);
+    beta = norm(w);
     H(j + 1, j) = beta;
     
 end
 
-V(:, k + 1) = (1.0 / beta) * b0;
+V(:, k + 1) = (1.0 / beta) * w;
 
 end
 

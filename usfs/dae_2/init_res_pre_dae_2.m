@@ -28,12 +28,9 @@ function [ eqn, opts, oper ] = init_res_pre_dae_2( eqn, opts, oper )
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
-  if any(any(eqn.B(eqn.st+1:end,:)))
-    error('MESS:equation_data', ...
-          'lower block in B must be all zeroes.');
-  end
+[eqn, opts, oper] = mul_Pi_pre(eqn,opts,oper);
 end
 

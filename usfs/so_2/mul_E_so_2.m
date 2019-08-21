@@ -1,4 +1,4 @@
-function C=mul_E_so_2(eqn, opts,opE,B,opB)
+function C=mul_E_so_2(eqn, opts,opE,B,opB)%#ok<INUSL>
 
 % function C=mul_E_so_2(eqn, opts,opE,B,opB)
 %
@@ -36,7 +36,7 @@ function C=mul_E_so_2(eqn, opts,opE,B,opB)
 %
 %   Inputs:
 %
-%   eqn     structure containing data for matrix E (fields 'D_' and 'M_')
+%   eqn     structure containing data for matrix E (fields 'E_' and 'M_')
 %   opts    structure containing parameters for the algorithm
 %   opE     character specifying the shape of E
 %           opE = 'N' performs E*opB(B)
@@ -70,35 +70,35 @@ function C=mul_E_so_2(eqn, opts,opE,B,opB)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 
 %% check input parameters
-if (~ischar(opE) || ~ischar(opB))
+if (not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opE or opB is not a char');
 end
 
 opE = upper(opE); opB = upper(opB);
-if(~(opE=='N' || opE=='T'))
+if(not((opE=='N' || opE=='T')))
     error('MESS:error_arguments','opE is not ''N'' or ''T''');
 end
 
-if(~(opB=='N' || opB=='T'))
+if(not((opB=='N' || opB=='T')))
     error('MESS:error_arguments','opB is not ''N'' or ''T''');
 end
 
-if (~isnumeric(B)) || (~ismatrix(B))
+if (not(isnumeric(B))) || (not(ismatrix(B)))
     error('MESS:error_arguments','B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if(~isfield(eqn,'D_') || ~isnumeric(eqn.D_) ...
-        || ~isfield(eqn,'M_') || ~isnumeric(eqn.M_))
+if(not(isfield(eqn,'E_')) || not(isnumeric(eqn.E_)) ...
+        || not(isfield(eqn,'M_')) || not(isnumeric(eqn.M_)))
     error('MESS:error_arguments',...
-    'E consists of D and M, field eqn.D_ or eqn.M_ is not defined');
+    'E consists of D and M, field eqn.E_ or eqn.M_ is not defined');
 end
-if ~isfield(eqn,'K_') || ~isnumeric(eqn.K_)
+if not(isfield(eqn,'K_')) || not(isnumeric(eqn.K_))
     error('MESS:error_arguments',...
     'Field eqn.K_ is not defined or corrupted');
 end
@@ -108,25 +108,20 @@ colE = 2*colK;
 
 %% perform multiplication
 switch opB
-    
     % implement operation E*B = C
-    case 'N'
-        
+    case 'N'        
         if(colE ~= size(B,1))
             error('MESS:error_arguments','number of columns of E differs with number of rows of B');
         end
-        
-        C = [ eqn.D_*B(1:rowK,:) + eqn.M_*B(rowK+1:end,:);...
+        C = [ eqn.E_*B(1:rowK,:) + eqn.M_*B(rowK+1:end,:);...
               eqn.M_*B(1:rowK,:)];
         
     % implement operation E*B' = C
-    case 'T'
-        
+    case 'T'        
         if(colE ~= size(B,2))
             error('MESS:error_arguments','number of columns of E differs with number of columns of B');
         end
-        
-        C = [eqn.D_*B(:,1:rowK)' + eqn.M_*B(:,rowK+1:end)';...
+        C = [eqn.E_*B(:,1:rowK)' + eqn.M_*B(:,rowK+1:end)';...
              eqn.M_*B(:,1:rowK)'];
 end
 

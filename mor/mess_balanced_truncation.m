@@ -1,7 +1,7 @@
-function [Er,Ar,Br,Cr,TL,TR]=mess_balanced_truncation(E,A,B,C,max_order,trunc_tol,info)
+function [Er,Ar,Br,Cr,outinfo]=mess_balanced_truncation(E,A,B,C,max_order,trunc_tol,info,opts)
 % Lyapunov Balanced truncation for descriptor systems with invertible E.
 %
-%  [Er,Ar,Br,Cr,TL,TR]=mess_balanced_truncation(E,A,B,C,max_order,trunc_tol,info)
+%  [Er,Ar,Br,Cr,outinfo]=mess_balanced_truncation(E,A,B,C,max_order,trunc_tol,info,opts)
 %
 % INPUTS:
 %  E,A,B,C    The mass, system, input and output matrices describing the
@@ -10,17 +10,27 @@ function [Er,Ar,Br,Cr,TL,TR]=mess_balanced_truncation(E,A,B,C,max_order,trunc_to
 %             (optional, defaults to size(A,1))
 %  trunc_tol  error tolerance used for the Hankel singular value truncation
 %             (optional, defaults to 1e-5)
-%  info       verbosity control parameter:
-%              0  quiet
-%              1  show iteration numbers and residuals
-%              >1 plot residual history
+%  info       verbosity control parameter (optional):
+%             0  quiet (default)
+%             1  show iteration numbers and residuals
+%             >1 plot residual history
+%             >2 compute and show the sigma and error plots
+%  opts       options structure that can be used to pass setting to the
+%             LRADI, ADI shift computation, or the square root method (optional)
+%             (see corresponding routines for additional information)
+%             It also has fields to control the plotting in case info>2:
+%             opts.sigma.fmin      minimum value in the logspace for the 
+%                                  sigma and error plots
+%             opts.sigma.fmax      maximum value in the logspace for the 
+%                                  sigma and error plots
+%             opts.sigma.nsample   number of elements in the losgspace.
 %
 % OUTPUTS:
-% Er,Ar,Br,Cr the reduced order model matrices
-% TL, TR      the left and right transformation matrices (optional)
+% Er, Ar, Br, Cr         the reduced order model matrices
+% outinfo.TL outinfo.TR  the left and right transformation matrices
+% outinfo.errbound       H-infinity error bound
+% outinfo.hsv            vector with the computed Hankel singular values
 % 
-
-% Author: Jens Saak March 2016
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -37,44 +47,73 @@ function [Er,Ar,Br,Cr,TL,TR]=mess_balanced_truncation(E,A,B,C,max_order,trunc_to
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
-% BT tolerance and maximum order for the ROM
+narginchk(4,8);
+%%
+% control verbosity of the computations
 if nargin<7
   opts.adi.info=0;
   opts.bt.info=0;
-  opts.bt.srm.info=0;
+  opts.srm.info=0;
   info=0;
+  opts.shifts.info = 0;
 else
-  opts.adi.info=info;
-  opts.bt.info=info;
-  opts.bt.srm.info=info;
-end
-if (nargin<6 || isempty(trunc_tol)), 
-  opts.bt.srm.tol=1e-5; 
-else
-  opts.bt.srm.tol=trunc_tol; 
-end
-if ( nargin<5 || isempty(max_order)), 
-  opts.bt.srm.max_ord=size(A,1); 
-else
-  opts.bt.srm.max_ord=max_order; 
+    if nargin <8
+        opts.adi.info=info;
+        opts.bt.info=info;
+        opts.srm.info=info;
+        opts.shifts.info=info;
+    else
+        if not(isfield(opts,'adi')) || not(isfield(opts.adi,'info'))
+            opts.adi.info = info;
+        end
+        if not(isfield(opts,'bt')) || not(isfield(opts.bt,'info'))
+            opts.bt.info = info;
+        end
+        if not(isfield(opts,'srm')) || not(isfield(opts.srm,'info'))
+            opts.srm.info = info;
+        end
+        if not(isfield(opts,'shifts')) || not(isfield(opts.shifts,'info'))
+            opts.shifts.info = info;
+        end
+    end
 end
 
+% BT tolerance and maximum order for the ROM
+if (nargin<6 || isempty(trunc_tol))
+  opts.srm.tol=1e-5; 
+else
+  opts.srm.tol=trunc_tol; 
+end
+if ( nargin<5 || isempty(max_order))
+  opts.srm.max_ord=size(A,1); 
+else
+  opts.srm.max_ord=max_order; 
+end
 
-% ADI tolerance and maximum iteration number
-opts.adi.maxiter=100;
-opts.adi.restol=min( 1e-9, opts.bt.srm.tol/100 );
-opts.adi.rctol=1e-16;
-opts.adi.norm='fro';
+% some control settings for the LRADI 
+if nargin<8 
+    % ADI tolerance and maximum iteration number
+    opts.adi.maxiter=100;
+    opts.adi.res_tol=min( 1e-9, opts.srm.tol/100 );
+    opts.adi.rel_diff_tol=1e-16;
+    opts.norm='fro';
+else
+    if not(isfield(opts.adi,'maxiter')),  opts.adi.maxiter=100; end
+    if not(isfield(opts.adi,'res_tol')), opts.adi.res_tol=min( 1e-9, opts.srm.tol/100 ); end
+    if not(isfield(opts.adi,'rel_diff_tol')), opts.adi.rel_diff_tol=1e-16; end
+    if not(isfield(opts,'norm')), opts.norm ='fro'; end
+end 
 
-% operations
+% operations are done by the default set of user supplied finctions
 oper = operatormanager('default');
+
 %%
 % Problem data
 
-if ~issparse(E)||~issparse(A)
+if not(issparse(E))||not(issparse(A))
     error('MESS:data', 'Both E and A need to be sparse.');
 end
 if sprank(E) < size(E,1)
@@ -89,6 +128,7 @@ eqn.D = [];
 
 n=oper.size(eqn, opts);
 
+% Let us avoid E if it is actually the identity.
 if norm(E-speye(n),'inf')==0
     eqn.haveE=0;
 else
@@ -97,23 +137,21 @@ end
 
 
 %%
-%Heuristic Parameters via basic Arnoldi 
-opts.adi.shifts.l0=25;
-opts.adi.shifts.kp=50;
-opts.adi.shifts.km=25;
+% If not set outside, we use projection shifts
+if not(isfield(opts.shifts,'method'))
+    opts.shifts.num_desired=max(5, min(size(eqn.B,2), size(eqn.C,1)));
+    opts.shifts.b0=ones(n,1);
+    opts.shifts.method = 'projection';
+end
 
-opts.adi.shifts.b0=ones(n,1);
+opts.shifts.p=mess_para(eqn,opts,oper);
 
-opts.adi.shifts.method = 'projection';
-
-opts.adi.shifts.p=mess_para(eqn,opts,oper);
-
-%disp(opts.adi.shifts.p);
+if opts.shifts.info && not(strcmp(opts.shifts.info, 'projection')), disp(opts.shifts.p); end
 %%
-%observability
+% controllability
 eqn.type='N';
-[ZB,out]=mess_lradi(eqn,opts,oper);
-if out.niter==opts.adi.maxiter
+outB = mess_lradi(eqn, opts, oper);
+if outB.niter==opts.adi.maxiter
   warning('MESS:BT',['ADI did not converge for observability Gramian ' ...
                      'factor. Reduction results may be ' ...
                      'inaccurate']);
@@ -121,7 +159,7 @@ end
 
 if info>1
   figure(1)
-  semilogy(out.res);
+  semilogy(outB.res);
   title('AX + XA^T = -BB^T');
   xlabel('number of iterations');
   ylabel('normalized residual norm');
@@ -129,16 +167,16 @@ if info>1
 end
 
 if info>0 
-  disp('size ZB:')
-  size(ZB)
+  disp('size outB.Z:')
+  size(outB.Z)
 end
 
 %%
-%controllability
+% observability
 
 eqn.type = 'T';
-[ZC,out]=mess_lradi(eqn,opts,oper);
-if out.niter==opts.adi.maxiter
+outC = mess_lradi(eqn, opts, oper);
+if outC.niter==opts.adi.maxiter
   warning('MESS:BT',['ADI did not converge for controllability Gramian ' ...
                      'factor. Reduction results may be ' ...
                      'inaccurate']);
@@ -146,24 +184,53 @@ end
 
 if info>1
   figure(2)
-  semilogy(out.res);
+  semilogy(outC.res);
   title('A^TX + XA = -C^TC');
   xlabel('number of iterations');
   ylabel('normalized residual norm');
   drawnow
 end
 if info>0
-  disp('size ZC:')
-  size(ZC)
+  disp('size outC.Z:')
+  size(outC.Z)
 end
 
 %% execute square root method
-if nargout == 4
-  [Er,Ar,Br,Cr, Dr] = mess_square_root_method(eqn,opts,oper,ZB,ZC);
+[TL,TR,hsv] = mess_square_root_method(eqn,opts,oper,outB.Z,outC.Z);
+%% compute ROM matrices
+Ar = TL'*oper.mul_A(eqn, opts, 'N', TR, 'N');
+Br = TL'*eqn.B;
+Cr = eqn.C*TR;
+Er = eye(size(Ar,1));
+if isfield(eqn,'D')
+    Dr=eqn.D;
+else
+    Dr = [];
 end
-if nargout == 6
-  [Er,Ar,Br,Cr,Dr,TL,TR] = mess_square_root_method(eqn,opts,oper,ZB,ZC);
-end
+
+%% if desired, plot the approximation results
 if info>2
-  mess_sigma_plot(eqn, opts, oper, Er, Ar, Br, Cr, Dr, 1e-6, 1e6, 100)
+  if nargin<8
+      opts.sigma.fmin = 1e-6;
+      opts.sigma.fmax = 1e6;
+      opts.sigma.nsample = 100;
+  else
+      if not(isfield(opts.sigma,'fmin')), opts.sigma.fmin = 1e-6; end
+      if not(isfield(opts.sigma,'fmax')), opts.sigma.fmax = 1e6; end
+      if not(isfield(opts.sigma,'nsample')), opts.sigma.nsample = 100; end
+  end
+  ROM = struct('A',Ar,'E',Er,'B',Br,'C',Cr,'D',Dr);
+  mess_sigma_plot(eqn, opts, oper, ROM);
+end
+
+%% construct output information
+if nargout > 4
+    r  = size(Ar, 1);
+    nr = size(A, 1) - length(hsv);
+    
+    outinfo = struct( ...
+        'TL'      , TL, ...
+        'TR'      , TR, ...
+        'errbound', 2 * sum(hsv(r+1:end)) + nr * hsv(end),...
+        'hsv'     , hsv);
 end

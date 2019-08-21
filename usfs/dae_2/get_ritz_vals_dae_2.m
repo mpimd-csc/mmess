@@ -22,15 +22,15 @@ function [rw, Hp, Hm, Vp, Vm] = get_ritz_vals_dae_2(eqn, opts, oper, U, W, p_old
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 % Input data not completely checked!
-if(~isfield(eqn,'A_')) || ~isnumeric(eqn.A_)
+if(not(isfield(eqn,'A_'))) || not(isnumeric(eqn.A_))
     error('MESS:error_arguments','field eqn.A_ is not defined');
 end
-[eqn, erg] = oper.init(eqn, opts, 'A','E');
-if ~erg
+[result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
+if not(result)
     error('MESS:control_data', 'system data is not completely defined or corrupted');
 end
 % returns order of A or states of A, A is supposed to be square
@@ -41,35 +41,15 @@ n = size(eqn.A_,1);
 % eqn structure back as an output, so this change is not visible in
 % anything above this routine and will only be passed on to the function
 % handles used in here.
-if isfield(eqn, 'U') && ~isempty(eqn.U)
-    eqn.U = [eqn.U; sparse(n - eqn.st, size(eqn.U, 2))];
+if isfield(eqn, 'U') && not(isempty(eqn.U))
+    eqn.U = [eqn.U; zeros(n - size(eqn.U, 1), size(eqn.U, 2))];
 end
-if isfield(eqn,'V') && ~isempty(eqn.V)
-    eqn.V=[eqn.V; sparse(n-eqn.st, size(eqn.V,2))]; 
+if isfield(eqn,'V') && not(isempty(eqn.V))
+    eqn.V = [eqn.V; zeros(n - size(eqn.V,1), size(eqn.V,2))];
 end
-% if (eqn.type=='N'),
-%     eqn.B=[eqn.B; sparse(n-eqn.st, size(eqn.B,2))];
-%     if isfield(eqn,'V') && ~isempty(eqn.V)
-%         eqn.V=[eqn.V; sparse(n-eqn.st, size(eqn.B,2))]; 
-%     end
-% else % eqn.type=='T';
-%     eqn.C=[eqn.C sparse(size(eqn.C,1),n-eqn.st)];
-%     if isfield(eqn,'V') && ~isempty(eqn.V)
-%         eqn.V=[eqn.V sparse(size(eqn.C,1),n-eqn.st)]; 
-%     end
-% end
-if (~isfield(opts.adi.shifts, 'b0') || isempty(opts.adi.shifts.b0))
-    opts.adi.shifts.b0 = ones(n,1);
-else 
-    if length(opts.adi.shifts.b0) ~= n
-        warning('MESS:b0',...
-        'b0 has the wrong length. Switching to default.');
-        opts.adi.shifts.b0 = ones(n,1);
-    end
-end
-if isfield(opts.adi.shifts, 'method') && ...
-        strcmp(opts.adi.shifts.method, 'projection')
-    U = [U; zeros(n - eqn.st, size(U, 2))];
+if isfield(opts.shifts, 'method') && ...
+        strcmp(opts.shifts.method, 'projection')
+    U = [U; zeros(n - size(U, 1), size(U, 2))];
     if isempty(W)
         % first shifts are computed with U = eqn.G and W = A * eqn.G
         W = oper.mul_A(eqn, opts, eqn.type, U, 'N');
@@ -79,5 +59,14 @@ if isfield(opts.adi.shifts, 'method') && ...
     rw = mess_projection_shifts(eqn, opts, oper, U, ...
         W, p_old);
 else
+    if (not(isfield(opts.shifts, 'b0')) || isempty(opts.shifts.b0))
+        opts.shifts.b0 = ones(n,1);
+    else
+        if length(opts.shifts.b0) ~= n
+            warning('MESS:b0',...
+                'b0 has the wrong length. Switching to default.');
+            opts.shifts.b0 = ones(n,1);
+        end
+    end
     [rw, Hp, Hm, Vp, Vm] = mess_get_ritz_vals(eqn, opts, oper);
 end

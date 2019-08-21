@@ -1,19 +1,20 @@
-function [ W, res0 ] = init_res_default( eqn, opts, RHS)
-
-% function [ W, res0 ] = init_res_default( eqn, opts, RHS)
+function [ RHS, res0, eqn, opts, oper ] = init_res_default( eqn, opts, oper, RHS)
+%% function init_res initializes the low rank residual W and res0
+% function [ RHS, res0, eqn, opts, oper ] = init_res_default( eqn, opts, oper, RHS)
 %
-% This function returns a matrix W and its associated residuum res0.
+% This function returns the initial residual factor W and its associated norm res0.
 %
-%   Inputs:
+%   Input/Output:
 %
 %   eqn        structure containing data for G or B or C
 %   opts       structure containing parameters for the algorithm
-%   RHS        right hand side matrix 
+%   oper       struct contains function handles for operation with A and E
+%   RHS        right hand side matrix
 %
 %   Outputs:
-% 
-%   W          matrix given by ADI to compute residuum
-%   res0       initial residuum
+%
+%   RHS        matrix given by ADI to compute residuum
+%   res0       initial residuum norm
 %
 % This function does not use other default functions.
 %% check input data
@@ -32,21 +33,26 @@ function [ W, res0 ] = init_res_default( eqn, opts, RHS)
 % You should have received a copy of the GNU General Public License
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
+%               2009-2019
 %
-if (~isnumeric(RHS)) || (~ismatrix(RHS))
+if (not(isnumeric(RHS))) || (not(ismatrix(RHS)))
     error('MESS:error_arguments','RHS has to ba a matrix');
 end
-%% compute low rank residual
-W = RHS;
 
 %% compute res0
-if opts.adi.LDL_T
-    res0 = max(abs(eig(W' * W * eqn.S)));
+if isfield(opts, 'nm') && isfield(opts.nm, 'res0')
+    res0 = opts.nm.res0;
 else
-    res0 = norm(W' * W, 2);
+    if opts.LDL_T
+        if opts.norm == 2
+            res0 = max(abs(eig(RHS' * RHS * diag(eqn.S_diag))));
+        else
+            res0 = norm(eig(RHS' * RHS * diag(eqn.S_diag)), 'fro');
+        end
+    else
+        res0 = norm(RHS' * RHS, opts.norm);
+    end
 end
-
 end
 

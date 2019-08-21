@@ -1,8 +1,16 @@
-function X = sol_E_dae_2(eqn, opts, opE, B, opB) 
-%% function sol_E_dae_so_1 solves opE(E)*X = opB(B) resp. performs X=opE(E)\opB(B)
+function X = sol_E_dae_2(eqn, opts, opE, B, opB) %#ok<INUSL>
+%% function sol_E solves opE(S_)*X = opB(B) resp. performs X=opE(S_)\opB(B)
+% sol_E_pre should be called before to construct
+% S_ = [ E1 -J';
+%      [ J   0 ]
+% from
+% A = [ A1 -J';
+%       J   0]
+% E = [ E1 0;
+%       0  0]
 %
 % Input:
-%   eqn     structure contains data for E (M_,K_)
+%   eqn     structure contains data for S_
 %
 %   opts    struct contains parameters for the algorithm
 %
@@ -20,8 +28,7 @@ function X = sol_E_dae_2(eqn, opts, opE, B, opB)
 %
 %   X       matrix fullfills equation opE(E)*X = opB(B)
 %
-%   uses no other dae_1 function
-%% check input Paramters
+%   uses no other dae_2 function
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -38,46 +45,54 @@ function X = sol_E_dae_2(eqn, opts, opE, B, opB)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
-if (~ischar(opE) || ~ischar(opB))
+
+%% check input Paramters
+if (not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opE or opB is not a char');
 end
 
 opE = upper(opE); opB = upper(opB);
-if(~(opE == 'N' || opE == 'T'))
+if(not((opE == 'N' || opE == 'T')))
     error('MESS:error_arguments','opE is not ''N'' or ''T''');
 end
 
-if(~(opB == 'N' || opB == 'T'))
+if(not((opB == 'N' || opB == 'T')))
     error('MESS:error_arguments','opB is not ''N'' or ''T''');
 end
-if (~isnumeric(B)) || (~ismatrix(B))
+if (not(isnumeric(B))) || (not(ismatrix(B)))
     error('MESS:error_arguments','B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if(~isfield(eqn, 'E_')) || ~isnumeric(eqn.E_)
-    error('MESS:error_arguments', 'field eqn.E_ is not defined');
-end
-if(~isfield(eqn, 'S_'))
+if(not(isfield(eqn, 'S_')))
     error('MESS:error_arguments', ['field eqn.S_ is not defined. Did ' ...
                         'you forget to run sol_E_pre?']);
 end
-if ~isfield(eqn, 'st')    || ~isnumeric(eqn.st)
+if not(isfield(eqn, 'st'))    || not(isnumeric(eqn.st))
     error('MESS:st',...
-    'Missing or Corrupted st field detected in equation structure.')
+    'Missing or Corrupted st field detected in equation structure.');
 end
 
 st = eqn.st;
-switch opB
-  case 'N'
-    rowB=size(B,1);
-  case 'T'
-    rowB=size(B,2);    
-end
-if rowB~=st && rowB~=size(eqn.E_,1) 
-  error('MESS:error_arguments', 'size of B does not match data in E');
+
+n = size(eqn.S_,1);
+
+[rowB,colB] = size(B);
+
+if(opB == 'N')
+    if(rowB == st)
+        B = [B; zeros(n - rowB, colB)];
+    elseif rowB ~= n
+        error('MESS:error_arguments', 'size of B does not match data in E');
+    end
+else
+    if(colB == st)
+        B = [B, zeros(rowB, n - colB)];
+    elseif colB ~= n
+        error('MESS:error_arguments', 'size of B does not match data in E');
+    end
 end
 
 
@@ -87,36 +102,28 @@ switch opE
     case 'N'
         switch opB
             
-            %implement solve E*X=B
+            %implement solve S_*X=B
             case 'N'
-                if( size(eqn.S_,1) ~= size(B, 1))
-                    error('MESS:error_arguments','number of rows of E differs with rows of B');
-                end
+                
                 X = eqn.S_ \ B;
             
-            %implement solve A*X=B'
+            %implement solve S_*X=B'
             case 'T'
-                if( size(eqn.S_,1) ~= size(B, 2))
-                    error('MESS:error_arguments','number of rows of E differs with cols of B');
-                end
+                
                 X = eqn.S_ \ B';
         end
         
     case 'T'
         switch opB
             
-            %implement solve E'*X=B
+            %implement solve S_'*X=B
             case 'N'
-                if( size(eqn.S_,1) ~= size(B, 1))
-                    error('MESS:error_arguments','number of cols of A_ differs with rows of B');
-                end
+                
                 X = eqn.S_' \ B;
                 
-            %implement solve A_'*X=B'
+            %implement solve S_'*X=B'
             case 'T'
-                if( size(eqn.S_,1) ~= size(B, 2))
-                    error('MESS:error_arguments','number of cols of A_ differs with cols of B');
-                end
+                
                 X = eqn.S_' \ B';
         end
         

@@ -28,7 +28,7 @@ function [ eqn, opts, oper ] = sol_E_pre_dae_2( eqn, opts, oper )
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
   alpha=-1/50;
   if isfield(eqn,'st')&&isnumeric(eqn.st)
@@ -36,16 +36,16 @@ function [ eqn, opts, oper ] = sol_E_pre_dae_2( eqn, opts, oper )
   else
     error('MESS:wrong_arguments','missing or corrupted field st detected');
   end
-  if ~isfield(eqn,'S_')
-    if(~isfield(eqn,'E_') || ~isnumeric(eqn.E_)...
-            || ~isfield(eqn,'A_')) || ~isnumeric(eqn.A_)
+  if not(isfield(eqn,'S_'))
+    if(not(isfield(eqn,'E_')) || not(isnumeric(eqn.E_))...
+            || not(isfield(eqn,'A_'))) || not(isnumeric(eqn.A_))
         error('MESS:error_arguments','field eqn.E_ or eqn.A_ is not defined or corrupted');
     end
     eqn.S_=alpha*eqn.A_;
     eqn.S_(1:st,1:st)=eqn.E_(1:st,1:st);
     eqn.Scount=1;
   else
-    if(~isfield(eqn, 'Scount')) || ~isnumeric(eqn.Scount)
+    if(not(isfield(eqn, 'Scount'))) || not(isnumeric(eqn.Scount))
         error('MESS:error_arguments', ['field eqn.Scount is not defined. Did ' ...
                         'you forget to run sol_E_pre?']);
     end

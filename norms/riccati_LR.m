@@ -21,14 +21,26 @@ function [ res ] = riccati_LR(W, DeltaK, opts, S, S_K )
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
+%% Check input data
+
+if not(isfield(opts,'bdf')), opts.bdf=[]; end
+if isstruct(opts.bdf) && isfield(opts.bdf, 'tau') ...
+        && isfield(opts.bdf, 'beta') && isempty(S_K)
+    DeltaK = DeltaK * sqrt(opts.bdf.tau * opts.bdf.beta);
+    % DeltaK needs to be scaled with tb to compute the residual norm of the
+    % ARE; DeltaK does not contain tb since it's for the DRE; if S_K is not
+    % empty DeltaK results from a linesearch and also contains parts from
+    % W; the scaling with tb is done in mess_lrnm already.
+end
+
 
 %% Compute norm
 
 % 2-norm
-if opts.nm.norm == 2
-    if opts.adi.LDL_T
+if opts.norm == 2
+    if opts.LDL_T
         if isempty(S_K)
             res = max(abs(eig([W DeltaK]'*[W * S -DeltaK])));
         else
@@ -37,9 +49,9 @@ if opts.nm.norm == 2
     else
         res = max(abs(eig([W DeltaK]'*[W -DeltaK])));
     end
-elseif strcmp(opts.nm.norm, 'fro')
+elseif strcmp(opts.norm, 'fro')
     % Fromenius norm
-    if opts.adi.LDL_T
+    if opts.LDL_T
         if isempty(S_K)
             res = norm(eig([W, DeltaK]' * [W * S, -DeltaK]), 'fro');
         else

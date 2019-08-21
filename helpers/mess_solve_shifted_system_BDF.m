@@ -2,9 +2,6 @@ function [ V, eqn, opts, oper ]=mess_solve_shifted_system_BDF(eqn, opts, oper, p
 % Solves (Ã + p*E)V = W for V, Ã = tau*beta*A - 0.5*E 
 %  or Ã = tau*beta*A - 0.5*E - UV^T (BDF scheme)
 %
-% author  Björn Baran
-% date    2015/09/01
-%
 %  Solves (Ã + p*E)V = W for V, Ã = tau*beta*A - 0.5*E 
 %   or Ã = tau*beta*A - 0.5*E - UV^T if eqn.type == 'N'
 %  Solves (Ã + p*E)^T*V = W for V, Ã = tau*beta*A - 0.5*E 
@@ -47,7 +44,7 @@ function [ V, eqn, opts, oper ]=mess_solve_shifted_system_BDF(eqn, opts, oper, p
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %% Check input
@@ -66,11 +63,20 @@ pc = (pc - 0.5) / (opts.bdf.tau * opts.bdf.beta);
 
 %% solve shifted system
 if eqn.haveUV %Perform Sherman-Morrison-Woodbury-trick
-    V = oper.sol_ApE(eqn, opts,eqn.type,pc,eqn.type,...
-        [W eqn.V] / (opts.bdf.tau * opts.bdf.beta),'N');
-    SMW = V(:,k+1:end);
-    V=V(:,1:k);
-    V=V+SMW*((eye(m)-eqn.U'*SMW)\(eqn.U'*V));
+    if eqn.type == 'T'
+        V = oper.sol_ApE(eqn, opts,eqn.type,pc,eqn.type,...
+            [W eqn.V] / (opts.bdf.tau * opts.bdf.beta),'N');
+        SMW = V(:,k+1:end);
+        V=V(:,1:k);
+        V=V-SMW*((eye(m)+eqn.U'*SMW)\(eqn.U'*V));
+    else
+        V = oper.sol_ApE(eqn, opts,eqn.type,pc,eqn.type,...
+            [W eqn.U] / (opts.bdf.tau * opts.bdf.beta),'N');
+        SMW = V(:,k+1:end);
+        V=V(:,1:k);
+        V=V-SMW*((eye(m)+eqn.V'*SMW)\(eqn.V'*V));
+
+    end
 else
     V = oper.sol_ApE(eqn, opts,eqn.type,pc,eqn.type,...
         W / (opts.bdf.tau * opts.bdf.beta),'N');

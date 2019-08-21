@@ -1,24 +1,29 @@
-function Z=mess_column_compression(Z,opts)
-%          Computes a compressed representation of Z using the rank
-%          revealing SVD.
+function [Z, D] = mess_column_compression(Z, opZ, D, tol, info)
+%	Computes a compressed representation of Z (and D).
 %
 %   Input
-%       Z             Matrix of interest
-%                 
-%       opts          structure with folowing fields
-%       opts.ccTOL    the truncation tolerance used in the RRQRprocess.
-%                     Note that in the context of factorized solution of matrix
-%                     equations it is sufficient to choose
-%                     sqrt(eps) here since in the product this will
-%                     lead to a truncation error eps. Only do this
-%                     when the product is used in subsequent
-%                     computations, though.
+%       Z             matrix of interest
+%
+%       opZ           character specifiyng if Z should be transposed
+%                       'N': Z*Z' or Z*D*Z'
+%                       'T': Z'*Z or Z'*D*Z
+%                     (optional, default 'N')
+%
+%       D             symmetric matrix of interest, if empty [] the Z*Z' or
+%                     Z'*Z factorizations are considered
+%                     (optional, default [])
+%
+%       tol           the truncation tolerance used in the rank-revealing
+%                     SVD or eigenvalue decomposition
+%                     (optional, default eps)
+%
+%       info          {0, 1}, disable/enable verbose mode
+%                     (optional, default 0)
 %
 %   Output
 %       Z             compressed low rank factor
-%
-% author  Jens Saak
-% date    2012/07/01
+%       D             compressed low rank factor, empty of D was empty
+%                     before
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -34,27 +39,102 @@ function Z=mess_column_compression(Z,opts)
 % You should have received a copy of the GNU General Public License
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
+%               2009-2019
 %
 
-if ~isfield(opts,'comprType')||(isempty(opts.comprType))
-  opts.comprType=0; 
-end
-if ~isfield(opts,'ccTOL')||(isempty(opts.ccTOL))
-  opts.ccTOL=eps; 
-end
-
-if(issparse(Z)) 
-  % This is just a safety measure that is hopefully never executed
-  Z=full(Z);
-  warning('MESS:dense',['Converting low rank factor to dense format. ' ...
-                      'This should never be necessary.']')
+% Check and assign input arguments.
+if(issparse(Z))
+    % This is just a safety measure that is hopefully never executed
+    Z = full(Z);
+    
+    warning('MESS:dense',...
+        ['Converting low rank factor to dense format. ' ...
+        'This should never be necessary.']');
 end
 
-[~,D,P] = svd(Z');
+if nargin < 2
+    opZ = 'N';
+end
 
-L = D';
-D = diag(D);
-l = length(find(D > opt.ccTOL*D(1)));
-Z = P * L(:,1:l);
+if strcmp(opZ, 'N')
+    m = size(Z, 2);
+else
+    m = size(Z, 1);
+end
+
+if (nargin >= 3) && not(isempty(D))
+    assert((norm(D - D', 'fro') < eps) ...
+        && isequal(size(D), [m m]), ...
+        'MESS:data', ...
+        'The D factor has to be symmetric of size %d.', m);
+else
+    D = [];
+end
+
+if nargin < 4
+    tol = eps;
+end
+
+if nargin < 5
+    info = 0;
+end
+
+% Perform compression.
+if isempty(D)
+    if strcmp(opZ, 'N')
+        % Z*Z' case.
+        [U, S, ~] = svd(Z,0);
+        
+        L = S;
+        S = diag(S);
+        l = length(find(S.^2 > tol * S(1)^2));
+        Z = U * L(:, 1:l);
+        
+        if info
+            fprintf(1, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 2), tol);
+        end
+    else
+        % Z'*Z case.
+        [~, S, V] = svd(Z,0);
+        
+        L = S;
+        S = diag(S);
+        l = length(find(S.^2 > tol * S(1)^2));
+        Z = L(1:l, :) * V;
+        
+        if info
+            fprintf(1, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 1), tol);
+        end
+    end
+else
+    if strcmp(opZ, 'N')
+        % Z*D*Z' case.
+        [Q, R] = qr(Z, 0);
+        RDR    = R * D * R';
+        [V, S] = eig(0.5 * (RDR + RDR'));
+        S      = diag(S);
+        
+        r = abs(S) > tol * max(abs(S));
+        Z = Q * V(:, r);
+        D = diag(S(r));
+        
+        if info
+            fprintf(1, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 2), tol);
+        end
+    else
+        % Z'*D*Z case.
+        [Q, R] = qr(Z', 0);
+        RDR    = R * D * R';
+        [V, S] = eig(0.5 * (RDR + RDR'));
+        S      = diag(S);
+        
+        r = abs(S) > tol * max(abs(S));
+        Z = (Q * V(:, r))';
+        D = diag(S(r));
+        
+        if info
+            fprintf(1, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 1), tol);
+        end
+    end
+end

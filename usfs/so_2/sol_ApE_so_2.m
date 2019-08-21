@@ -1,4 +1,4 @@
-function X=sol_ApE_so_2(eqn, opts,opA,p,opE,B,opB)
+function X=sol_ApE_so_2(eqn, opts,opA,p,opE,B,opB)%#ok<INUSL>
 
 % function X=sol_ApE_so_2(eqn, opts,opA,p,opE,C,opC)
 %
@@ -31,12 +31,14 @@ function X=sol_ApE_so_2(eqn, opts,opA,p,opE,B,opB)
 % Matrices M, D, K are assumed to be quadratic, symmetric and positive definit.
 %
 %
-% This function returns X =(A+p*E)\C, where matrices A and E given by structure eqn and input matrix C could be transposed.
+% This function returns X =(A+p*E)\C, where matrices A and E given
+% by structure eqn and input matrix C could be transposed. 
 % Matrices A and E are assumed to be quadratic.
 %
 %   Inputs:
 %
-%   eqn     structure containing data for matrices A (fields 'K_' and 'M_') and E (fields 'D_' and 'M_')
+%   eqn     structure containing data for matrices 
+%           A (fields 'K_' and 'M_') and E (fields 'E_' and 'M_')
 %   opts    structure containing parameters for the algorithm
 %   opA     character specifying the shape of A
 %           opA = 'N' solves (A + p* opE(E))*X = opC(C) 
@@ -74,47 +76,48 @@ function X=sol_ApE_so_2(eqn, opts,opA,p,opE,B,opB)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 
 %% check input parameters
-if (~ischar(opA) || ~ischar(opE) || ~ischar(opB))
+if (not(ischar(opA)) || not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opA, opE or opC is not a char');
 end
 
 opA = upper(opA); opE = upper(opE); opB = upper(opB);
 
-if(~(opA=='N' || opA=='T'))
+if(not((opA=='N' || opA=='T')))
     error('MESS:error_arguments','opA is not ''N'' or ''T''');
 end
 
-if(~(opE=='N' || opE=='T'))
+if(not((opE=='N' || opE=='T')))
     error('MESS:error_arguments','opE is not ''N'' or ''T''');
 end
 
-if(~(opB=='N' || opB=='T'))
+if(not((opB=='N' || opB=='T')))
     error('MESS:error_arguments','opC is not ''N'' or ''T''');
 end
 
-if(~isnumeric(p))
+if(not(isnumeric(p)))
     error('MESS:error_arguments','p is not numeric');
 end
 
-if (~isnumeric(B)) || (~ismatrix(B))
+if (not(isnumeric(B))) || (not(ismatrix(B)))
     error('MESS:error_arguments','B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if ~isfield(eqn, 'haveE'), eqn.haveE = 0; end
+if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
 if(eqn.haveE ==1)
-    if(~isfield(eqn,'M_') || ~isnumeric(eqn.M_) || ~isfield(eqn,'D_') || ...
-            ~isnumeric(eqn.D_) || ~isfield(eqn,'K_') || ~isnumeric(eqn.K_))
+    if(not(isfield(eqn,'M_')) || not(isnumeric(eqn.M_)) || not(isfield(eqn,'E_')) || ...
+            not(isnumeric(eqn.E_)) || not(isfield(eqn,'K_')) || not(isnumeric(eqn.K_)))
         error('MESS:error_arguments',...
-            'field eqn.M_, eqn.D_ or eqn.K_ is not defined or corrupted');
+            'field eqn.M_, eqn.E_ or eqn.K_ is not defined or corrupted');
     end
 else
-    error('MESS:error_arguments','eqn.haveE has to be 1 because of the structure of E')
+    error('MESS:error_arguments',['eqn.haveE has to be 1 because of ' ...
+                        'the structure of E']); 
 end
 
 rowK = size(eqn.K_, 1);
@@ -122,30 +125,25 @@ rowA = 2*rowK;
 
 %% perform solve operations
 switch opB
-    
     % implement solve (A+p*E)*X = B
     case 'N'
-        
         if (rowA ~= size(B,1))
-            error('MESS:error_arguments','number of rows of A differs with number of rows of B');
+            error('MESS:error_arguments',['number of rows of A differs ' ...
+                                'with number of rows of B']);
         end
-        
-        temp = p*eqn.D_ - eqn.K_;
+        temp = p*eqn.E_ - eqn.K_;
         X1 = (p^2*eqn.M_ - temp)\(p*B(rowK+1:end,:) - B(1:rowK,:));
         X2 = (p*eqn.M_)\(B(1:rowK,:) - temp*X1);
         X  = [X1;X2];
         
     % implement solve (A+p*E)*X = B'
     case 'T'
-        
         if (rowA ~= size(B,2))
-            error('MESS:error_arguments','number of rows of A differs with number of columns of B');
+            error('MESS:error_arguments',['number of rows of A differs ' ...
+                                'with number of columns of B']); 
         end
-        
-        temp = p*eqn.D_ -eqn.K_;
+        temp = p*eqn.E_ -eqn.K_;
         X1 = (p^2*eqn.M_ - temp)\(p*B(:,rowK+1:end)' - B(:,1:rowK)');
         X2 = (p*eqn.M_)\(B(:,1:rowK)' - temp*X1);
         X  = [X1;X2];
-    
-
 end

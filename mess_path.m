@@ -1,3 +1,4 @@
+function mypath = mess_path
 %% Add all required directories to the MATLAB path
 % Run this script to add all required functions and directories to the
 % MATLAB path in order to rum M.E.S.S. functions and demos
@@ -17,18 +18,10 @@
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
-s=pwd;
-addpath(s);
-addpath(sprintf('%s/mor/',s));
-addpath(sprintf('%s/norms/',s));
-addpath(sprintf('%s/mat-eqn-solvers/',s));
-addpath(sprintf('%s/shifts/',s));
-addpath(genpath(sprintf('%s/usfs/',s)));
-addpath(sprintf('%s/helpers/',s));
-addpath(genpath(sprintf('%s/DEMOS/',s)));
-
-addpath(genpath(sprintf('%s/shifts',s)));
-
-clear s;
+mypath = genpath_exclude(pwd,{'.git','html'}); 
+addpath(mypath);
+if not(nargout)
+    clear mypath;
+end

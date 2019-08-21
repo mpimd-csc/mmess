@@ -10,9 +10,9 @@ function out=dn(u,k)
   i=1;
   while abs(c(i))>eps
     i=i+1;
-    a(i)=(a(i-1)+b(i-1))/2;
-    b(i)=sqrt(a(i-1)*b(i-1));
-    c(i)=(a(i-1)-b(i-1))/2;
+    a(i)=(a(i-1)+b(i-1))/2; %#ok<AGROW>
+    b(i)=sqrt(a(i-1)*b(i-1)); %#ok<AGROW>
+    c(i)=(a(i-1)-b(i-1))/2; %#ok<AGROW>
   end
   phi1=(2.^(i-1)).*a(i).*u;%here 2^(i-1) and not 2^i as in
                            %Abramowitz/Stegun because counting
@@ -21,7 +21,7 @@ function out=dn(u,k)
   for j=i:-1:2 
     if (j<i) 
       phi1=phi0;
-    end;
+    end
     phi0=(phi1+asin(c(j)*sin(rem(phi1,2*pi))/a(j)))/2;
   end
   arg=1-k*k*sin(rem(phi0,2*pi))^2;

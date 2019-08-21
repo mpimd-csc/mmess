@@ -1,19 +1,19 @@
-function [Er,Ar,Br,Cr,Dr,TL,TR] = mess_square_root_method(eqn,opts,oper,ZB,ZC)
+function [TL,TR,hsv,eqn,opts,oper] = mess_square_root_method(eqn,opts,oper,ZB,ZC)
 % Square root method for the computation of the balanced and reduced
 % system
 %  
 % Call
-%  [Er,Ar,Br,Cr,Dr] = mess_square_root_method(eqn,opts,oper,ZB,ZC);
+%  [TL,TR,hsv,eqn,opts,oper] = mess_square_root_method(eqn,opts,oper,ZB,ZC);
 %
 % Inputs:
-%  eqn, opt, oper   the standard structures
+%  eqn, opt, oper   the standard mess structures
+%                   opts needs to have opts.srm.max_ord and opts.srm.tol
+%                   set.
 %  ZB, ZC           the (tall and skinny) Gramian factors
 %
 % Outputs: 
-%  Er,Ar,Br,Cr,Dr   The reduced system matrices.
-%                   Note that Er is always an identity by
-%                   construction and Dr will only be set for
-%                   certain DAE systems.
+%  TL,TR            left and right truncation matrices
+%  hsv              computed Hankel singular values
 %
 % The implementation (especially in the case E!=I) follows the
 % derivation in:
@@ -22,12 +22,6 @@ function [Er,Ar,Br,Cr,Dr,TL,TR] = mess_square_root_method(eqn,opts,oper,ZB,ZC)
 %   Saak, Jens;
 %   Dissertation, TU Chemnitz; 2009. 
 % 
-% NOTE: Currently only standard state space systems and descriptor systems
-% with E invertible are supported.
-%
-
-% Author: 
-%  Jens Saak, Feb 24 2016
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -44,32 +38,64 @@ function [Er,Ar,Br,Cr,Dr,TL,TR] = mess_square_root_method(eqn,opts,oper,ZB,ZC)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
+%% Check necessary control data
+[result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
+[eqn, opts, oper] = oper.mul_E_pre(eqn,opts,oper);
+if not(result)
+    error('MESS:control_data',...
+        'system data is not completely defined or corrupted');
+end
+if isfield(opts,'srm')
+   if not(isfield(opts.srm,'tol'))
+       error('Missing truncation tolerance opts.srm.tol');
+   end
+   if not(isfield(opts.srm,'max_ord'))
+        opts.srm.max_ord=oper.size(eqn,opts);
+   end
+   if not(isfield(opts.srm,'info'))
+       opts.srm.info = 0;
+   end
+else
+    error('Missing srm substructure in opts argument.');
+end
 
-  [U0,S0,V0] = svd(ZC'*oper.mul_E(eqn, opts, 'N', ZB, 'N'),0);
-  s0=diag(S0);
-  ks=length(s0);
-  k=ks;
-  while (sum(s0(k-1:ks))<opts.bt.srm.tol/2)&&(k>2)
-    k=k-1; 
-  end
-  k0=k;
+%% Compute SVD of Gramian factor product in the correct inner product
+if eqn.haveE
+    [U0,S0,V0] = svd(ZC'*oper.mul_E(eqn, opts, 'N', ZB, 'N'),0);
+else
+    [U0,S0,V0] = svd(ZC'*ZB,0);
+end
 
-  r= min([opts.bt.srm.max_ord k0]);
-  if opts.bt.srm.info>0
-    fprintf(1,'reduced system order: %d\n\n',r);
-  end
-  
-  sigma_r=diag(S0(1:r,1:r));
-  
-  VB = ZB*V0(:,1:r);
-  VC = ZC*U0(:,1:r);
-  
-  TR = VB*diag(ones(r,1)./sqrt(sigma_r));
-  TL = VC*diag(ones(r,1)./sqrt(sigma_r));
-  
-  Ar = TL'*oper.mul_A(eqn, opts, 'N', TR, 'N');
-  Br = TL'*eqn.B;
-  Cr = eqn.C*TR;
-  Er = eye(r);
-  Dr = [];
+%% Determine possible and desired ROM order
+hsv=diag(S0);
+ks=length(hsv);
+nr=oper.size(eqn,opts)-ks;
+k=ks;
+while (2*sum(hsv(k-1:ks))+nr*hsv(ks)<opts.srm.tol)&&(k>2)
+    k=k-1;
+end
+k0=k;
+
+r= min([opts.srm.max_ord k0]);
+if opts.srm.info>0
+    fprintf(1,['reduced system order: %d',...
+        '  (max possible/allowed: %d/%d)\n\n'],r,ks,opts.srm.max_ord);
+end
+
+% Compute the truncating projection matrices
+
+S = sparse(1:r, 1:r, 1 ./ sqrt(hsv(1:r)));
+
+TL = (ZC*U0(:,1:r))*S;
+TR = (ZB*V0(:,1:r))*S;
+
+% augment projection matrices by preselected columns
+if isfield(opts.srm,'V') && ismatrix(opts.srm.V)
+    TL = [TL,opts.srm.V];
+end
+if isfield(opts.srm,'W') && ismatrix(opts.srm.W)
+    TR = [TR, opts.srm.W];
+end
+
+[eqn, opts, oper] = oper.mul_E_post(eqn,opts,oper);

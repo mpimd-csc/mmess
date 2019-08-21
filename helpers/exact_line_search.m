@@ -1,4 +1,4 @@
-function [ lambda ] = exact_line_search( W_old, DeltaK_old, W, DeltaK )
+function [ lambda ] = exact_line_search( W_old, DeltaK_old, W, DeltaK, S, S_old )
 % Compute lambda for exact line search
 
 %
@@ -16,7 +16,7 @@ function [ lambda ] = exact_line_search( W_old, DeltaK_old, W, DeltaK )
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %% Check input
@@ -24,16 +24,34 @@ if isempty(DeltaK_old)
     DeltaK_old = 0;
 end
 %% Compute scalar values
-alpha = sum(sum((W_old' * W_old).^2, 1), 2) ...
-    + sum(sum((DeltaK_old' * DeltaK_old).^2, 1), 2) ...
-    - 2 * sum(sum((DeltaK_old' * W_old).^2, 1), 2);
-beta = sum(sum((W' * W).^2, 1), 2);
-delta = sum(sum((DeltaK' * DeltaK).^2, 1), 2);
-gamma = sum(sum((W_old' * W).^2, 1), 2) ...
-    - sum(sum((DeltaK_old' * W).^2, 1), 2);
-epsilon = sum(sum((W_old' * DeltaK).^2, 1), 2) ...
-    - sum(sum((DeltaK_old' * DeltaK).^2, 1), 2);
-zeta = sum(sum((DeltaK' * W).^2, 1), 2);
+if isempty(S) && isempty(S_old)
+    alpha = sum(sum(( (W_old' * W_old) ).^2, 1), 2) ...
+        + sum(sum((DeltaK_old' * DeltaK_old).^2, 1), 2) ...
+        - 2 * sum(sum((DeltaK_old' * W_old).^2, 1), 2);
+    beta = sum(sum((W' * W).^2, 1), 2);
+    delta = sum(sum((DeltaK' * DeltaK).^2, 1), 2);
+    gamma = sum(sum((W_old' * W).^2, 1), 2) ...
+        - sum(sum((DeltaK_old' * W).^2, 1), 2);
+    epsilon = sum(sum((W_old' * DeltaK).^2, 1), 2) ...
+        - sum(sum((DeltaK_old' * DeltaK).^2, 1), 2);
+    zeta = sum(sum((DeltaK' * W).^2, 1), 2);
+elseif not(isempty(S)) && not(isempty(S_old))
+    S = diag(sqrt(S));
+    S_old = diag(sqrt(S_old));
+    alpha = sum(sum((S_old * (W_old' * W_old) * S_old).^2, 1), 2) ...
+        + sum(sum((DeltaK_old' * DeltaK_old).^2, 1), 2) ...
+        - 2 * sum(sum((DeltaK_old' * W_old * S_old).^2, 1), 2);
+    beta = sum(sum((S * (W' * W) * S).^2, 1), 2);
+    delta = sum(sum((DeltaK' * DeltaK).^2, 1), 2);
+    gamma = sum(sum((S_old * W_old' * W * S).^2, 1), 2) ...
+        - sum(sum((DeltaK_old' * W * S).^2, 1), 2);
+    epsilon = sum(sum((S_old * W_old' * DeltaK).^2, 1), 2) ...
+        - sum(sum((DeltaK_old' * DeltaK).^2, 1), 2);
+    zeta = sum(sum((DeltaK' * W * S).^2, 1), 2);
+else
+    error('MESS:line_search', ...
+        'Incorrect data for S and S_old.');
+end
 
 %% Compute lambda via eigenproblem
 a0 = 2 * (gamma - alpha);
@@ -56,7 +74,7 @@ catch
   lambda = eig(A, B);
 end
 
-lambda = lambda(~imag(lambda));
+lambda = lambda(not(imag(lambda)));
 lambda = lambda(lambda >= 0);
 lambda = lambda(lambda <= 2);
 
@@ -86,12 +104,12 @@ end
 % B1 = eye(3);
 % B1(3, 3) = a3;
 % E1 = eig(A1, B1); % inaccurate
-% E1 = E1(~imag(E1));
+% E1 = E1(not(imag(E1)));
 % E1 = E1(E1 >= 0);
 % E1 = E1(E1 <= 2);
 
 % E2 = eig(A1, B1, 'qz'); % inaccurate
-% E2 = E2(~imag(E2));
+% E2 = E2(not(imag(E2)));
 % E2 = E2(E2 >= 0);
 % E2 = E2(E2 <= 2);
  
@@ -99,13 +117,13 @@ end
 %     0,          0,          1
 %     -a0 / a3,   -a1 / a3,   -a2 / a3];
 % E3 = eig(C1);
-% E3 = E3(~imag(E3));
+% E3 = E3(not(imag(E3)));
 % E3 = E3(E3 >= 0);
 % E3 = E3(E3 <= 2);
 
 
 % E4 = eig(A2, B2);
-% E4 = E4(~imag(E4));
+% E4 = E4(not(imag(E4)));
 % E4 = E4(E4 >= 0);
 % E4 = E4(E4 <= 2);
 
@@ -114,7 +132,7 @@ end
 %     0,              0,              1
 %     -a(1) / a(4),   -a(2) / a(4),   -a(3) / a(4)];
 % E6 = eig(C2); % seems to be most reliable in tests
-% E6 = E6(~imag(E6));
+% E6 = E6(not(imag(E6)));
 % E6 = E6(E6 >= 0);
 % E6 = E6(E6 <= 2);
 

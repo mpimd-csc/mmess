@@ -4,6 +4,7 @@ function [R,iter] = lyap_sgn_fac(A,C,E)
 % Solve the stable Lyapunov equation
 %
 % (*) A' X E + E' X A + C' C = 0
+%                          X = R' R
 %
 % for a full-rank factor R of X via the sign function iteration.
 %
@@ -13,8 +14,8 @@ function [R,iter] = lyap_sgn_fac(A,C,E)
 %    E - a square, n x n - matrix.
 %
 % Output: 
-%    R - numerical full rank factor of X.  
-%  iter (optionally) - number of sign iterations required.
+%    R - numerical full rank factor of X = R'*R.  
+%    iter (optionally) - number of sign iterations required.
 %
 % REFERENCE:
 %
@@ -25,8 +26,6 @@ function [R,iter] = lyap_sgn_fac(A,C,E)
 %   Lecture Notes in Computational Science and Engineering, pp. 5-48,
 %   Springer-Verlag, Berlin/Heidelberg, 2005.
 %
-% Authors: Peter Benner, 2004-2007.
-%          Jens Saak, 2015-2016
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -43,12 +42,12 @@ function [R,iter] = lyap_sgn_fac(A,C,E)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 n = size(A,1);
 R    = C;
-if nargin < 3,
+if nargin < 3 || isempty(E)
     desc = 0;
     E    = eye(n);
     Enrm = 1;
@@ -68,23 +67,22 @@ rtol = 1e-8;
 iter = 0;
 convergence = Err <= tol;
 In = eye(size(A,1));
-while (iter < maxstep) && ((~convergence) || (convergence && (onemore < 2))),
+while (iter < maxstep) && ((not(convergence)) || (convergence && (onemore < 2)))
     [AL,AU,p]=lu(A,'vector');
     p(p)=1:length(p);
     AL = AL( p , : );
     
     Y = AL\In;
     Y = AU\Y;
-    if desc,
+    if desc
         YE = Y*E;
         Y  = E*YE;
     end
-    if Err > 0.1,
+    if Err > 0.1
         d = sqrt(norm(A,'fro')/norm(Y,'fro'));
     else
         d = 1;
     end
-    [iter d]
     A = (A/d + d*Y)/2;
     if desc
         R = [R; d*R*YE]/sqrt(2*d);
@@ -99,16 +97,12 @@ while (iter < maxstep) && ((~convergence) || (convergence && (onemore < 2))),
     for j=1:rc,  q(j) = find(p==j);  end
     R = R(1:r,q);
     
-    norm(R)
-    
     Err  = norm(A + E,'fro');
     iter = iter + 1;
-    %% uncomment for non-verbose mode %%
-    fprintf('Step %i, rank = %d, conv. crit. = %d\n', iter, r, Err)
     convergence = Err <= tol;
     if convergence,  onemore = onemore + 1;  end
 end
 R = (R/E)/sqrt(2);
-if (iter == maxstep && norm(A + E,'fro') > tol),
-    fprintf('LYAP_SGN_FAC: No convergence in %d iterations.\n', maxstep)
-end
+% if (iter == maxstep && norm(A + E,'fro') > tol)
+%     fprintf('LYAP_SGN_FAC: No convergence in %d iterations.\n', maxstep)
+% end

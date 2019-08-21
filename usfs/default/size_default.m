@@ -1,17 +1,20 @@
-function n = size_default(eqn, ~)
-
-% function n = size_default(eqn, opts)
+function n = size_default(eqn, opts, oper)%#ok<INUSD>
+% function n = size_default(eqn, opts, oper)
 %
 % This function returns the number of rows of matrix A_ in structure eqn.
 %
-%    Inputs:
+%   Input:
 %
-%    eqn     structure containing field 'A_'
-%    opts    structure containing parameters for the algorithm
+%   eqn     struct contains data for equations
 %
-%    Output:
+%   opts    struct contains parameters for the algorithm
 %
-%    n       number of rows of matrix A_ in structure eqn
+%   oper    struct contains function handles for operation 
+%           with A and E
+%
+%   Output:
+%
+%   n       number of rows of matrix A_ in structure eqn
 %
 % This function does not use other default functions.
 
@@ -30,9 +33,9 @@ function n = size_default(eqn, ~)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
-if(~isfield(eqn,'A_'))
+if(not(isfield(eqn,'A_')))
     error('MESS:error_arguments','field eqn.A_ is not defined');
 end
 

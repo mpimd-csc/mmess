@@ -1,19 +1,23 @@
-function [E,A,B,C]=getrail(k);
+function eqn = getrail(k)
 
-%% function [E,A,B,C]=getrail(k) reads in data from rail example
-% s.a. Oberwolfach Model Reduction Benchmark Collection
+%% function eqn = getrail(k) reads in data from rail example
+% s.a. Oberwolfach Model Reduction Benchmark Collection hosted at MORWiki
+% (https://modelreduction.org)
 %
 % Input:
 %   k       number of instance 
-%           k=1 Data_Rail/rail_1357
-%           k=2 Data_Rail/rail_5177 
-%           k=3 Data_Rail/rail_20209
-%           k=4 Data_Rail/rail_79841
+%           k=0 rail_371
+%           k=1 rail_1357
+%           k=2 rail_5177 
+%           k=3 rail_20209
+%           k=4 rail_79841
 % Output:
-%   E       Sparse Matrix
-%   A       Sparse Matrix
+% eqn       structure with members
+%   E_      Sparse Matrix
+%   A_      Sparse Matrix
 %   B       Dense Matrix
 %   C       Dense Matrix
+%   haveE   indicates that E is not the identity
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -30,11 +34,13 @@ function [E,A,B,C]=getrail(k);
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %% set path
 switch k
+    case 0
+        example = 'rail_371';
     case 1
         example = 'rail_1357';
     case 2
@@ -44,27 +50,19 @@ switch k
     case 4
         example = 'rail_79841';
     otherwise
-        error('MESS:error_arguments','k has to be 1, 2, 3 or 4\n');
+        error('MESS:error_arguments','k has to be 0, 1, 2, 3 or 4\n');
 end
 
 %% check path
-path = strcat('Data_Rail/',example);
-if(~exist(path,'dir'))
-   error('MESS:file_io','%s not found \n',path); 
-end
+path = fileparts(mfilename('fullpath'));
 
 %% read matrices
-%example file DEMOS/Data_Rail/rail_1357/rail_1357_c60.A
-A= mmread(strcat(path,'/',example,'_c60.A'));
-B= mmread(strcat(path,'/',example,'_c60.B'));
-C= mmread(strcat(path,'/',example,'_c60.C'));
-E= mmread(strcat(path,'/',example,'_c60.E'));
-
-%% convert B and C to dense matrices
-B = full(B);
-C = full(C);
-
-
+eqn = load(strcat(path,'/',example),'E','A','B','C');
+eqn.E_ = eqn.E;
+eqn.A_ = eqn.A;
+eqn = rmfield(eqn,'E');
+eqn = rmfield(eqn,'A');
+eqn.haveE = 1;
 
 
 

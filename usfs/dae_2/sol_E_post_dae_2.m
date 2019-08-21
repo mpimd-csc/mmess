@@ -28,9 +28,9 @@ function [ eqn, opts, oper ] = sol_E_post_dae_2( eqn, opts, oper )
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
-  if(~isfield(eqn, 'Scount')) || ~isnumeric(eqn.Scount)
+  if(not(isfield(eqn, 'Scount'))) || not(isnumeric(eqn.Scount))
       error('MESS:error_arguments', ['field eqn.Scount is not defined. Did ' ...
                         'you forget to run mul_E_pre?']);
   end

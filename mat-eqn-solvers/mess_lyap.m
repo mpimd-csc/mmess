@@ -42,7 +42,7 @@ function [Z, D] = mess_lyap(A, B, C, S, E)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %% Usfs
@@ -55,21 +55,21 @@ if ni < 4
     S = [];
 end
 opts.adi.info=0;
-opts.adi.restol=1e-12;
-opts.adi.rctol=0;
+opts.adi.res_tol=1e-12;
+opts.adi.rel_diff_tol=0;
 opts.adi.maxiter=100;
-opts.adi.shifts.kp=50;
-opts.adi.shifts.km=25;
-opts.adi.shifts.method = 'projection';
-opts.adi.shifts.l0 = 6;
-opts.adi.norm = 'fro';
-opts.adi.computeZ = 1;
+opts.shifts.num_Ritz=50;
+opts.shifts.num_hRitz=25;
+opts.shifts.method = 'projection';
+opts.shifts.num_desired = 6;
+opts.norm = 'fro';
+opts.adi.compute_sol_fac = 1;
 
 
 %% Equation type
 eqn.type = 'N';
 if no == 1
-    if ~isempty(S)
+    if not(isempty(S))
         warning('MESS:ignored',...
             'Fourth argument is supposed to be empty. Data is ignored.');
     end
@@ -78,7 +78,7 @@ if no == 1
     if ni == 2
         eqn.haveE = 0;
     elseif ni == 5
-        if ~isempty(C)
+        if not(isempty(C))
             warning('MESS:ignored',...
                 'Third argument is supposed to be empty. Data is ignored.');
         end
@@ -88,18 +88,18 @@ if no == 1
         error('MESS:notimplemented', 'Feature not yet implemented!');
     end
 elseif no == 2 % ZDZ^T case
-    opts.adi.LDL_T = 1;
+    opts.LDL_T = 1;
     eqn.A_ = A;
     eqn.G = B;
     eqn.S = S;
     if ni == 4
-        if ~isempty(C)
+        if not(isempty(C))
             warning('MESS:ignored',...
                 'Third argument is supposed to be empty. Data is ignored.');
         end
         eqn.haveE = 0;
     elseif ni == 5
-        if ~isempty(C)
+        if not(isempty(C))
             warning('MESS:ignored',...
                 'Third argument is supposed to be empty. Data is ignored.');
         end
@@ -114,12 +114,13 @@ end
 eqn.B = B;
 
 %% Shift parameter
-opts.adi.shifts.p = mess_para(eqn, opts, oper);
+opts.shifts.p = mess_para(eqn, opts, oper);
 
 %% Solve Equation
-[Z, out] = mess_lradi(eqn, opts, oper);
+out = mess_lradi(eqn, opts, oper);
+Z   = out.Z;
 
 %% Prepare output
 if no == 2 % ZDZ^T case 
-    D = kron(diag(out.D), eqn.S);
+    D = out.D;
 end

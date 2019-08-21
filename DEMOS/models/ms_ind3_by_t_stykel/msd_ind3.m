@@ -89,11 +89,11 @@ if size(d1,1)  < size(d1,2),  d1  = d1'; end
 if size(d2,1)  < size(d2,2),  d2  = d2'; end
 
 % Example from [1]
-if length(mas) == 0, mas = 100*ones(g,1); end
-if length(k1)  == 0, k1  = 2*ones(g-1,1); end
-if length(k2)  == 0, k2  = 2*ones(g,1); k2(1) = 4; k2(g) = 4; end
-if length(d1)  == 0, d1  = 5*ones(g-1,1); end
-if length(d2)  == 0, d2  = 5*ones(g,1); d2(1) = 10;d2(g) = 10;end
+if isempty(mas), mas = 100*ones(g,1); end
+if isempty(k1), k1  = 2*ones(g-1,1); end
+if isempty(k2), k2  = 2*ones(g,1); k2(1) = 4; k2(g) = 4; end
+if isempty(d1), d1  = 5*ones(g-1,1); end
+if isempty(d2), d2  = 5*ones(g,1); d2(1) = 10;d2(g) = 10;end
 
 % matrix M
 M = spdiags(mas,0,g,g);
@@ -129,11 +129,10 @@ B=sparse(n,1);
 B(g+1,1)=1;
 
 % matrix C
-% C=sparse(3,n);
-% C(1,1)=1;
-% C(2,2)=1;
-% C(3,g-1)=1;
-C = speye(n);
+C=sparse(3,n);
+C(1,1)=1;
+C(2,2)=1;
+C(3,g-1)=1;
 
 m=size(B,2); p=size(C,1);
 disp('Problem dimensions:');

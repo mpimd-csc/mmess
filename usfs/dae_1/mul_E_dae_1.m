@@ -1,4 +1,4 @@
-function C = mul_E_dae_1(eqn, opts, opE, B, opB)
+function C = mul_E_dae_1(eqn, opts, opE, B, opB)%#ok<INUSL>
 
 %% function mul_A perfoms operation C = opE(E_)*opB(B)
 %
@@ -37,34 +37,34 @@ function C = mul_E_dae_1(eqn, opts, opE, B, opB)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %% check input Paramters
-if (~ischar(opE) || ~ischar(opB))
+if (not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opE or opB is not a char');
 end
 
 opE = upper(opE); opB = upper(opB);
-if(~(opE == 'N' || opE == 'T'))
+if(not((opE == 'N' || opE == 'T')))
     error('MESS:error_arguments','opE is not ''N'' or ''T''');
 end
 
-if(~(opB == 'N' || opB == 'T'))
+if(not((opB == 'N' || opB == 'T')))
     error('MESS:error_arguments','opB is not ''N'' or ''T''');
 end
 
-if (~isnumeric(B)) || (~ismatrix(B))
+if (not(isnumeric(B))) || (not(ismatrix(B)))
     error('MESS:error_arguments','B has to ba a matrix');
 end
 %% check data in eqn structure
-if(~isfield(eqn, 'E_')) || ~isnumeric(eqn.E_)
+if(not(isfield(eqn, 'E_'))) || not(isnumeric(eqn.E_))
     error('MESS:error_arguments', ...
         'Missing or Corrupted E_ field detected in equation structure.');
 end
-if ~isfield(eqn, 'st')    || ~isnumeric(eqn.st)
+if not(isfield(eqn, 'st'))    || not(isnumeric(eqn.st))
     error('MESS:st',...
-    'Missing or Corrupted st field detected in equation structure.')
+    'Missing or Corrupted st field detected in equation structure.');
 end
 st = eqn.st;
 %% perfom multiplication

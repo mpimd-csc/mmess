@@ -1,3 +1,19 @@
+function bt_mor_DAE1_tol(istest)
+% Computes a reduced order model via Balanced Truncation for the proper
+% index-1 System BIPS98_606 from https://sites.google.com/site/rommes/software
+% following the method suggested in [1]
+%
+% Input: 
+% istest    decides whether the function runs as an interactive demo or a
+%           continuous integration test. (optional; defaults to 0, i.e.
+%           interactive demo)
+%
+% References:
+%[1] F. Freitas, J. Rommes, N. Martins, Gramian-based reduction method
+%    applied to large sparse power system descriptor models, IEEE Trans.
+%    Power Syst. 23 (3) (2008) 1258–1270. doi:10.1109/TPWRS.2008.926693. 
+
+%
 % This program is free software; you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation; either version 2 of the License, or
@@ -12,165 +28,151 @@
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
-clear , close all
+
 %%
-% set operation
+if nargin<1, istest=0; end
+%%
+% set operation manager for the Gramian computations
 oper = operatormanager('dae_1');
 
-%% Problem data
-load('bips98_606.mat')
+%% Read problem data
+fname  = sprintf('%s/../models/BIPS/bips98_606.mat',...
+    fileparts(mfilename('fullpath')));
+Bips = load(fname);
 % from https://sites.google.com/site/rommes/software
-% Note that we here use the alpha shift suggested by Rommes and coauthors,
-% but do not perform the shift back.
-p = find(diag(E));
-np = find(diag(E) == 0);
+% Note that we here use the alpha shift suggested by Rommes and coauthors
+% [1], but do not perform the shift back.
+p = find(diag(Bips.E));
+np = find(diag(Bips.E) == 0);
 pp = [p;np];
-eqn.A_ = A(pp, pp)-0.05*E(pp,pp);
-eqn.E_ = E(pp, pp);
-eqn.B = b(pp, :);
-eqn.C = c( : , pp);
+eqn.A_ = Bips.A(pp, pp)-0.05*Bips.E(pp,pp);
+eqn.E_ = Bips.E(pp, pp);
+eqn.B = Bips.b(pp, :);
+eqn.C = Bips.c( : , pp);
 eqn.st = length(p);
 eqn.haveE = 1;
-
-%%
-% BT tolerance and maximum order for the ROM
-tol=1e-3;
-max_ord=250;
+%% Turn off  close to singular warnings
+% (this model is really badly conditioned)
+orig_warnstate = warning('OFF','MATLAB:nearlySingularMatrix');
 
 %%
 % ADI tolerances and maximum iteration number
 opts.adi.maxiter = 300;
-opts.adi.restol = 1e-12;
-opts.adi.rctol = 1e-16;
+opts.adi.res_tol = 1e-10;
+opts.adi.rel_diff_tol = 1e-16;
 opts.adi.info = 1;
-opts.adi.projection.freq=0;
-opts.adi.norm = 'fro';
+opts.norm = 'fro';
 
 %%
-opts.adi.shifts.kp = 50;
-opts.adi.shifts.km = 35;
-opts.adi.shifts.method = 'projection';
-opts.adi.shifts.l0= 20;
+opts.shifts.method = 'projection';
+opts.shifts.num_desired= 20;
 
-opts.adi.shifts.p=mess_para(eqn,opts,oper);
+opts.shifts.p=mess_para(eqn,opts,oper);
 
-disp(opts.adi.shifts.p);
+disp(opts.shifts.p);
 
 %%
 eqn.type='N';
-tic
-[ZB,out]=mess_lradi(eqn,opts,oper);
-toc
+tic;
+outB = mess_lradi(eqn, opts, oper);
+toc;
 
-figure
-disp('normalize residuals')
-semilogy(out.res);
-title('0= BB^T + AXM^T + MXA^T');
-xlabel('number of iterations');
-ylabel('normalized residual norm');
+if istest
+    if min(outB.res)>=opts.adi.res_tol
+        error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+    end
+else
+    figure;
+    semilogy(outB.res);
+    title('0= BB^T + AXM^T + MXA^T');
+    xlabel('number of iterations');
+    ylabel('normalized residual norm');
+end
 
-disp('size ZB:')
-size(ZB)
+disp('size outB.Z:');
+disp(size(outB.Z));
 
 %%
 eqn.type='T';
-tic
-[ZC,out]=mess_lradi(eqn,opts,oper);
-toc
+tic;
+outC = mess_lradi(eqn, opts, oper);
+toc;
 
-figure
-disp('normalize residuals')
-semilogy(out.res);
-title('0= C^TC + A^TXE + E^TXA');
-xlabel('number of iterations');
-ylabel('normalized residual norm');
-pause(1)
 
-disp('size ZC:')
-size(ZC)
-%%
-
-[U0,S0,V0] = svd(ZC'*(eqn.E_(1:eqn.st,1:eqn.st)*ZB),0);
-s0=diag(S0);
-ks=length(s0);
-k=ks;
-while (sum(s0(k-1:ks))<tol/2)&&(k>2)
-  k=k-1; 
+if istest
+    if min(outC.res)>=opts.adi.res_tol
+        error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+    end
+else
+    figure;
+    semilogy(outC.res);
+    title('0= C^TC + A^TXE + E^TXA');
+    xlabel('number of iterations');
+    ylabel('normalized residual norm');
+    pause(1);
 end
-k0=k
+disp('size outC.Z:');
+disp(size(outC.Z));
 
+%% Compute reduced system matrices
+% Perform Square Root Method  (SRM)
 
-r= min([max_ord k0]);
-fprintf(1,'reduced system order: %d\n\n',r);
+% BT tolerance and maximum order for the ROM
+opts.srm.tol=1e-3;
+opts.srm.max_ord=250;
 
-sigma_0=diag(S0);
-sigma_r=diag(S0(1:r,1:r));
-
-VB = ZB*V0(:,1:r);
-VC = ZC*U0(:,1:r);
-
-SB = VB*diag(ones(r,1)./sqrt(sigma_r));
-SC = VC*diag(ones(r,1)./sqrt(sigma_r));
-
-b1 = SC'*(eqn.A_(1:eqn.st,1:eqn.st))*SB;
-b2 = SC'*(eqn.A_(1:eqn.st,eqn.st+1:end));
-a1 = eqn.A_(eqn.st+1:end,1:eqn.st)*SB;
-
-Ar =  b1 - b2*(eqn.A_(eqn.st+1:end,eqn.st+1:end)\a1);%+a1*eye(r,r);
-Br = SC'*eqn.B(1:eqn.st,:) - b2*(eqn.A_(eqn.st+1:end,eqn.st+1:end)\eqn.B(eqn.st+1:end,:));
-Cr = eqn.C(:,1:eqn.st)*SB - eqn.C(:,eqn.st+1:end)*(eqn.A_(eqn.st+1:end,eqn.st+1:end)\a1);
-Dr = -eqn.C(:,eqn.st+1:end)*(eqn.A_(eqn.st+1:end,eqn.st+1:end)\eqn.B(eqn.st+1:end,:));
-%%
-nsample = 200;
-w = logspace(-3, 4, nsample);
-
-tr1=zeros(1,nsample); tr2=tr1; err=tr1; relerr=tr1;
-fprintf(['Computing TFMs of original and reduced order systems and ' ...
-         'MOR errors\n']) 
-
-Ir=eye(r);
-for k=1:nsample
-  if mod(k,10)==0, fprintf('\r Step %3d / %3d',k,nsample), end
-  g1 = eqn.C / (1i*w(k)*eqn.E_ - eqn.A_) * eqn.B;
-  g2 = Cr / (1i*w(k)*Ir - Ar) * Br + Dr;
-  err(k) = max(svds(g1-g2));
-  tr1(k) = max(svds(g1));
-  tr2(k) = max(svds(g2));
-  relerr(k)=err(k)/tr1(k);
+% SRM verbosity
+if istest
+    opts.srm.info=1;
+else
+    opts.srm.info=2;
 end
-clear I
-fprintf('\n\n');
 
-figure
-subplot(2,1,1); 
-loglog(w, err); 
-title('absolute model reduction error')
-xlabel('\omega')
-ylabel('\sigma_{max}(G(j\omega) - G_r(j\omega))')
-subplot(2,1,2); 
-loglog(w, relerr);
-title('relative model reduction error')
-xlabel('\omega')
-ylabel(['\sigma_{max}(G(j\omega) - G_r(j\omega)) / \' ...
-        'sigma_{max}(G(j\omega))'])
+%The actual SRM
+[TL,TR,hsv] = mess_square_root_method(eqn,opts,oper,outB.Z,outC.Z);
 
+% compute ROM matrices
+B1 = TL'*(eqn.A_(1:eqn.st,1:eqn.st))*TR;
+B2 = TL'*(eqn.A_(1:eqn.st,eqn.st+1:end));
+A1 = eqn.A_(eqn.st+1:end,1:eqn.st)*TR;
 
-figure
-loglog(w, tr1)
-hold on
-loglog(w, tr2, 'r--')
-legend({'original system','reduced system'})
-xlabel('\omega')
-ylabel('\sigma_{max}(G(j\omega))')
-title('Transfer functions of original and reduced systems')
-hold off
+ROM.A = B1 - B2*(eqn.A_(eqn.st+1:end,eqn.st+1:end)\A1);
+ROM.B = TL'*eqn.B(1:eqn.st,:) - ...
+     B2*(eqn.A_(eqn.st+1:end,eqn.st+1:end)\eqn.B(eqn.st+1:end,:));
+ROM.C = eqn.C(:,1:eqn.st)*TR - ...
+     eqn.C(:,eqn.st+1:end)*(eqn.A_(eqn.st+1:end,eqn.st+1:end)\A1);
+ROM.D = -eqn.C(:,eqn.st+1:end)*(eqn.A_(eqn.st+1:end,eqn.st+1:end)\...
+    eqn.B(eqn.st+1:end,:));
+ROM.E = eye(size(ROM.A));
+%% Evaluate the ROM quality
+% while the Gramians are computed on the hidden manifold, we need to do the
+% frequency domain computations without (implicitly) using the Schur
+% complement (due to the construction of the function handles)
+oper = operatormanager('default');
 
+if istest
+    opts.sigma.info=0;
+else
+    opts.sigma.info=2;
+end
 
-figure
-semilogy(diag(S0));
-title('Computed Hankel singular values');
-xlabel('index');
-ylabel('magnitude');
+opts.sigma.fmin=-3;
+opts.sigma.fmax=4;
 
+err = mess_sigma_plot(eqn, opts, oper, ROM);
+
+if istest
+    if max(err)>5e-3
+        error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+    end   
+else
+    figure;
+    semilogy(hsv);
+    title('Computed Hankel singular values');
+    xlabel('index');
+    ylabel('magnitude');
+end
+%% reset warning state
+warning(orig_warnstate);

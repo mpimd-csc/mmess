@@ -1,4 +1,4 @@
-function C=mul_ApE_so_1(eqn, opts,opA,p,opE,B,opB)
+function C=mul_ApE_so_1(eqn, opts,opA,p,opE,B,opB)%#ok<INUSL>
 
 % function C=mul_ApE_so_1(eqn, opts,opA,p,opE,B,opB)
 %
@@ -29,12 +29,14 @@ function C=mul_ApE_so_1(eqn, opts,opA,p,opE,B,opB)
 % Matrix K has full rank.
 %
 %
-% This function returns C = (A+p*E)*B, where matrices A and E given by structure eqn and input matrix B could be transposed.
+% This function returns C = (A+p*E)*B, where matrices A and E given
+% by structure eqn and input matrix B could be transposed. 
 % Matrix A is assumed to be quadratic and has a size of 2*size(K).
 %
 %   Inputs:
 %
-%   eqn     structure containing data for matrices A (fields 'K_' and 'D_') and E (fields 'K_' and 'M_')
+%   eqn     structure containing data for matrices A 
+%           (fields 'K_' and 'E_') and E (fields 'K_' and 'M_') 
 %   opts    structure containing parameters for the algorithm
 %   opA     character specifying the shape of A
 %           opA = 'N' performs (A + p*opE(E))*opB(B)
@@ -55,7 +57,7 @@ function C=mul_ApE_so_1(eqn, opts,opA,p,opE,B,opB)
 %
 % This function does not use other so1 functions.
 %
-% ATTENTION: opA,opE are not used since matrices A and E are symmetric. 
+% ATTENTION: opA, opE are not used since matrices A and E are symmetric. 
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -72,101 +74,108 @@ function C=mul_ApE_so_1(eqn, opts,opA,p,opE,B,opB)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 
 %% check input parameters
-if (~ischar(opA) || ~ischar(opB) || ~ischar(opE))
+if (not(ischar(opA)) || not(ischar(opB)) || not(ischar(opE)))
     error('MESS:error_arguments', 'opA, opB or opE is not a char');
 end
 
 opA = upper(opA); opB = upper(opB); opE = upper(opE);
 
-if(~(opA=='N' || opA=='T'))
+if(not((opA=='N' || opA=='T')))
     error('MESS:error_arguments','opA is not ''N'' or ''T''');
 end
 
-if(~(opB=='N' || opB=='T'))
+if(not((opB=='N' || opB=='T')))
     error('MESS:error_arguments','opB is not ''N'' or ''T''');
 end
 
-if(~(opE=='N' || opE=='T'))
+if(not((opE=='N' || opE=='T')))
     error('MESS:error_arguments','opE is not ''N'' or ''T''');
 end
 
-if(~isnumeric(p))
+if(not(isnumeric(p)))
     error('MESS:error_arguments','p is not numeric');
 end
 
-if (~isnumeric(B)) || (~ismatrix(B))
+if (not(isnumeric(B))) || (not(ismatrix(B)))
     error('MESS:error_arguments','B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if ~isfield(eqn, 'haveE'), eqn.haveE = 0; end
+if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
 if(eqn.haveE ==1)
-    if(~isfield(eqn,'M_') || ~isnumeric(eqn.M_) || ~isfield(eqn,'D_') || ...
-            ~isnumeric(eqn.D_) || ~isfield(eqn,'K_') || ~isnumeric(eqn.K_))
+    if(not(isfield(eqn,'M_')) || not(isnumeric(eqn.M_)) || not(isfield(eqn,'E_')) || ...
+            not(isnumeric(eqn.E_)) || not(isfield(eqn,'K_')) || not(isnumeric(eqn.K_)))
         error('MESS:error_arguments',...
-            'field eqn.M_, eqn.D_ or eqn.K_ is not defined or corrupted');
+            'field eqn.M_, eqn.E_ or eqn.K_ is not defined or corrupted');
     end
 else
-    if~isfield(eqn,'D_') || ~isnumeric(eqn.D_) ||...
-            ~isfield(eqn,'K_') || ~isnumeric(eqn.K_)
+    if not(isfield(eqn,'E_')) || not(isnumeric(eqn.E_)) ||...
+            not(isfield(eqn,'K_')) || not(isnumeric(eqn.K_))
         error('MESS:error_arguments',...
-            'field eqn.K_ or eqn.D_ is not defined or corrupted');
+            'field eqn.K_ or eqn.E_ is not defined or corrupted');
     end
 end
 
 [rowK, colK] = size(eqn.K_);
-rowA = 2*rowK;
 colA = 2*colK;
 
 
 
 if(eqn.haveE==1)
-%% perform operations for E ~= Identity
+    %% perform operations for E ~= Identity
     switch opB
         
         %implement multiplication (A+p*E)*B=C
-        case 'N'
-            if(colA~=size(B,1))
-                error('MESS:error_arguments','number of columns of A differs with number of rows of B');
-            end
-            C = [(-p*(eqn.K_*B(1:rowK,:)) -(eqn.K_*B(rowK+1:end,:)));
-                 (-(eqn.K_*B(1:rowK,:)) + p*(eqn.M_*B(rowK+1:end,:)) - eqn.D_*B(rowK+1:end,:))];
-            
+      case 'N'
+        if(colA~=size(B,1))
+            error('MESS:error_arguments',['number of columns of A ' ...
+                                'differs with number of rows of B']);
+        end
+        C = [(-p*(eqn.K_*B(1:rowK,:)) -(eqn.K_*B(rowK+1:end,:)));
+             (-(eqn.K_*B(1:rowK,:)) + p*(eqn.M_*B(rowK+1:end,:)) - ...
+              eqn.E_*B(rowK+1:end,:))]; 
+        
         %implement multiplication (A+p*E)*B'=C
-        case 'T'
-            if(colA~=size(B,2))
-                error('MESS:error_arguments','number of columns of A differs with number of columns of B');
-            end
-            C = [(-p*(eqn.K_*B(:,1:colK)') -(eqn.K_*B(:,colK+1:end)'));...
-                 (-(eqn.K_*B(:,1:colK)')   +  p*(eqn.M_*B(:,colK+1:end)') - eqn.D_*B(:,colK+1:end)')];
+      case 'T'
+        if(colA~=size(B,2))
+            error('MESS:error_arguments',['number of columns of A ' ...
+                                'differs with number of columns of B']); 
+        end
+        C = [(-p*(eqn.K_*B(:,1:colK)') -(eqn.K_*B(:,colK+1:end)'));...
+             (-(eqn.K_*B(:,1:colK)')   +  p*(eqn.M_*B(:,colK+1:end)') ...
+              - eqn.E_*B(:,colK+1:end)')]; 
     end
     
     
 elseif(eqn.haveE==0)
-%% perform operations for E = Identity
+    %% perform operations for E = Identity
     
     switch opB
-    
+        
         %implement multiplication (A+p*I)*B=C
-        case 'N'
-            if(colA~=size(B,1))
-                error('MESS:error_arguments','number of columns of A differs with number of rows of B');
-            end
-            C = [(p*B(1:rowK,:)      -(eqn.K_*B(rowK+1:end,:)));...
-                 (-(eqn.K_*B(1:rowK,:))+  p*B(rowK+1:end,:) - eqn.D_*B(rowK+1:end,:))];
-            
+      case 'N'
+        if(colA~=size(B,1))
+            error('MESS:error_arguments',['number of columns of A ' ...
+                                'differs with number of rows of B']);
+        end
+        C = [(p*B(1:rowK,:)      -(eqn.K_*B(rowK+1:end,:)));...
+             (-(eqn.K_*B(1:rowK,:))+  p*B(rowK+1:end,:) - eqn.E_* ...
+              B(rowK+1:end,:))];
+        
         %implement multiplication (A+p*I)*B'=C
-        case 'T'
-            if(colA~=size(B,2))
-                error('MESS:error_arguments','number of columns of A differs with number of columns of B');
-            end
-            C = [(p*B(:,1:colK)'      -(eqn.K_*B(:,colK+1:end)'));...
-                 (-(eqn.K_*B(:,1:colK)')+  p*B(:,colK+1:end)' - eqn.D_*B(:,colK+1:end)')];
+      case 'T'
+        if(colA~=size(B,2))
+            error('MESS:error_arguments',['number of columns of A ' ...
+                                'differs with number of columns of B']); 
+        end
+        C = [(p*B(:,1:colK)'      -(eqn.K_*B(:,colK+1:end)'));...
+             (-(eqn.K_*B(:,1:colK)')+  p*B(:,colK+1:end)' - ...
+              eqn.E_*B(:,colK+1:end)')];
     end
     
 end

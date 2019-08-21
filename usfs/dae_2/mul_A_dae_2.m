@@ -1,11 +1,17 @@
-function C = mul_A_dae_2(eqn, opts, opA, B, opB)
-
+function C = mul_A_dae_2(eqn, opts, opA, B, opB)%#ok<INUSL>
 %% function mul_A perfoms operation C = opA(A_)*opB(B)
+% Depending on the size of B either multiplication with
+%     A = [A1 F;
+%           G 0 ]
+% or
+%  A = P*A1*P'  with
+%  P = I - F ( G E1\F ) \ G / E the hidden manifold projector
+%  and E1 the corresponding 1,1 block in eqn.E_
 %
 % Input:
-%   eqn     structure contains field A_
+%   eqn     structure containing field A_ and E_
 %
-%   opts    struct contains parameters for the algorithm
+%   opts    struct containing parameters for the algorithm
 %
 %   opA     character specifies the form of opA(A_)
 %           opA = 'N' performs A_*opB(B)
@@ -16,6 +22,11 @@ function C = mul_A_dae_2(eqn, opts, opA, B, opB)
 %   opB     character specifies the form of opB(B)
 %           opB = 'N' performs opA(A_)*B
 %           opB = 'T' performs opA(A_)*B'
+%
+%
+% Output:
+% C = opA(A_)*opB(B)
+%
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -31,43 +42,35 @@ function C = mul_A_dae_2(eqn, opts, opA, B, opB)
 % You should have received a copy of the GNU General Public License
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
+%               2009-2019
 %
-
-%     A = [A1 -G';
-%           G  0 ]  
-%
-% Output:
-% C = opA(A_)*opB(B)
-%
-%   uses size_dae_1
 
 %% check input Paramters
-if (~ischar(opA) || ~ischar(opB))
+if (not(ischar(opA)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opA or opB is not a char');
 end
 
 opA = upper(opA); opB = upper(opB);
-if(~(opA == 'N' || opA == 'T'))
+if(not((opA == 'N' || opA == 'T')))
     error('MESS:error_arguments', 'opA is not ''N'' or ''T''');
 end
 
-if(~(opB == 'N' || opB == 'T'))
+if(not((opB == 'N' || opB == 'T')))
     error('MESS:error_arguments', 'opB is not ''N'' or ''T''');
 end
 
-if (~isnumeric(B)) || (~ismatrix(B))
+if (not(isnumeric(B))) || (not(ismatrix(B)))
     error('MESS:error_arguments','B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if(~isfield(eqn, 'A_')) || ~isnumeric(eqn.A_)
+if(not(isfield(eqn, 'A_'))) || not(isnumeric(eqn.A_))
     error('MESS:error_arguments', 'field eqn.A_ is not defined');
 end
-if ~isfield(eqn, 'st')    || ~isnumeric(eqn.st)
+if not(isfield(eqn, 'st'))    || not(isnumeric(eqn.st))
     error('MESS:st',...
-    'Missing or Corrupted st field detected in equation structure.')
+        'Missing or Corrupted st field detected in equation structure.');
 end
 
 n = size(eqn.A_,1);
@@ -76,55 +79,68 @@ st = eqn.st;
 [rowB,colB] = size(B);
 
 if(opB == 'N')
-    if(n > rowB)
-        B = [B; zeros(n - st, colB)];
-    elseif n < rowB
-        error('MESS:error_arguments', 'B has more rows than A');
+    switch rowB
+        case n
+            dim = n;
+        case st
+            dim = st;
+        otherwise
+            error('MESS:error_arguments', 'B has wrong number of rows.');
     end
 else
-    if(n > colB)
-        B = [B, zeros(rowB, n - st)];
-    elseif n < colB
-        error('MESS:error_arguments', 'B has more columns than A');
+    switch colB
+        case n
+            dim = n;
+        case st
+            dim = st;
+        otherwise
+            error('MESS:error_arguments', 'B has wrong number of columns.');
     end
 end
 
 %% perfom multiplication
-switch opA
-  
-  case 'N'
-    
-    switch opB
-      
-      case 'N'
-        %implement operation A_*B
-        C=eqn.A_*B;
+if dim==n
+    switch opA
         
-      case 'T'
-        %implement operation A_*B'
-        C=eqn.A_*B';
-        
+        case 'N'
+            
+            switch opB
+                
+                case 'N'
+                    %implement operation A_*B
+                    C=eqn.A_*B;
+                    
+                case 'T'
+                    %implement operation A_*B'
+                    C=eqn.A_*B';
+                    
+            end
+            
+        case 'T'
+            
+            switch opB
+                
+                case 'N'
+                    %implement operation A_'*B
+                    C=eqn.A_'*B;
+                    
+                    
+                case 'T'
+                    %implement operation A_'*B'
+                    C=eqn.A_'*B';
+                    
+            end
+            
     end
     
-  case 'T'
-    
-    switch opB
-      
-      case 'N'
-        %implement operation A_'*B
-        C=eqn.A_'*B;
-        
-               
-      case 'T'
-        %implement operation A_'*B'
-        C=eqn.A_'*B';
-        
-    end
-    
-end
-if opB == 'N'
-    C = C(1 : rowB, : );
 else
-    C = C(1 : colB, : );
+    
+    switch opA
+        case 'N'
+            V = eqn.A_(1:st,1:st)*mul_Pi(eqn, 'T', B , opB);
+        case 'T'
+            V = eqn.A_(1:st,1:st)'*mul_Pi(eqn, 'T', B , opB);
+    end
+    C = mul_Pi(eqn, 'N', V, 'N');
 end
 end

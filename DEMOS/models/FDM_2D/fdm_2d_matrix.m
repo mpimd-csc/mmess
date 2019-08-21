@@ -62,9 +62,9 @@ ptr = 0;                                  % Pointer
 i = 0;                                    % Row Number
 
 for iy = 1:n0
-  y = iy*h;
+  y = iy*h; %#ok<NASGU> used as part of fy_str
   for ix = 1:n0
-    x = ix*h;
+    x = ix*h; %#ok<NASGU> used as part of fx_str
       
     i = i+1;
     fxv = eval(fx_str);

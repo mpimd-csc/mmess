@@ -1,32 +1,57 @@
-function Z=mess_galerkin_projection_acceleration(Z,type,eqn,oper,fopts)
+function [Z, D, S]=mess_galerkin_projection_acceleration(Z, type, ...
+                                                  eqn, oper, fopts, D)
 %  Galerkin projection onto subspace spanned by low-rank factor Z of ADI
 %  method for solving FXE^T + EXF^T = -GG^T.
 %
 % Input:
-%  Z                 Low-rank factor Z
+%  Z                        Low-rank factor Z
 %
-%  eqn               structure with data for A, E, G
-%                          eqn.E(optional, eqn.haveE specifies whether it is
-%                          there) in the above equation with ZZ' approximating X
+%  type                     possible values: 'LE','CARE'
+%                           determines whether a Lyapunov ('LE') or a
+%                           Riccati ('CARE') equation should be
+%                           projected
 %
-%  oper              structure contains function handles for
-%                          operations with A, E
+%  eqn                      structure with data for A, E, G
+%                           eqn.E(optional, eqn.haveE specifies whether it
+%                           is there) in the above equation with ZZ'
+%                           approximating X
 %
-%  opts              options structure that should contain following members
-%  opts.ortho        implicit or explitic orthogonalization of Z defaults to 1,
-%                          i.e., explicit orthogonalization via orth().
-%  opts.meth         method for solving projected Lyapunov equation
+%  oper                     structure contains function handles for
+%                           operations with A, E
 %
+%  fopts                    options structure that should contain following
+%                           members
 %
-%  opts.comprType    compression type, default is 0 for SVD based
-%                          compression, to use RRQR based compression
+%  fopts.adi                options structure for ADI method
 %
-%  fopts
+%  fopts.nm                 options structure for Newton method
+%
+%  xopts                    fopts.adi or fopts.nm depending on type
+%
+%  xopts.projection.ortho   possible  values: 0, 1, false, true
+%                           implicit (0) or explicit (1)
+%                           orthogonalization of Z in NM
+%                           i.e., explicit orthogonalization via orth().
+%                           (optional, default: 1)
+%
+%  xopts.projection.meth    method for solving projected Lyapunov or
+%                           Riccati equation xopts is fopts.adi or fopts.nm
+%                           depending on type possible  values: 'lyapchol',
+%                           'lyap_sgn_fac','lyap','lyapunov','lyap2solve', 
+%                           'care','care_nwt_fac','mess_dense_nm'
+%                           (optional, default: 'lyap' or 'care' depending
+%                           on type)
+%
+%  D                        solution factor D for LDL^T formulation
 %
 % Output:
-%  Z                 Updated solution factor Z after prolongation
+%  Z                        Updated solution factor Z after prolongation
 %
-% uses oparatorfunctions mul_A, mul_E
+%  D                        Updated solution factor D after prolongation
+%
+%  S                        Updated solution factor S after prolongation
+%
+% uses oparatorfunctions mul_A, mul_E, mul_ApE
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -42,60 +67,164 @@ function Z=mess_galerkin_projection_acceleration(Z,type,eqn,oper,fopts)
 % You should have received a copy of the GNU General Public License
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
+%               2009-2019
 %
 
 factorize=1;
 
 switch type
-    case {'lyapunov','lyap','lyapc','lyapchol'}
+    case {'LE'}
         opts=fopts.adi;
-    case {'riccati','care','care_nwt_fac'}
+    case {'CARE'}
         opts=fopts.nm;
+    otherwise
+        error('MESS:GP_type',...
+            ['type has to be ''LE'' or ''CARE'' in Galerkin projection '...
+            'acceleration.']);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check for control parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if ~isfield(opts.projection,'ortho') || isempty(opts.projection.ortho)
+if not(isfield(opts.projection,'ortho')) || isempty(opts.projection.ortho)
     opts.projection.ortho=1;
 end
-if ~isfield(opts.projection,'meth') || isempty(opts.projection.meth)
+% if opts.projection.meth is not set use default, availability is checked
+% later
+if not(isfield(opts.projection,'meth')) || isempty(opts.projection.meth)
+    set_default = 1;
     switch type
-        case {'lyapunov','lyap','lyap2solve'}
-            opts.projection.meth='lyap2solve';
-        case {'lyapc','lyapchol'}
-            opts.projection.meth='lyapchol';
-        case {'riccati','care'}
+        case 'LE'
+            opts.projection.meth='lyap';
+        case 'CARE'
             opts.projection.meth='care';
-        case {'care_nwt_fac' }
-            opts.projection.meth='care_nwt_fac';
-        case {'mess_dense_nm'}
-            opts.projection.meth='mess_dense_nm';
+    end
+else
+    set_default = 0;
+end
+
+if strcmp(opts.projection.meth, 'riccati')
+    opts.projection.meth = 'care';
+end
+if strcmp(opts.projection.meth, 'lyapunov')
+    opts.projection.meth = 'lyap';
+end
+
+if not(exist(opts.projection.meth,'file'))
+    switch type
+        case 'LE'
+            meth_non_ex = opts.projection.meth;
+            if exist('lyap', 'file')
+                opts.projection.meth='lyap';
+            elseif exist('lyapchol', 'file')
+                opts.projection.meth='lyapchol';
+            elseif exist('lyap_sgn_fac', 'file')
+                opts.projection.meth='lyap_sgn_fac';
+            elseif exist('lyap2solve', 'file')
+                opts.projection.meth='lyap2solve';
+            else
+                error('MESS:GP_missing_solver',...
+                    ['Galerkin projection acceleration was unable to '...
+                    'find Lyapunov solver']);
+            end
+        case 'CARE'
+            meth_non_ex = opts.projection.meth;
+            if exist('icare', 'file')
+                opts.projection.meth='icare';
+            elseif exist('care', 'file')
+                opts.projection.meth='care';
+            elseif exist('care_nwt_fac', 'file')
+                opts.projection.meth='care_nwt_fac';
+            elseif exist('mess_dense_nm', 'file')
+                opts.projection.meth='mess_dense_nm';
+            else
+                error('MESS:GP_missing_solver',...
+                    ['Galerkin projection acceleration was unable to '...
+                    'find Riccati solver']);
+            end
+    end
+    if not(set_default)
+        warning('MESS:GP_missing_solver',...
+            ['Galerkin projection acceleration was unable to find'...
+            ' solver ''%s'', switched to ''%s'''], meth_non_ex, ...
+            opts.projection.meth);
     end
 end
 
-if ~isfield(fopts,'rosenbrock'), fopts.rosenbrock=[]; end
+if not(isfield(fopts,'rosenbrock')), fopts.rosenbrock=[]; end
 if isstruct(fopts.rosenbrock)&&isfield(fopts.rosenbrock,'tau')
     rosenbrock = 1;
-    pc = -1 / (2 * fopts.rosenbrock.tau);
+    if fopts.rosenbrock.stage == 1
+        pc = -1 / (2 * fopts.rosenbrock.tau);
+    else % stage 2
+        pc = -1 / (2 * fopts.rosenbrock.tau * fopts.rosenbrock.gamma);
+    end
 else
     rosenbrock = 0;
 end
-if ~isfield(fopts,'bdf'), fopts.bdf=[]; end
-if isstruct(fopts.bdf) && isfield(fopts.bdf, 'tau') && isfield(fopts.bdf, 'beta')
+if not(isfield(fopts,'bdf')), fopts.bdf=[]; end
+if isstruct(fopts.bdf) && isfield(fopts.bdf, 'tau') ...
+        && isfield(fopts.bdf, 'beta')
     bdf = 1;
     pc = -1 / (2 * fopts.bdf.tau * fopts.bdf.beta);
 else
     bdf = 0;
 end
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Compute projector matrix
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if opts.projection.ortho
+if fopts.LDL_T
+    [Z, D] = mess_column_compression(Z, 'N', D, eps, 0);
+    if strcmp(opts.projection.meth, 'care_nwt_fac') ...
+            || strcmp(type, 'LE')
+        if not(set_default)
+            meth_not_supp = opts.projection.meth;
+        end
+        switch type
+            case 'LE'
+                if isfield(eqn, 'diagonalized_RHS') && eqn.diagonalized_RHS
+                    U = eqn.U_diag;
+                else
+                    U = 1;
+                end
+                S = diag(eqn.S_diag);
+                if any(diag(S)<0) && ...
+                        (strcmp(opts.projection.meth, 'lyapchol') ...
+                         || strcmp(opts.projection.meth, 'lyap_sgn_fac'))
+                    if exist('lyap', 'file')
+                        opts.projection.meth='lyap';
+                    elseif exist('lyap2solve', 'file')
+                        opts.projection.meth='lyap2solve';
+                    else
+                        error('MESS:GP_missing_solver',...
+                            ['Galerkin projection acceleration was unable to '...
+                            'find Lyapunov solver']);
+                    end
+                end
+            case 'CARE'
+                [U,S] = eig(eqn.S);
+                if any(diag(S)<0)
+                    if exist('care', 'file')
+                        opts.projection.meth='care';
+                    elseif exist('mess_dense_nm', 'file')
+                        opts.projection.meth='mess_dense_nm';
+                    else
+                        error('MESS:GP_missing_solver',...
+                            ['Galerkin projection acceleration was unable to '...
+                            'find Riccati solver']);
+                    end
+                end
+        end
+        if not(set_default) && not(strcmp(meth_not_supp, opts.projection.meth))
+            warning('MESS:galerkin_projection_acceleration', ...
+                ['Projection method %s not supported for ', ...
+                'LDL_T formulation with D indefinite. Switching to %s.'], ...
+                meth_not_supp, opts.projection.meth);
+        end
+    end
+elseif opts.projection.ortho
     Z=orth(Z);
 else
     [U,S,~]=svd(full(Z'*Z));
@@ -108,169 +237,216 @@ end
 % Solve the projected Matrix equation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 switch type
-    case {'lyapunov','lyap','lyapchol','lyap_sgn_fac'}
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    case 'LE'
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % The Lyapunov equation case
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         lyapunov = 1;
-        % Project down matrices
-        if eqn.type=='N'
+        B=Z'*eqn.G;
+        if bdf || rosenbrock
+            A = oper.mul_ApE(eqn, fopts,eqn.type,pc,eqn.type,Z,'N');
             if bdf
-                A=Z'*((fopts.bdf.tau * fopts.bdf.beta) * ...
-                    oper.mul_ApE(eqn, fopts,'N',pc, 'N', Z,'N'));
-            elseif rosenbrock
-                A=Z'*(oper.mul_ApE(eqn, fopts,'N',pc, 'N', Z,'N') ...
-                    - eqn.U * (eqn.V' * Z));
-            else
-                A=Z'*(oper.mul_A(eqn, fopts,'N',Z,'N'));
+                A = (fopts.bdf.tau * fopts.bdf.beta) * A;
+                if eqn.haveUV
+                    if eqn.type=='T'
+                        A = A + eqn.V * (eqn.U' * Z);
+                    else
+                        A = A + eqn.U * (eqn.V' * Z);
+                    end
+                end
+            else % rosenbrock
+                if fopts.rosenbrock.stage == 2
+                    A = (fopts.rosenbrock.tau * fopts.rosenbrock.gamma) * A;
+                end
+                if eqn.haveUV
+                    if eqn.type=='T'
+                        A = A + eqn.V * (eqn.U' * Z);
+                    else
+                        A = A + eqn.U * (eqn.V' * Z);
+                    end
+                end
             end
-            B=Z'*eqn.B;
-        elseif eqn.haveUV
-            if bdf
-                A=Z'*((fopts.bdf.tau * fopts.bdf.beta) * ...
-                    oper.mul_ApE(eqn, fopts,'T',pc, 'T',Z,'N')-eqn.V*(eqn.U'*Z));
-            elseif rosenbrock
-                A=Z'*(oper.mul_ApE(eqn, fopts,'T',pc, 'T',Z,'N')-eqn.V*(eqn.U'*Z));
-            else
-            A=Z'*(oper.mul_A(eqn, fopts,'T',Z,'N')-eqn.V*(eqn.U'*Z));
-            end
-            B=Z'*eqn.G;
         else
-            if bdf
-                A=Z'*((fopts.bdf.tau * fopts.bdf.beta) * ...
-                    oper.mul_ApE(eqn, fopts,'T',pc, 'T',Z,'N'));
-            elseif rosenbrock
-                A=Z'*(oper.mul_ApE(eqn, fopts,'T',pc, 'T',Z,'N') ...
-                    - eqn.V * (eqn.U' * Z));
-            else
-                A=Z'*(oper.mul_A(eqn, fopts,'T',Z,'N'));
+            A = oper.mul_A( eqn, fopts, eqn.type, Z, 'N' );
+            if eqn.haveUV
+                if eqn.type=='T'
+                    A = A + eqn.V * (eqn.U' * Z);
+                else
+                    A = A + eqn.U * (eqn.V' * Z);
+                end
             end
-            B=Z'*eqn.C';
         end
-        
+        A = Z' * A;
         if eqn.haveE
-            if eqn.type=='N'
-                E=Z'*(oper.mul_E(eqn, fopts,'N',Z,'N'));
-            else
-                E=Z'*(oper.mul_E(eqn, fopts,'T',Z,'N'));
-            end
+            E = Z'*(oper.mul_E(eqn, fopts,eqn.type,Z,'N'));
         else
-            E=[];
+            E = [];
         end
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Choose solver for the small equation
-        file_not_found = 0;
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         switch opts.projection.meth
             case 'lyapchol'
-                if exist('lyapchol','file')
-                    XC=lyapchol(A,B,E);
-                    factorize=0;
+                % in LDL_T with S neg. EV sqrt(S_diag) will be complex
+                if fopts.LDL_T
+                    B = B * U * sqrt(S);
+                    if eqn.haveE
+                        XC = lyapchol(A,B,E);
+                    else
+                        XC = lyapchol(A,B);
+                    end
+                    [~,S,XC] = svd(XC,'econ');
+                    XC = XC';
+                    D = S.^2;
+                    S = 1;
                 else
-                    file_not_found=1;
+                    if eqn.haveE
+                        XC=lyapchol(A,B,E);
+                    else
+                        XC=lyapchol(A,B);
+                    end
                 end
+                factorize=0;
                 
             case 'lyap_sgn_fac'
-                if exist('lyap_sgn_fac','file')
-                    XC=lyap_sgn_fac(A,B',E);
-                    factorize=0;
+                if fopts.LDL_T
+                    B = B * U * sqrt(S);
+                    XC = lyap_sgn_fac(A',B',E');
+                    [~,S,XC] = svd(XC,'econ');
+                    XC = XC';
+                    D = S.^2;
+                    S = 1;
                 else
-                    file_not_found=1;
+                    XC = lyap_sgn_fac(A',B',E');
                 end
+                factorize=0;
                 
             case {'lyap','lyapunov'}
-                if exist('lyap','file')
-                    X=lyap(A,B*B',[],E);
+                if fopts.LDL_T
+                    B = B*U*S*U'*B';
+                    B = (B + B') / 2; % make sure it's symmetric for lyap
+                    if eqn.haveE
+                        X = lyap(A,B,[],E);
+                    else
+                        X = lyap(A,B);
+                    end
                 else
-                    file_not_found=1;
+                    if eqn.haveE
+                        X = lyap(A,B*B',[],E);
+                    else
+                        X = lyap(A,B*B');
+                    end
                 end
                 
             case 'lyap2solve'
-                if exist('lyap2solve','file')
-                    X=lyap2solve(A,B*B',[],E);
+                if eqn.haveE
+                    EB = E\B;
+                    if fopts.LDL_T
+                        X = lyap2solve(E\A,EB*U*S*U'*EB');
+                    else
+                        X = lyap2solve(E\A,EB*EB');
+                    end
                 else
-                    file_not_found=1;
+                    if fopts.LDL_T
+                        X = lyap2solve(A,B*U*S*U'*B');
+                    else
+                        X = lyap2solve(A,B*B');
+                    end
                 end
-            otherwise
-                file_not_found=1;
         end
-        if file_not_found
-            warning('MESS:GP_missing_solver',...
-                ['Galerkin projection acceleration skipped due to missing direct'...
-                ' Lyapunov solver, or unknown method']);
-            factorize=0;
-        end
-    case {'riccati','care','care_nwt_fac','mess_dense_nm'}
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    case 'CARE'
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % The Riccati equation case
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        file_not_found = 0;
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         lyapunov = 0;
-        
-        if bdf
-            A=Z'*((fopts.bdf.tau * fopts.bdf.beta) * ...
-                oper.mul_ApE(eqn, fopts,'N',pc, 'N',Z,'N'));
-        elseif rosenbrock
-            A=Z'*(oper.mul_ApE(eqn, fopts,eqn.type,pc, 'N',Z,'N') ...
-                - eqn.U * (eqn.V' * Z));
-        else
-            if eqn.setUV
-                A = Z' * (oper.mul_A( eqn, fopts, 'N', Z, 'N' ) ...
-                    - eqn.U(:,1:eqn.UVsize) * (eqn.V(:,1:eqn.UVsize)' * Z));
+        if eqn.type=='T'
+            opAE = 'N';
+            if bdf
+                B=Z'*eqn.B * sqrt(fopts.bdf.tau * fopts.bdf.beta);
             else
-                A=Z'*(oper.mul_A(eqn, fopts,'N',Z,'N'));
+                B=Z'*eqn.B;
             end
-        end
-        B=Z'*eqn.B;
-        C=eqn.C*Z;
-        if eqn.haveE
-            M=Z'*(oper.mul_E(eqn, fopts,'N',Z,'N'));
+            C=eqn.C*Z;
         else
-            M=[];
+            opAE = 'T';
+            if bdf
+                B=Z'*eqn.C' * sqrt(fopts.bdf.tau * fopts.bdf.beta);
+            else
+                B=Z'*eqn.C';
+            end
+            C=eqn.B'*Z;
+        end
+        if bdf
+            A = (fopts.bdf.tau * fopts.bdf.beta) * (Z' ...
+                * oper.mul_ApE(eqn, fopts,opAE,pc,opAE,Z,'N'));
+        else
+            A = oper.mul_A( eqn, fopts, opAE, Z, 'N' );
+            if eqn.haveUV && eqn.sizeUV1
+                if eqn.type=='T'
+                    A = A + eqn.U(:, 1:eqn.sizeUV1) ...
+                        * (eqn.V(:, 1:eqn.sizeUV1)' * Z);
+                else
+                    A = A + eqn.V(:, 1:eqn.sizeUV1) ...
+                        * (eqn.U(:, 1:eqn.sizeUV1)' * Z);
+                end
+            end
+            A = Z' * A;
+        end
+        if eqn.haveE
+            E = Z'*(oper.mul_E(eqn, fopts,opAE,Z,'N'));
+        else
+            E = [];
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        % Choose solver for the small equation
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         switch opts.projection.meth
             case {'care', 'riccati'}
-                if exist('care','file')
-                    if ~isempty(M)
-                        X=care(A,B,C'*C,eye(size(B,2)),[],M);
-                    else
-                        X=care(A,B,C'*C,eye(size(B,2)));
-                    end
-                else
-                    file_not_found=1;
+                if exist('icare','file')
+                    warning('MESS:care',['It seems that icare() is ' ...
+                                        'available on your system. ' ...
+                                        'We recommend using icare() ' ...
+                                        'over using care() following the ' ...
+                                        'recommendation by TMW.'])
                 end
-                
-            case 'care_nwt_fac'
-                if exist('care_nwt_fac','file')
-                    if ~isempty(M)
-                        XC = care_nwt_fac([],M\A,M\B,C,1e-12,50);
-                        XC = XC*M;
-                    else
-                        XC = care_nwt_fac([],A,B,C,1e-12,50);
-                    end
+            
+                if fopts.LDL_T
+                    X=care(A,B,C'*eqn.S*C,eye(size(B,2)),[],E);
                 else
-                    file_not_found=1;
+                    X=care(A,B,C'*C,eye(size(B,2)),[],E);
+                end
+         
+            case {'icare'}
+                if fopts.LDL_T
+                    X=icare(A,B,C'*eqn.S*C,eye(size(B,2)),[],E);
+                else
+                    X=icare(A,B,C'*C,eye(size(B,2)),[],E);
+                end
+         
+            case 'care_nwt_fac'
+                if fopts.LDL_T
+                    C = sqrt(S) * U' * C;
+                end
+                if not(isempty(E))
+                    XC = care_nwt_fac([],A/E,B,C/E,1e-12,50);
+                else
+                    XC = care_nwt_fac([],A,B,C,1e-12,50);
+                end
+                if fopts.LDL_T
+                    [~,S,XC] = svd(XC,'econ');
+                    XC = XC';
+                    D = S.^2;
+                    S = 1;
                 end
                 factorize=0;
                 
             case 'mess_dense_nm'
-                if exist('mess_dense_nm','file')
-                    if ~isempty(M)
-                        X=mess_dense_nm(A,B,C,M);
+                    if fopts.LDL_T
+                        X=mess_dense_nm(A,B,C,E, [], eqn.S);
                     else
-                        X=mess_dense_nm(A,B,C,[]);
+                        X=mess_dense_nm(A,B,C,E);
                     end
-                else
-                    file_not_found=1;
-                end
-            otherwise
-                file_not_found=1;
-        end
-        if file_not_found
-            warning('MESS:GP_missing_solver',...
-                ['Galerkin projection acceleration skipped due to missing'...
-                ' Riccati solver']);
-            factorize=0;
         end
 end
 
@@ -279,12 +455,16 @@ end
 % compute a symmetric factorization now and update the large factor
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if factorize
-    if (exist('cholp','file'))
+    if fopts.LDL_T
+        [V, D] = eig(X);
+        Z = Z * V;
+        S = 1;
+    elseif (exist('cholp','file'))
         [XC,P,I]=cholp(X);
         XC=XC*P';
         if I && lyapunov
             warning('MESS:proj_sol_semidef',...
-                'The solution of the projected equation was semidefinite.')
+                'The solution of the projected equation was semidefinite.');
         end
     else
         [~,S,V]=svd(X);

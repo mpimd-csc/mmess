@@ -2,9 +2,6 @@ function [ V, eqn, opts, oper ]=mess_solve_shifted_system_Rosenbrock(eqn, opts, 
 % Solves (Ã + p*E)V = W for V, Ã = A - 1/(2*tau)*E - UV^T
 %  (Rosenbrock Scheme)
 %
-% author  Björn Baran
-% date    2015/09/01
-%
 %  Solves (Ã + p*E)V = W for V, Ã = A - 1/(2*tau)*E - UV^T if eqn.type == 'N'
 %  Solves (Ã + p*E)^T*V = W for V, Ã = A - 1/(2*tau)*E - UV^T if eqn.type == 'T'
 %   (Rosenbrock Scheme)
@@ -45,7 +42,7 @@ function [ V, eqn, opts, oper ]=mess_solve_shifted_system_Rosenbrock(eqn, opts, 
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %% Check input
@@ -70,19 +67,35 @@ end
 %% solve shifted system
 if opts.rosenbrock.stage == 1  % 1st order Rosenbrock
     if eqn.haveUV %Perform Sherman-Morrison-Woodbury-trick
-        V = oper.sol_ApE(eqn, opts,eqn.type,pc,eqn.type,[W eqn.V],'N');
-        SMW = V(:,k+1:end);
-        V=V(:,1:k);
-        V=V+SMW*((eye(m)-eqn.U'*SMW)\(eqn.U'*V));
+        if eqn.type == 'T'
+            V = oper.sol_ApE(eqn, opts,eqn.type,pc,eqn.type,[W eqn.V],'N');
+            SMW = V(:,k+1:end);
+            V=V(:,1:k);
+            V=V-SMW*((eye(m)+eqn.U'*SMW)\(eqn.U'*V));
+        else
+            V = oper.sol_ApE(eqn, opts,eqn.type,pc,eqn.type,[W eqn.U],'N');
+            SMW = V(:,k+1:end);
+            V=V(:,1:k);
+            V=V-SMW*((eye(m)+eqn.V'*SMW)\(eqn.V'*V));
+
+        end
     else
         V = oper.sol_ApE(eqn, opts,eqn.type,pc,eqn.type,W,'N');
     end
 else % p = 2, 2nd order Rosenbrock
     if eqn.haveUV %Perform Sherman-Morrison-Woodbury-trick
-        V = oper.sol_ApE(eqn, opts,eqn.type,pc,eqn.type,[W eqn.V] / taugamma,'N');
-        SMW = V(:,k+1:end);
-        V=V(:,1:k);
-        V=V+SMW*((eye(m)-eqn.U'*SMW)\(eqn.U'*V));
+        if eqn.type == 'T'
+            V = oper.sol_ApE(eqn, opts,eqn.type,pc,eqn.type,[W eqn.V] / taugamma,'N');
+            SMW = V(:,k+1:end);
+            V=V(:,1:k);
+            V=V-SMW*((eye(m)+eqn.U'*SMW)\(eqn.U'*V));
+        else
+            V = oper.sol_ApE(eqn, opts,eqn.type,pc,eqn.type,[W eqn.U] / taugamma,'N');
+            SMW = V(:,k+1:end);
+            V=V(:,1:k);
+            V=V-SMW*((eye(m)+eqn.V'*SMW)\(eqn.V'*V));
+
+        end
     else
         V = oper.sol_ApE(eqn, opts,eqn.type,pc,eqn.type, W / taugamma,'N');
     end

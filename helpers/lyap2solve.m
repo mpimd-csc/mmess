@@ -1,9 +1,9 @@
 function X = lyap2solve(A,B)
-% Solve Lyapunov equation AX+XA^T+B^T=0
-% 
-%  Solve Lyapunov equation AX+XA^T+B^T=0
-%  via Zhou and Sorensen 2-solve  method  
-%    
+% Solve Lyapunov equation AX+XA^T+B^T=0 via Zhou and Sorensen 2-solve
+% method   
+%
+% Usage:     X = lyap2solve(A,B)
+%
 % Input:
 %  A         Matrix from Lyapunov equation
 %  B         Matrix from Lyapunov equation
@@ -26,7 +26,7 @@ function X = lyap2solve(A,B)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 m = size(A,1); n = size(B,2);

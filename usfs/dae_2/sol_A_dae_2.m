@@ -1,24 +1,29 @@
-function X = sol_A_dae_2(eqn, opts, opA, B, opB)
-% function sol_A solves solves opA(A_)*X = opB(B)
-%
-% author  Jens Saak
-% date    2013/10/18
+function X = sol_A_dae_2(eqn, opts, opA, B, opB)%#ok<INUSL>
+%% function sol_A solves solves opA(A_)*X = opB(B)
 % 
+% Depending on the vertical dimension of B this solves either with 
+%     A = [A1 F;
+%           G 0 ]
+% or
+%  A = P*A1*P'  with
+%  P = I - F ( G E1\F ) \ G / E the hidden manifold projector
+%  and E1 the corresponding 1,1 block in eqn.E_
+%
 % Input:
-%  eqn       structure with field A_
+%  eqn       structure with fields A_ and E_
 %  opts      struct contains parameters for the algorithm
 %  opA       character specifies the form of opA(A_)
-%                  opA = 'N' solves A_*X=opB(B) 
-%                  opA = 'T' solves A_^T*X=opB(B)
+%                  opA = 'N' solves A*X=opB(B) 
+%                  opA = 'T' solves A^T*X=opB(B)
 %
 %  B         p-x-q matrix
 %
 %  opB       character specifies the form of opB(B)
-%                  opB = 'N' solves A_*X=B 
-%                  opB = 'T' solves A_*X=B^T
+%                  opB = 'N' solves A*X=B 
+%                  opB = 'T' solves A*X=B^T
 %
 % Output:
-%  X       matrix fullfills equation opA(A_)X = opB(B)
+%  X       matrix fullfills equation opA(A)X = opB(B)
 %
 
 %
@@ -36,35 +41,35 @@ function X = sol_A_dae_2(eqn, opts, opA, B, opB)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 
 %% check input Paramters
-if (~ischar(opA) || ~ischar(opB))
+if (not(ischar(opA)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opA or opB is not a char');
 end
 
 opA = upper(opA); opB = upper(opB);
-if(~(opA == 'N' || opA == 'T'))
+if(not((opA == 'N' || opA == 'T')))
     error('MESS:error_arguments','opA is not ''N'' or ''T''');
 end
 
-if(~(opB == 'N' || opB == 'T'))
+if(not((opB == 'N' || opB == 'T')))
     error('MESS:error_arguments','opB is not ''N'' or ''T''');
 end
 
-if (~isnumeric(B)) || (~ismatrix(B))
+if (not(isnumeric(B))) || (not(ismatrix(B)))
     error('MESS:error_arguments','B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if(~isfield(eqn, 'A_'))
+if(not(isfield(eqn, 'A_')))
     error('MESS:error_arguments', 'field eqn.A_ is not defined');
 end
-if ~isfield(eqn, 'st')    || ~isnumeric(eqn.st)
+if not(isfield(eqn, 'st'))    || not(isnumeric(eqn.st))
     error('MESS:st',...
-    'Missing or Corrupted st field detected in equation structure.')
+    'Missing or Corrupted st field detected in equation structure.');
 end
 
 n = size(eqn.A_,1);
@@ -73,57 +78,66 @@ st = eqn.st;
 [rowB,colB] = size(B);
 
 if(opB == 'N')
-    if(n > rowB)
-        B = [B; zeros(n - st, colB)];
-    elseif n < rowB
-        error('MESS:error_arguments', 'B has more rows than A');
+    switch rowB
+        case n
+            dim = n;
+        case st
+            dim = st;
+        otherwise
+            error('MESS:error_arguments', 'B has wrong number of rows.');
     end
 else
-    if(n > colB)
-        B = [B, zeros(rowB, n - st)];
-    elseif n < colB
-        error('MESS:error_arguments', 'B has more columns than A');
+    switch colB
+        case n
+            dim = n;
+        case st
+            dim = st;
+        otherwise
+            error('MESS:error_arguments', 'B has wrong number of columns.');
     end
 end
 
 %% solve
-switch opA
-    
-    case 'N'
-        switch opB
-            
-            %implement solve A_*X=B
-            case 'N'
-                if(n ~= size(B, 1))
-                    error('MESS:error_arguments','number of rows of A_ differs with rows of B');
-                end
-                X = eqn.A_ \ B;
-            
-            %implement solve A_*X=B'
-            case 'T'
-                if(n ~= size(B, 2))
-                    error('MESS:error_arguments','number of rows of A_ differs with cols of B');
-                end
-                X = eqn.A_ \ B';
-        end
+if dim ==n
+    switch opA
         
-    case 'T'
-        switch opB
-             
-            %implement solve A_'*X=B
-            case 'N'
-                if(n ~= size(B, 1))
-                    error('MESS:error_arguments','number of cols of A_ differs with rows of B');
-                end
-                X = eqn.A_' \ B;
+        case 'N'
+            switch opB
                 
-            %implement solve A_'*X=B'
-            case 'T'
-                if(n ~= size(B, 2))
-                    error('MESS:error_arguments','number of cols of A_ differs with cols of B');
-                end
-                X = eqn.A_' \ B';
-        end
-        
-end
+                %implement solve A_*X=B
+                case 'N'
+                    if(n ~= size(B, 1))
+                        error('MESS:error_arguments','number of rows of A_ differs with rows of B');
+                    end
+                    X = eqn.A_ \ B;
+                    
+                    %implement solve A_*X=B'
+                case 'T'
+                    if(n ~= size(B, 2))
+                        error('MESS:error_arguments','number of rows of A_ differs with cols of B');
+                    end
+                    X = eqn.A_ \ B';
+            end
+            
+        case 'T'
+            switch opB
+                
+                %implement solve A_'*X=B
+                case 'N'
+                    if(n ~= size(B, 1))
+                        error('MESS:error_arguments','number of cols of A_ differs with rows of B');
+                    end
+                    X = eqn.A_' \ B;
+                    
+                    %implement solve A_'*X=B'
+                case 'T'
+                    if(n ~= size(B, 2))
+                        error('MESS:error_arguments','number of cols of A_ differs with cols of B');
+                    end
+                    X = eqn.A_' \ B';
+            end
+            
+    end
+else
+     error('MESS:error_arguments','A is singular in these coordinates');
 end

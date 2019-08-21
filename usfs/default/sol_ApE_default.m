@@ -1,8 +1,9 @@
-function X=sol_ApE_default(eqn, opts,opA,p,opE,C,opC)
+function X=sol_ApE_default(eqn, opts,opA,p,opE,C,opC)%#ok<INUSL>
 
 % function X=sol_ApE_default(eqn, opts,opA,p,opE,C,opC)
 %
-% This function returns X = (A_ + p*E_)\C, where matrices A_ and E_ given by structure eqn and input matrix C could be transposed.
+% This function returns X = (A_ + p*E_)\C, where matrices A_ and E_
+% given by structure eqn and input matrix C could be transposed. 
 % Matrices A_ and E_ are assumed to be quadratic.
 %
 %   Inputs:
@@ -42,45 +43,45 @@ function X=sol_ApE_default(eqn, opts,opA,p,opE,C,opC)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 
 %% check input parameters
-if (~ischar(opA) || ~ischar(opE) || ~ischar(opC))
+if (not(ischar(opA)) || not(ischar(opE)) || not(ischar(opC)))
     error('MESS:error_arguments', 'opA, opE or opC is not a char');
 end
 
 opA = upper(opA); opE = upper(opE); opC = upper(opC);
 
-if(~(opA=='N' || opA=='T'))
+if(not((opA=='N' || opA=='T')))
     error('MESS:error_arguments','opA is not ''N'' or ''T''');
 end
 
-if(~(opE=='N' || opE=='T'))
+if(not((opE=='N' || opE=='T')))
     error('MESS:error_arguments','opE is not ''N'' or ''T''');
 end
 
-if(~(opC=='N' || opC=='T'))
+if(not((opC=='N' || opC=='T')))
     error('MESS:error_arguments','opC is not ''N'' or ''T''');
 end
 
-if(~isnumeric(p)) || (length(p) ~= 1)
+if(not(isnumeric(p))) || (length(p) ~= 1)
     error('MESS:error_arguments','p is not numeric');
 end
 
-if (~isnumeric(C)) || (~ismatrix(C))
+if (not(isnumeric(C))) || (not(ismatrix(C)))
     error('MESS:error_arguments','C has to ba a matrix');
 end
 
 %% check data in eqn structure
-if ~isfield(eqn, 'haveE'), eqn.haveE = 0; end
+if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
 if(eqn.haveE ==1)
-    if(~isfield(eqn,'E_') || ~isfield(eqn,'A_'))
+    if(not(isfield(eqn,'E_')) || not(isfield(eqn,'A_')))
         error('MESS:error_arguments','field eqn.E_ or eqn.A_ is not defined');
     end
 else
-    if(~isfield(eqn,'A_'))
+    if(not(isfield(eqn,'A_')))
         error('MESS:error_arguments','field eqn.A_ is not defined');
     end    
 end

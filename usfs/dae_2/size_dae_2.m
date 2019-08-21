@@ -1,16 +1,21 @@
-function n = size_dae_2(eqn, opts)
-% function n = size_dae_2(eqn, opts)
+function n = size_dae_2(eqn, opts, oper)%#ok<INUSD>
+% function n = size_dae_2(eqn, opts, oper)
 %
 % This function returns the number of rows of the implicitly projected A 
 % matrix of the index-2 system.
 %
-%    Inputs:
+%   Input:
 %
-%    eqn     structure containing the system data
+%   eqn     struct contains data for equations
 %
-%    Output:
+%   opts    struct contains parameters for the algorithm
 %
-%    n       size of the implicitly projected A matrix
+%   oper    struct contains function handles for operation 
+%           with A and E
+%
+%   Output:
+%
+%   n       size of the implicitly projected A matrix
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -27,11 +32,11 @@ function n = size_dae_2(eqn, opts)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
-if ~isfield(eqn, 'st')    || ~isnumeric(eqn.st)
+if not(isfield(eqn, 'st'))    || not(isnumeric(eqn.st))
     error('MESS:st',...
-    'Missing or Corrupted st field detected in equation structure.')
+    'Missing or Corrupted st field detected in equation structure.');
 end
 n = eqn.st;
 

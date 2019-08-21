@@ -19,7 +19,7 @@ function [M,D,K]=triplechain_MSD(n1,alpha,beta,v)
 % [1] N.Truhar and K.Veselic
 %     An efficient method for estimating the optimal dampers' viscosity for
 %     linear vibrating systems using Lyapunov equations
-%     SIAM J. Matriax Anal. Appl. vol.31 no.1 pp 18-39
+%     SIAM J. Matrix Anal. Appl. vol.31 no.1 pp 18-39
 %
 m1=1;
 m2=2;
@@ -32,8 +32,9 @@ k3=1;
 k0=50;
 
 if nargin<2
-  alpha=.1;
+  alpha=.002;
   beta=alpha;
+  v=5e0;
 end
 
 M=spdiags([m1*ones(1,n1) m2*ones(1,n1) m3*ones(1,n1) m0]',0,3*n1+1,3*n1+1);

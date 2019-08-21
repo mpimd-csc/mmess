@@ -1,25 +1,33 @@
-function [eqn,erg] = init_dae_2(eqn, opts, flag1, flag2)
-%% init_dae_2(eqn, flagA, flagE)
+function [result, eqn, opts, oper] = init_dae_2(eqn, opts, oper, flag1, flag2)
+% function [result, eqn, opts, oper] = init_dae_2(eqn, opts, oper, flag1, flag2)
 % return true or false if Data for A_ and E_ resp. flag1 and flag2  are 
 % availabe and correct in eqn.
 %
-%   erg = init_dae_2(eqn,flag1);
-%   erg = init_dae_2(eqn,flag1,flag2);
+%   result = init_dae_2(eqn,flag1);
+%   result = init_dae_2(eqn,flag1,flag2);
 %
-%   erg = init_dae_2(eqn,'A')    (==init_dae_2(eqn,'A','A'));
-%   erg = init_dae_2(eqn,'E')    (==init_dae_2(eqn,'E','E'));
-%   erg = init_dae_2(eqn,'A','E')  (==init_dae_2(eqn,'E','A'));
+%   result = init_dae_2(eqn,'A')    (==init_dae_2(eqn,'A','A'));
+%   result = init_dae_2(eqn,'E')    (==init_dae_2(eqn,'E','E'));
+%   result = init_dae_2(eqn,'A','E')  (==init_dae_2(eqn,'E','A'));
 %
 %   Input:
-%   flag1/flag2    'A'/'E' for checking A or E in eqn
-%   eqn             structure with the data
-%   opts            struct contains parameters for the algorithm
+%
+%   eqn             structure with data
+%   opts            structure containing parameter for the algorithm
+%   oper            struct contains function handles for operation with A and E
+%   flag1           'A'/'E' to check if A or E is in eqn
+%   flag2           'A'/'E' to check if A or E is in eqn
 %
 %   Output:
-%   eqn             structure with the data
-%   opts            struct contains parameters for the algorithm
 %
-%   uses no other dae_1 functions
+%   result             1 if data corresponding to flag1 (and flag2)
+%                      are available ,
+%                   0 data are not available  
+%   eqn             structure with data
+%   opts            structure containing parameter for the algorithm
+%   oper            struct contains function handles for operation with A and E
+%
+%   uses no other dae_2 functions
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -36,49 +44,48 @@ function [eqn,erg] = init_dae_2(eqn, opts, flag1, flag2)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %% check input Paramters
-na = nargin;
-if(na<=2)
+if(nargin<=3)
     error('MESS:check_data','Number of input Arguments must be at least 3');
 
-%% erg = init_dae_2(eqn, flag1);    
-elseif(na==3)
+%% result = init_dae_2(eqn, opts, oper, flag1);    
+elseif(nargin==4)
     switch flag1
         case {'A','a'}
-            [eqn,erg] = checkA(eqn);
+            [eqn,result] = checkA(eqn);
         case {'E','e'}
-            [eqn,erg] = checkE(eqn);
+            [eqn,result] = checkE(eqn);
         otherwise
             error('MESS:check_data','flag1 has to be ''A'' or ''E''');
     end
     
-%% erg = init_dae_2(eqn,flag1,flag2);
-elseif(na==4)
+%% result = init_dae_2(eqn, opts, oper,flag1,flag2);
+elseif(nargin==5)
     switch flag1
         case {'A','a'}
-            [eqn,erg] = checkA(eqn);
+            [eqn,result] = checkA(eqn);
             switch flag2
                 case {'A','a'}
-                    [eqn,ergA] = checkA(eqn);
-                     erg = erg && ergA;
+                    [eqn,resultA] = checkA(eqn);
+                     result = result && resultA;
                 case {'E','e'}
-                    [eqn,ergE] = checkE(eqn);
-                     erg = erg &&ergE;
+                    [eqn,resultE] = checkE(eqn);
+                     result = result &&resultE;
                 otherwise
                     error('MESS:check_data','flag2 has to be ''A'' or ''E''');
             end
         case {'E','e'}
-            [eqn, erg] = checkE(eqn);
+            [eqn, result] = checkE(eqn);
             switch flag2
                 case {'A','a'}
-                     [eqn,ergA] = checkA(eqn);
-                     erg = erg && ergA;
+                     [eqn,resultA] = checkA(eqn);
+                     result = result && resultA;
                 case {'E','e'}
-                    [eqn,ergE] = checkE(eqn);
-                     erg =  erg && ergE;
+                    [eqn,resultE] = checkE(eqn);
+                     result =  result && resultE;
                 otherwise
                     error('MESS:check_data','flag2 has to be ''A'' or ''E''');
             end
@@ -86,80 +93,74 @@ elseif(na==4)
             error('MESS:check_data','flag1 has to be ''A'' or ''E''');
     end 
 end
+
 end
 
 %% checkdata for A_
-function [eqn,erg] = checkA(eqn)
-% A = [ A1 -G';
-%       G   0]
+function [eqn,result] = checkA(eqn)
+% A = [ A11 A12;
+%       A21   0]
 %
-if ~isfield(eqn, 'st')    || ~isnumeric(eqn.st)
+if not(isfield(eqn, 'st')) || not(isnumeric(eqn.st))
     error('MESS:st',...
-    'Missing or Corrupted st field detected in equation structure.')
+    'Missing or Corrupted st field detected in equation structure.');
 end
-if ~isfield(eqn,'A_') || ~isnumeric(eqn.A_)
+if not(isfield(eqn,'A_')) || not(isnumeric(eqn.A_))
     error('MESS:equation_data',...
-      'Empty or Corrupted field A detected in equation structure.')
+      'Empty or Corrupted field A detected in equation structure.');
 end
 if  (size(eqn.A_,1) ~= size(eqn.A_,2))
     error('MESS:error_arguments', 'field eqn.A_ has to be quadratic');
 end
-if(~issparse(eqn.A_))
-    warning('MESS:check_data','A is not sparse');
-end
-% check for A12=-A21' or A12=A21' 
-asymmG=~any(any(eqn.A_(eqn.st+1:end,1:eqn.st)+eqn.A_(1:eqn.st,eqn.st+1:end)'));
-symmG=~any(any(eqn.A_(eqn.st+1:end,1:eqn.st)-eqn.A_(1:eqn.st,eqn.st+1:end)'));
-if ~full( asymmG || symmG ) 
-   error('MESS:equation_data',...
-      'Corrupted field A detected in equation structure. ')   
-   
+
+if(not(issparse(eqn.A_)))
+    warning('MESS:check_data','A has to be sparse for best performance');
 end
 % check if lower right block is empty
 if (any(any(eqn.A_(eqn.st+1:end,eqn.st+1:end)))) 
    error('MESS:equation_data',...
-      'Corrupted field A detected in equation structure.')   
+      'Corrupted field A detected in equation structure.'); 
 end
-erg = 1;
+result = 1;
 end
 
 %% checkdata for E_
-function [eqn,erg] = checkE(eqn)
-if ~isfield(eqn, 'haveE'), eqn.haveE = 0; end
-if ~isfield(eqn, 'st')    || ~isnumeric(eqn.st)
+function [eqn,result] = checkE(eqn)
+if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
+if not(isfield(eqn, 'st')) || not(isnumeric(eqn.st))
     error('MESS:st',...
           ['Missing or Corrupted st field detected in equation ' ...
-           'structure.'])
+           'structure.']);
 end
 if eqn.haveE
-  if ~isfield(eqn,'E_') || ~isnumeric(eqn.E_)
-    error('MESS:equation_data',...
-      'Empty or Corrupted field E detected in equation structure.')
-  end
-  if  (size(eqn.E_,1) ~= size(eqn.E_,2))
-    error('MESS:error_arguments', 'field eqn.E_ has to be quadratic');
-  end
-  if(~issparse(eqn.E_))
-    warning('MESS:check_data','E is not sparse');
-  end
-  st = eqn.st;
-  % E = [ E1 0;
-  %       0  0]
-  if full(any([any(eqn.E_(1:st, st + 1:end)), any(eqn.E_(st+1:end,:))]))
-    warning('MESS:check_data',['E has to be non-zero only in the ' ...
-                        'upper left st x st block']);
-  end
+    if not(isfield(eqn,'E_')) || not(isnumeric(eqn.E_))
+        error('MESS:equation_data',...
+            'Empty or Corrupted field E detected in equation structure.');
+    end
+    if  (size(eqn.E_,1) ~= size(eqn.E_,2))
+        error('MESS:error_arguments', 'field eqn.E_ has to be quadratic');
+    end
+    
+    if not(issparse(eqn.E_))
+        warning('MESS:check_data','E has to be sparse for best performance');
+    end
+    st = eqn.st;
+    % E = [ E1 0;
+    %       0  0]
+    if full(any([any(eqn.E_(1:st, st + 1:end)), any(eqn.E_(st+1:end,:))]))
+        warning('MESS:check_data',['E has to be non-zero only in the ' ...
+            'upper left st x st block']);
+    end
 else
-  % E = [ I 0 ]
-  %     [ 0 0 ]
-  if ~isfield(eqn,'A_') || ~isnumeric(eqn.A_)
-    error('MESS:equation_data',...
-      'Empty or Corrupted field A detected in equation structure.')
-  end
-  st = eqn.st;
-  n=size(eqn.A_,1);
-  eqn.E_=sparse(1:st,1:st,ones(st, 1),n,n,st);
+    % E = [ I 0 ]
+    %     [ 0 0 ]
+    if not(isfield(eqn,'A_')) || not(isnumeric(eqn.A_))
+        error('MESS:equation_data',...
+            'Empty or Corrupted field A detected in equation structure.');
+    end
+    st = eqn.st;
+    n=size(eqn.A_,1);
+    eqn.E_=sparse(1:st,1:st,ones(st, 1),n,n,st);
 end
-erg = 1;
-% erg: bool; without 'full()' erg: 1x1 sparse
+result = 1;
 end

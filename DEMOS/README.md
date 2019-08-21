@@ -27,7 +27,7 @@ following purposes.
   advantage of the first.
 
 **DAE2_SO/ DAE3_SO/**
-  Show the use of the *"dae2_so"* and *"dae3_so"* usfs for
+  Show the use of the *"dae_2_so"* and *"dae_3_so"* usfs for
   second order index-2 and index-3 systems.
 
 **RI/**

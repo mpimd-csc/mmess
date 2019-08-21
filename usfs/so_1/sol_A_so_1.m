@@ -1,4 +1,4 @@
-function X=sol_A_so_1(eqn, opts,opA,B,opB)
+function X=sol_A_so_1(eqn, opts,opA,B,opB)%#ok<INUSL>
 
 % function X=sol_A_so_1(eqn, opts,opA,B,opB)
 %
@@ -34,7 +34,7 @@ function X=sol_A_so_1(eqn, opts,opA,B,opB)
 %
 %   Inputs:
 %
-%   eqn     structure containing data for matrix A (fields 'D_' and 'K_')
+%   eqn     structure containing data for matrix A (fields 'E_' and 'K_')
 %   opts    structure containing parameters for the algorithm
 %   opA     character specifying the shape of A
 %           opA = 'N' solves A *X = opB(B)
@@ -67,36 +67,35 @@ function X=sol_A_so_1(eqn, opts,opA,B,opB)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %% check input parameters
-if (~ischar(opA) || ~ischar(opB))
+if (not(ischar(opA)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opA or opB is not a char');
 end
 
 opA = upper(opA); opB = upper(opB);
-if(~(opA=='N' || opA=='T'))
+if(not((opA=='N' || opA=='T')))
     error('MESS:error_arguments','opA is not ''N'' or ''T''');
 end
 
-if(~(opB=='N' || opB=='T'))
+if(not((opB=='N' || opB=='T')))
     error('MESS:error_arguments','opB is not ''N'' or ''T''');
 end
 
-if (~isnumeric(B)) || (~ismatrix(B))
+if (not(isnumeric(B))) || (not(ismatrix(B)))
     error('MESS:error_arguments','B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if(~isfield(eqn,'K_') || ~isnumeric(eqn.K_) || ~isfield(eqn,'D_')) || ~isnumeric(eqn.D_)
+if(not(isfield(eqn,'K_')) || not(isnumeric(eqn.K_)) || not(isfield(eqn,'E_'))) || not(isnumeric(eqn.E_))
     error('MESS:error_arguments',...
-        'A consists of K and D, field eqn.K_ or eqn.D_ is not defined or corrupted');
+        'A consists of K and D, field eqn.K_ or eqn.E_ is not defined or corrupted');
 end
 
 [rowK, colK] = size(eqn.K_);
 rowA = 2*rowK;
-colA = 2*colK;
 
 
 
@@ -112,7 +111,7 @@ switch opB
         
         %%K_ hat vollen Rang
         X2 = eqn.K_\B(1:rowK,:);
-        X1 = eqn.K_\(B(rowK+1:end,:)-eqn.D_*X2);
+        X1 = eqn.K_\(B(rowK+1:end,:)-eqn.E_*X2);
         X= [-X1;-X2];
         
     %implement solve A*X=B'
@@ -123,7 +122,7 @@ switch opB
         end
         
         X2 = eqn.K_\B(:,1:colK)';
-        X1 = eqn.K_\(B(:,colK+1:end)'-eqn.D_*X2);
+        X1 = eqn.K_\(B(:,colK+1:end)'-eqn.E_*X2);
         X= [-X1;-X2];
 end
 

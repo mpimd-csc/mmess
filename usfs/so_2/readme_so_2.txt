@@ -30,7 +30,7 @@ The fieldnames have to end with _  to indicate that the data
 are inputdata for the algorithm.
 eqn.M_
 eqn.K_
-eqn.D_
+eqn.E_
 eqn.B
 
 [Benner, Kuerschner, Saak: An improved numerical method for balanced truncation for symmetric second-order systems, 2013]

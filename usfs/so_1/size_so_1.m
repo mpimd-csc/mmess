@@ -1,4 +1,4 @@
-function n = size_so_1(eqn, opts)
+function n = size_so_1(eqn, opts)%#ok<INUSD>
 
 % function n = size_so_1(eqn, opts)
 %
@@ -57,9 +57,9 @@ function n = size_so_1(eqn, opts)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
-if(~isfield(eqn,'K_') || ~isnumeric(eqn.K_))
+if(not(isfield(eqn,'K_')) || not(isnumeric(eqn.K_)))
     error('MESS:error_arguments',...
         'A consists of K and D, field eqn.K_ is not defined or corrupted');
 end

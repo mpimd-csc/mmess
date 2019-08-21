@@ -16,7 +16,7 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 %
 %  Output:
 %
-%    p         an opts.adi.shifts.l0- or opts.adi.shifts.l0+1-vector of
+%    p         an opts.shifts.num_desired- or opts.shifts.num_desired+1-vector of
 %              suboptimal ADI parameters;
 %    err_code  Error code; = 1, if Ritz values with positive real parts
 %              have been encountered; otherwise, err_code = 0;
@@ -49,54 +49,92 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 %   Depending on the operator chosen by the operatormanager, additional
 %   fields may be needed. For the "default", e.g., eqn.A_ and eqn.E_ hold
 %   the A and E matrices. For the second order types these are given
-%   implicitly by the M, D, K matrices stored in eqn.M_, eqn.D_ and eqn.K_,
+%   implicitly by the M, D, K matrices stored in eqn.M_, eqn.E_ and eqn.K_,
 %   respectively.
 %
 % Input fields in struct opts:
-%   opts.adi.shifts.l0          possible  values: integer > 0
-%                               number of shifts that should be computed
-%                               2*l0 < kp + km is required
-%                               (optional)
+%   opts.shifts.num_desired   possible  values: integer > 0
+%                             number of shifts that should be computed
+%                             2*num_desired < num_Ritz + num_hRitz is required
+%                             (optional, default: 25)
 %
-%   opts.adi.shifts.kp          possible  values: integer > 0
-%                               number of Arnoldi steps w.r.t. F for
-%                               heuristic shift computation
-%                               kp < n is required
-%                               (optional)
+%   opts.shifts.num_Ritz      possible  values: integer > 0
+%                             number of Arnoldi steps w.r.t. F for
+%                             heuristic shift computation
+%                             num_Ritz < n is required
+%                             (optional, default: 50)
 %
-%   opts.adi.shifts.km          possible  values: integer > 0
-%                               number of Arnoldi steps w.r.t. inv(F) for
-%                               heuristic shift computation
-%                               km < n is required
-%                               (optional)
+%   opts.shifts.num_hRitz     possible  values: integer > 0
+%                             number of Arnoldi steps w.r.t. inv(F) for
+%                             heuristic shift computation
+%                             num_hRitz < n is required
+%                             (optional, default: 25)
 %
-%   opts.adi.shifts.b0          (n x 1) array
-%                               start vector for Arnoldi algorithm for
-%                               heuristic shift computation
-%                               (optional)
+%   opts.shifts.b0            (n x 1) array
+%                             start vector for Arnoldi algorithm for
+%                             heuristic shift computation
+%                             (optional, default: ones(n, 1))
 %
-%   opts.adi.shifts.info        possible  values: 0, 1, false, true
-%                               turn output of used shifts before the first
-%                               iteration step on (1) or off (0) 
-%                               (optional)
+%   opts.shifts.info          possible  values: 0, 1, false, true
+%                             turn output of used shifts before the first
+%                             iteration step on (1) or off (0) 
+%                             (optional, default: 0)
 %
-%   opts.adi.shifts.method      possible  values: 'heur','heuristic',
-%                               'penzl','Penzl', 'wachspress','Wachspress',
-%                               'projection'
-%                               method for shift computation
-%                               in case of 'projection' new shifts are
-%                               computed during the iteration steps
-%                               (optional)
+%   opts.shifts.method        possible  values: 
+%                             'heuristic', ('heur','Penzl','penzl') 
+%                                for Penzl's heuristics.
+%                             'wachspress', ('Wachspress')
+%                                for asymptotically optimal Wachspress
+%                                selection.
+%                             'projection'
+%                                for adaptively updated projection shifts.
+%                             method for shift computation
+%                             in case of 'projection' new shifts are
+%                             computed during the iteration steps,
+%                             otherwise the shifts are reused cyclically
+%                             (optional, default: 'heuristic')
+%
+%   opts.shifts.truncate      possible values: scalar >= 1.0
+%                             truncation tolerance to drop exceptionally large 
+%                             and small Ritz values (e.g. used in second order
+%                             cases, where (p^2*M + p*E + K) may otherwise 
+%                             numerically loose the information about either
+%                             M or K in finite precision). Ritz values larger
+%                             than the given value and smaller than its 
+%                             reciprocal are truncated.
+%                             (optional, default: [])
+%                              
+%   opts.shifts.banned        array of shift paramater values that the
+%                             ADI will not use.
+%                             shift parameter computation will remove all
+%                             shifts in a neighborhood of the banned
+%                             shifts.
+%                             use opts.shifts.banned_tol as relative
+%                             tolerance for the neighborhood size
+%                             (optional, default: [])
+%
+%   opts.shifts.banned_tol    possible  values: scalar >= 0
+%                             relative tolerance for the neighborhood
+%                             size around banned shifts
+%                             (optional, default: 1e-4)
+%
+%   opts.shifts.implicitVtAV  possible values: true, false
+%                             decides whether A*V is reconstructed
+%                             implicitly in 'projection' method, unused
+%                             otherwise. 
+%                             (optional, default: true)
 %
 %  Remarks:
 %
-%    Typical values are opts.adi.shifts.l0 = 10..40,
-%    opts.adi.shifts.kp = 20..80, opts.adi.shifts.km = 10..40.
+%    Typical values are opts.shifts.num_desired = 10..40,
+%    opts.shifts.num_Ritz = 20..80, opts.shifts.num_hRitz = 10..40.
 %    The harder the problem is the large values are necessary.
 %    Larger values mostly result in a faster convergence, but also in a
 %    larger memory requirement.
 %    However, for "well-conditioned" problems small values of
-%    opts.adi.shifts.l0 can lead to the optimal performance.
+%    opts.shifts.num_desired can lead to the optimal performance.
+%    In case of the projection shifts, a natural selection for l0
+%    is the number of columns, i.e. normally the rank, of the right hand side.
 %
 %  References:
 %
@@ -104,8 +142,17 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 %      LYAPACK (Users' Guide - Version 1.0).
 %      1999.
 %
-%   uses operatorfunctions size directly and indirectly
-%   size, sol_A, mul_A, sol_E, mul_E in mess_arn
+%  [2] P. Kürschner, Efficient low-rank solution of large-scale matrix
+%      equations, Dissertation, Otto-von-Guericke-Universität, Magdeburg,
+%      Germany, shaker Verlag, ISBN 978-3-8440-4385-3 (Apr. 2016).   
+%      URL http://hdl.handle.net/11858/00-001M-0000-0029-CE18-2
+%
+%   uses operatorfunction size 
+%   and indirectly requires 
+%   (heuristic and wachspress shifts)
+%    - size, sol_A, mul_A, sol_E, mul_E in mess_arn 
+%   (projection shifts)
+%    - mul_A, mul_E  in mess_projection_shifts (projection shifts
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -122,7 +169,7 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %  MMESS (Jens Saak, October 2013)
@@ -130,43 +177,48 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 % Input data not completely checked!
 
 %% check data
-if ~isfield(opts,'adi') || ~isstruct(opts.adi)
-    error('MESS:control_data','ADI control structure opts.ADI missing.');
+
+if not(isfield(opts.shifts,'method'))
+    opts.shifts.method='heuristic';
+    warning('MESS:control_data','Missing shift parameter selection method. Switching to default: heuristic shifts');
 end
-if ~isfield(opts.adi,'shifts') || ~isstruct(opts.adi.shifts)
+
+if not(isfield(opts,'shifts')) || not(isstruct(opts.shifts))
     warning('MESS:control_data',['shift parameter control structure missing.', ...
-        'Switching to default l0 = 25, kp = 50, km = 25.']);
-    opts.adi.shifts.l0 = 25;
-    opts.adi.shifts.kp = 50;
-    opts.adi.shifts.km = 25;
+        'Switching to default num_desired = 25, num_Ritz = 50, num_hRitz = 25.']);
+    opts.shifts.num_desired = 25;
+    opts.shifts.num_Ritz = 50;
+    opts.shifts.num_hRitz = 25;
 else
-    if ~isfield(opts.adi.shifts,'l0')||~isnumeric(opts.adi.shifts.l0)
+    if not(isfield(opts.shifts,'num_desired'))||not(isnumeric(opts.shifts.num_desired))
         warning('MESS:control_data',...
-            ['Missing or Corrupted opts.adi.shifts.l0 field.', ...
+            ['Missing or Corrupted opts.shifts.num_desired field.', ...
             'Switching to default: 25']);
-        opts.adi.shifts.l0 = 25;
+        opts.shifts.num_desired = 25;
     end
-    if ~isfield(opts.adi.shifts,'kp')||~isnumeric(opts.adi.shifts.kp)
+    if strcmp(opts.shifts.method,'heur')&&...
+       (not(isfield(opts.shifts,'num_Ritz'))||not(isnumeric(opts.shifts.num_Ritz)))
         warning('MESS:control_data',...
-            ['Missing or Corrupted opts.adi.shifts.kp field.', ...
+            ['Missing or Corrupted opts.shifts.num_Ritz field.', ...
             'Switching to default: 50']);
-        opts.adi.shifts.kp = 50;
+        opts.shifts.num_Ritz = 50;
     end
-    if ~isfield(opts.adi.shifts,'km')||~isnumeric(opts.adi.shifts.km)
+    if strcmp(opts.shifts.method,'heur')&&...
+       (not(isfield(opts.shifts,'num_hRitz'))||not(isnumeric(opts.shifts.num_hRitz)))
         warning('MESS:control_data',...
-            ['Missing or Corrupted opts.adi.shifts.km field.', ...
+            ['Missing or Corrupted opts.shifts.num_hRitz field.', ...
             'Switching to default: 25']);
-        opts.adi.shifts.km = 25;
+        opts.shifts.num_hRitz = 25;
     end
 end
-if ~isfield(eqn, 'haveE'), eqn.haveE = 0; end
-if ~isfield(eqn, 'type'), eqn.type = 'N'; end
-[eqn, erg] = oper.init(eqn, opts, 'A','E');
-if ~erg
+if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
+if not(isfield(eqn, 'type')), eqn.type = 'N'; end
+[result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
+if not(result)
     error('MESS:control_data', 'system data is not completely defined or corrupted');
 end
 err_code = 0;
-if ~isfield(opts,'rosenbrock'), opts.rosenbrock=[]; end
+if not(isfield(opts,'rosenbrock')), opts.rosenbrock=[]; end
 if isstruct(opts.rosenbrock)&&isfield(opts.rosenbrock,'tau')
     rosenbrock = 1;
     if opts.rosenbrock.stage == 1
@@ -179,7 +231,7 @@ if isstruct(opts.rosenbrock)&&isfield(opts.rosenbrock,'tau')
 else
     rosenbrock = 0;
 end
-if ~isfield(opts,'bdf'), opts.bdf=[]; end
+if not(isfield(opts,'bdf')), opts.bdf=[]; end
 if isstruct(opts.bdf) && isfield(opts.bdf, 'tau') && isfield(opts.bdf, 'beta')
     bdf = 1;
     pc = -1 / (2 * opts.bdf.tau * opts.bdf.beta);
@@ -187,17 +239,29 @@ else
     bdf = 0;
 end
 
+if not(isfield(opts.shifts, 'banned')) ...
+        || not(isnumeric(opts.shifts.banned))
+    opts.shifts.banned = [];
+elseif not(isfield(opts.shifts, 'banned_tol')) ...
+        || not(isnumeric(opts.shifts.banned_tol)) ...
+        || not(isscalar(opts.shifts.banned_tol))
+    opts.shifts.banned_tol = 1e-4;
+end
+
+if not(isfield(opts.shifts,'recursion_level')) ...
+        || not(isnumeric(opts.shifts.recursion_level)) ...
+        || not(isscalar(opts.shifts.recursion_level))
+    opts.shifts.recursion_level = 0;
+end
+
 %% initialize usfs
 [eqn,opts, oper] = oper.mul_A_pre(eqn, opts, oper);
 [eqn,opts, oper] = oper.mul_E_pre(eqn, opts, oper);
 [eqn,opts, oper] = oper.sol_A_pre(eqn, opts, oper);
 [eqn,opts, oper] = oper.sol_E_pre(eqn, opts, oper);
-%%
-if ~isfield(opts.adi.shifts,'method')
-    opts.adi.shifts.method='heur';
-end
 
-switch opts.adi.shifts.method
+%%
+switch opts.shifts.method
     case {'heur','heuristic','penzl','Penzl'}
         %%
         if isfield(oper,'get_ritz_vals')
@@ -214,7 +278,7 @@ switch opts.adi.shifts.method
             end
         end
         
-        p = mess_mnmx(rw,opts.adi.shifts.l0);
+        p = mess_mnmx(rw,opts.shifts.num_desired);
         
     case {'wachspress','Wachspress'}
         %%
@@ -236,21 +300,26 @@ switch opts.adi.shifts.method
         b=max(abs(real(rw)));
         alpha=atan(max(imag(rw)./real(rw)));
         
-        if ~isfield(opts.adi.shifts,'wachspress')
-            opts.adi.shifts.wachspress='T';
+        if not(isfield(opts.shifts,'wachspress'))
+            opts.shifts.wachspress='T';
         end
-        switch opts.adi.shifts.wachspress
+        switch opts.shifts.wachspress
             case 'N'
-                p = mess_wachspress_n(a,b,alpha,opts.adi.shifts.l0);
+                p = mess_wachspress_n(a,b,alpha,opts.shifts.num_desired);
             case 'T'
-                p = mess_wachspress(a,b,alpha,opts.adi.restol);
+                if isfield(opts,'nm') && isfield(opts.nm,'inexact') && isa(opts.nm.inexact,'char')
+                    tol=opts.adi.inexact;
+                else
+                    tol=opts.adi.res_tol;
+                end
+                p = mess_wachspress(a,b,alpha,tol);
             otherwise
                 error('MESS:shift_method','wachspress selector needs to be either ''T'' or ''N''');
         end
     case 'projection'
         if nargout > 3
             error('MESS:shift_method', ...
-                'For shift method ''projection'' matrices Hp, Hm, Vp and Vm are not available.')
+                'For shift method ''projection'' matrices Hp, Hm, Vp and Vm are not available.');
         end
         if isfield(eqn, 'G')
             U = eqn.G;
@@ -281,21 +350,21 @@ switch opts.adi.shifts.method
                         if isfield(oper,'get_ritz_vals')
                             p = oper.get_ritz_vals(eqn, opts, oper, U, ...
                                 taugamma * oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N') ...
-                                - eqn.U * (eqn.V' * U) , []);
+                                + eqn.U * (eqn.V' * U) , []);
                         else
                             p = mess_projection_shifts(eqn, opts, oper, U, ...
                                 taugamma * oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N') ...
-                                - eqn.U * (eqn.V' * U) , []);
+                                + eqn.U * (eqn.V' * U) , []);
                         end
                     else
                         if isfield(oper,'get_ritz_vals')
                             p = oper.get_ritz_vals(eqn, opts, oper, U, ...
                                 taugamma * oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N') ...
-                                - eqn.V * (eqn.U' * U) , []);
+                                + eqn.V * (eqn.U' * U) , []);
                         else
                             p = mess_projection_shifts(eqn, opts, oper, U, ...
                                 taugamma * oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N') ...
-                                - eqn.V * (eqn.U' * U) , []);
+                                + eqn.V * (eqn.U' * U) , []);
                         end
                     end
                 else
@@ -310,35 +379,58 @@ switch opts.adi.shifts.method
                     end
                 end
             else
+                AU = oper.mul_A(eqn, opts, eqn.type, U, 'N');
+                if isfield(eqn, 'haveUV') && eqn.haveUV
+                    if eqn.type == 'T'
+                        AU = AU + eqn.V * (eqn.U' * U);
+                    else
+                        AU = AU + eqn.U * (eqn.V' * U);
+                    end
+                end
                 if isfield(oper,'get_ritz_vals')
-                    p = oper.get_ritz_vals(eqn, opts, oper, U, ...
-                        oper.mul_A(eqn, opts, eqn.type, U, 'N'), []);
+                    p = oper.get_ritz_vals(eqn, opts, oper, U, AU, []);
                 else
-                    p = mess_projection_shifts(eqn, opts, oper, U, ...
-                        oper.mul_A(eqn, opts, eqn.type, U, 'N'), []);
+                    p = mess_projection_shifts(eqn, opts, oper, U, AU, []);
                 end
             end
             if isempty(p)
                 if  (i < 5)
                     warning('MESS:mess_para',['Could not compute initial projection shifts. ',...
-                        'Retry with random RHS.'])
+                        'Going to retry with random RHS.']);
                     U = rand(size(U));
                 else
-                    error('MESS:mess_para','Could not compute initial projection shifts.')
+                    error('MESS:mess_para','Could not compute initial projection shifts.');
                 end
             end
             i = i + 1;
         end
     otherwise
-        error('MESS:shift_method','unknown shift computation method requested.')
+        error('MESS:shift_method','unknown shift computation method requested.');
 end
 
-p = cplxpair( p, 1000*eps(p(1)) ); % ensure that complex pairs are
-                                % actually paired. The tolerance is
-                                % increased by a factor of 10
-                                % compared to the default to ensure
-                                % this also works in Octave where
-                                % eig seems to be less accurate. 
+%% check computed shifts
+% check for banned shifts
+for j = 1 : size(opts.shifts.banned)
+    critical_shifts = abs(p - opts.shifts.banned(j)) ...
+        < opts.shifts.banned_tol * max(abs(p));
+    p(critical_shifts) = p(critical_shifts) ...
+        - opts.shifts.banned_tol * 2;
+    %     p = p(not(critical_shifts));
+end
+if isempty(p) % if all shifts banned try again with double amount
+    if opts.shifts.recursion_level < 2
+        warning('MESS:mess_para', 'All computed shifts are banned. Retrying');
+        num_desired = opts.shifts.num_desired;
+        opts.shifts.num_desired = num_desired * 2;
+        opts.shifts.recursion_level = opts.shifts.recursion_level + 1;
+        p = mess_para(eqn, opts, oper);
+        opts.shifts.num_desired = num_desired;
+        opts.shifts.recursion_level = opts.shifts.recursion_level - 1;
+    end
+end
+
+p = mess_make_proper(p);
+
 
 %% finalize usfs
 [eqn,opts, oper] = oper.mul_A_post(eqn, opts, oper);

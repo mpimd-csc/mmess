@@ -33,18 +33,18 @@ function [max_r,ind] = mess_s(p,set)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %   Exact copy from
 %   
 %   LYAPACK 1.0 (Thilo Penzl, Jan 1999)
 %
-if ~isnumeric(p)
-    error('MESS:error_arguments','p has to be a vector of numeric type')
+if not(isnumeric(p))
+    error('MESS:error_arguments','p has to be a vector of numeric type');
 end
-if ~isnumeric(set)
-    error('MESS:error_arguments','set has to be a vector of numeric type')
+if not(isnumeric(set))
+    error('MESS:error_arguments','set has to be a vector of numeric type');
 end
 max_r = -1;
 ind = 0;

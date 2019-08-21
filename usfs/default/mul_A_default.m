@@ -2,7 +2,8 @@ function C=mul_A_default(eqn, opts,opA,B,opB)
 
 % function C=mul_A_default(eqn,opts,opA,B,opB)
 %
-% This function returns C = A_*B, where matrix A_ given by structure eqn and input matrix B could be transposed. 
+% This function returns C = A_*B, where matrix A_ given by
+% structure eqn and input matrix B could be transposed.
 % Matrix A_ is assumed to be quadratic.
 %
 %   Inputs:
@@ -21,7 +22,8 @@ function C=mul_A_default(eqn, opts,opA,B,opB)
 %
 %   C = opA(A_)*opB(B)
 %
-% This function uses another default function size_default(eqn, opts) to obtain the number of rows of matrix A_ in structure eqn. 
+% This function uses another default function size_default(eqn,
+% opts) to obtain the number of rows of matrix A_ in structure eqn.
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -38,30 +40,30 @@ function C=mul_A_default(eqn, opts,opA,B,opB)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 
 %% check input parameters
-if (~ischar(opA) || ~ischar(opB))
+if (not(ischar(opA)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opA or opB is not a char');
 end
 
 opA = upper(opA); opB = upper(opB);
-if(~(opA=='N' || opA=='T'))
+if(not((opA=='N' || opA=='T')))
     error('MESS:error_arguments','opA is not ''N'' or ''T''');
 end
 
-if(~(opB=='N' || opB=='T'))
+if(not((opB=='N' || opB=='T')))
     error('MESS:error_arguments','opB is not ''N'' or ''T''');
 end
 
-if (~isnumeric(B)) || (~ismatrix(B))
+if (not(isnumeric(B))) || (not(ismatrix(B)))
     error('MESS:error_arguments','B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if(~isfield(eqn,'A_'))
+if(not(isfield(eqn,'A_')))
     error('MESS:error_arguments','field eqn.A_ is not defined');
 end
 
@@ -71,42 +73,46 @@ colA = rowA;
 %% perform multiplication
 switch opA
     
-    case 'N'
-        switch opB
-            
-            %implement operation A_*B
-            case 'N'
-                if(colA~=size(B,1))
-                    error('MESS:error_arguments','number of columns of A_ differs with number of rows of B');
-                end
-                C = eqn.A_*B;
-            
-            %implement operation A_*B'
-            case 'T'
-                if(colA~=size(B,2))
-                    error('MESS:error_arguments','number of columns of A_ differs with number of columns of B');
-                end
-                C = eqn.A_*B';
-        end
+  case 'N'
+    switch opB
         
-    case 'T'
-        switch opB
-            
-            %implement operation A_'*B
-            case 'N'
-                if(rowA~=size(B,1))
-                    error('MESS:error_arguments','number of rows of A_ differs with number rows of B');
-                end
-                C = eqn.A_'*B;
-                
-            %implement operatio A_'*B'
-            case 'T'
-                if(rowA~=size(B,2))
-                    error('MESS:error_arguments','number of rows of A_ differs with number of columns of B');
-                end
-                C = eqn.A_'*B';
+        %implement operation A_*B
+      case 'N'
+        if(colA~=size(B,1))
+            error('MESS:error_arguments',['number of columns of A_ ' ...
+                                'differs with number of rows of B']);
         end
+        C = eqn.A_*B;
         
+        %implement operation A_*B'
+      case 'T'
+        if(colA~=size(B,2))
+            error('MESS:error_arguments',['number of columns of A_ ' ...
+                                'differs with number of columns of B']);
+        end
+        C = eqn.A_*B';
+    end
+    
+  case 'T'
+    switch opB
+        
+        %implement operation A_'*B
+      case 'N'
+        if(rowA~=size(B,1))
+            error('MESS:error_arguments',['number of rows of A_ ' ...
+                                'differs with number rows of B']);
+        end
+        C = eqn.A_'*B;
+        
+        %implement operatio A_'*B'
+      case 'T'
+        if(rowA~=size(B,2))
+            error('MESS:error_arguments',['number of rows of A_ ' ...
+                                'differs with number of columns of B']);
+        end
+        C = eqn.A_'*B';
+    end
+    
 end
 
 end

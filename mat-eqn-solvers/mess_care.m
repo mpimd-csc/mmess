@@ -4,9 +4,9 @@ function [Z, D, K] = mess_care(A, B, C, S, E)
 % 
 %   [Z, K] = mess_care(A, B, C) solves the Riccati matrix equation:
 % 
-%        A*Z*Z' + Z*Z'*A' + - Z*Z'*C'*C*Z*Z' + B*B' = 0
+%        A'*Z*Z' + Z*Z'*A - Z*Z'*B*B'*Z*Z' + C'*C = 0
 %
-%        K is the feedback matrix K = Z*Z'*C'
+%        K is the feedback matrix K = B'*Z*Z'
 %        To omit the computation of Z use: 
 %   K = mess_care(A, B, C)
 %        To get only the solution factor Z as output use:
@@ -16,9 +16,9 @@ function [Z, D, K] = mess_care(A, B, C, S, E)
 %   [Z, K] = mess_care(A, B, C, [], E) solves the generalized Riccati 
 %        equation:
 % 
-%        A*Z*Z'*E' + E*Z*Z'*A' - E*Z*Z'*C'*C*Z*Z'*E' + B*B' = 0 
+%        A'*Z*Z'*E + E'*Z*Z'*A - E'*Z*Z'*B*B'*Z*Z'*E + C'*C = 0 
 %
-%        K is the feedback matrix K = E*Z*Z'*C'
+%        K is the feedback matrix K = B'*Z*Z'*E
 %        To omit the computation of Z use: 
 %   K = mess_care(A, B, C, [], E)
 %        To get only the solution factor Z as output use:
@@ -28,9 +28,9 @@ function [Z, D, K] = mess_care(A, B, C, S, E)
 %   [Z, D, K] = mess_care(A, B, C, S) solves the Riccati matrix equation
 %       in ZDZ^T formulation:
 % 
-%        A*Z*D*Z' + Z*D*Z'*A' + - Z*D*Z'*C'*S*C*Z*D*Z' + B*B' = 0
+%        A'*Z*D*Z' + Z*D*Z'*A - Z*D*Z'*B*B'*Z*D*Z' + C'*S*C = 0
 %
-%        K is the feedback matrix K = Z*D*Z'*C'
+%        K is the feedback matrix K = B'*Z*D*Z'
 %        To omit the computation of Z and D use: 
 %   K = mess_care(A, B, C, S)
 %        To get only the solution factors Z and D as output use:
@@ -40,9 +40,9 @@ function [Z, D, K] = mess_care(A, B, C, S, E)
 %   [Z, D, K] = mess_care(A, B, C, S, E) solves the generalized Riccati 
 %       equation in ZDZ^T formulation:
 % 
-%        A*Z*D*Z'*E' + E*Z*D*Z'*A' + - E*Z*D*Z'*C'*S*C*Z*D*Z'*E' + B*B' = 0 
+%        A'*Z*D*Z'*E + E'*Z*D*Z'*A - E'*Z*D*Z'*B*B'*Z*D*Z'*E + C'*S*C = 0 
 %
-%        K is the feedback matrix K = E*Z*D*Z'*C'
+%        K is the feedback matrix K = B'*Z*D*Z'*E
 %        To omit the computation of Z and D use: 
 %   K = mess_care(A, B, C, S, E)
 %        To get only the solution factor Z as output use:
@@ -66,7 +66,7 @@ function [Z, D, K] = mess_care(A, B, C, S, E)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %% Usfs
@@ -80,39 +80,40 @@ if ni < 4
 end
 % ADI
 opts.adi.info = 0;
-opts.adi.restol = 1e-12;
-opts.adi.rctol = 0;
+opts.adi.res_tol = 1e-12;
+opts.adi.rel_diff_tol = 0;
 opts.adi.maxiter = 100;
-opts.adi.shifts.kp = 50;
-opts.adi.shifts.km = 25;
+n = size(A, 1);
+opts.shifts.num_Ritz = min(n - 2, 50);
+opts.shifts.num_hRitz = min(n - 2, 25);
 if no == 1
-    opts.adi.shifts.method = 'heur';
-    opts.adi.shifts.l0 = 25;
+    opts.shifts.method = 'heur';
+    opts.shifts.num_desired = min(floor((opts.shifts.num_Ritz + opts.shifts.num_hRitz) / 2) - 2, 25);
 else
-    opts.adi.shifts.method = 'projection';
-    opts.adi.shifts.l0 = max(6, size(B, 2));
+    opts.shifts.method = 'projection';
+    opts.shifts.num_desired = max(6, size(B, 2));
 end
-opts.adi.norm = 'fro';
-opts.adi.computeZ = 1;
+opts.norm = 'fro';
+opts.adi.compute_sol_fac = 1;
 opts.adi.accumulateK = 1;
 opts.adi.accumulateDeltaK = 0;
 if no == 1
-    opts.adi.computeZ = 0;
+    opts.adi.compute_sol_fac = 0;
 else
-    opts.adi.computeZ = 1;
+    opts.adi.compute_sol_fac = 1;
 end
 % NM
 opts.nm.maxiter = 25;
-opts.nm.restol = 1e-11;
-opts.nm.rctol = 0;
+opts.nm.res_tol = 1e-11;
+opts.nm.rel_diff_tol = 0;
 opts.nm.info = 0;
 opts.nm.accumulateRes = 1;
 opts.nm.linesearch = 1;
-opts.nm.norm = 'fro';
+opts.norm = 'fro';
 
 
 %% Equation type
-eqn.type = 'N';
+eqn.type = 'T';
 if isempty(S)
     eqn.A_ = A;
     eqn.B = B;
@@ -126,7 +127,7 @@ if isempty(S)
         error('MESS:notimplemented', 'Wrong number of input arguments');
     end
 else % ZDZ^T case 
-    opts.nm.LDL_T = 1;
+    opts.LDL_T = 1;
     eqn.A_ = A;
     eqn.B = B;
     eqn.C = C;
@@ -142,18 +143,21 @@ else % ZDZ^T case
 end
 
 %% Solve Equation
-[Z, out] = mess_lrnm(eqn, opts, oper);
+out = mess_lrnm(eqn, opts, oper);
 
 %% Prepare output
-if (~isempty(S)) && (no >= 2) % ZDZ^T case 
-    D = kron(diag(out.nm.D), out.nm.S);
+if no >= 2 
+    Z = out.Z;
+end
+if (not(isempty(S))) && (no >= 2) % ZDZ^T case 
+    D = out.D;
     if no == 3
-       K = out.nm.K; 
+       K = out.K; 
     end
 elseif no == 2
-    D = out.nm.K;
+    D = out.K;
 elseif no == 1
-    Z = out.nm.K;
+    Z = out.K;
 end
 
 
@@ -164,4 +168,4 @@ end
 % Projection shifts require Z to be computed. They use the last columns in
 % Z to project down the matrices.
 % With only one output argument, Z should not be computed 
-% (opts.adi.computeZ = 0). Thus, we use heurisic shifts. 
+% (opts.adi.compute_sol_fac = 0). Thus, we use heurisic shifts. 

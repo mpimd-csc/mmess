@@ -1,4 +1,4 @@
-function X=sol_A_so_2(eqn, opts,opA,B,opB)
+function X=sol_A_so_2(eqn, opts,opA,B,opB)%#ok<INUSL>
 
 % function X=sol_A_so_2(eqn, opts,opA,B,opB)
 %
@@ -69,30 +69,30 @@ function X=sol_A_so_2(eqn, opts,opA,B,opB)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %% check input parameters
-if (~ischar(opA) || ~ischar(opB))
+if (not(ischar(opA)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opA or opB is not a char');
 end
 
 opA = upper(opA); opB = upper(opB);
-if(~(opA=='N' || opA=='T'))
+if(not((opA=='N' || opA=='T')))
     error('MESS:error_arguments','opA is not ''N'' or ''T''');
 end
 
-if(~(opB=='N' || opB=='T'))
+if(not((opB=='N' || opB=='T')))
     error('MESS:error_arguments','opB is not ''N'' or ''T''');
 end
 
-if (~isnumeric(B)) || (~ismatrix(B))
+if (not(isnumeric(B))) || (not(ismatrix(B)))
     error('MESS:error_arguments','B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if(~isfield(eqn,'K_') || ~isnumeric(eqn.K_) || ~isfield(eqn,'M_') ...
-        || ~isnumeric(eqn.M_))
+if(not(isfield(eqn,'K_')) || not(isnumeric(eqn.K_)) || not(isfield(eqn,'M_')) ...
+        || not(isnumeric(eqn.M_)))
     error('MESS:error_arguments',...
         'A consists of K and M, field eqn.K_ or eqn.M_ is not defined');
 end

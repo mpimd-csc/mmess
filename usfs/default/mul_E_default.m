@@ -2,8 +2,9 @@ function C=mul_E_default(eqn, opts,opE,B,opB)
 
 % function C=mul_E_default(eqn, opts,opE,B,opB)
 %
-% This function returns C = E_*B, where matrix E_ given by struture eqn and input matrix B could be transposed.
-% Matrix E_ is assumed to be quadratic and has the same size as A_ in structure eqn.
+% This function returns C = E_*B, where matrix E_ given by struture
+% eqn and input matrix B could be transposed. Matrix E_ is assumed
+% to be quadratic and has the same size as A_ in structure eqn.
 %
 %   Inputs:
 %
@@ -21,8 +22,10 @@ function C=mul_E_default(eqn, opts,opE,B,opB)
 %
 %   C = opE(E_)*opB(B)
 %
-% This function uses another default function size_default(eqn,opts) to obtain the number of rows of matrix A_ in structure eqn,
-% that should be equal to the number of rows of the matrix E_.
+% This function uses another default function
+% size_default(eqn,opts) to obtain the number of rows of matrix A_
+% in structure eqn, that should be equal to the number of rows of
+% the matrix E_.
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -39,29 +42,29 @@ function C=mul_E_default(eqn, opts,opE,B,opB)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
 %% check input parameters
-if (~ischar(opE) || ~ischar(opB))
+if (not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opE or opB is not a char');
 end
 
 opE = upper(opE); opB = upper(opB);
-if(~(opE=='N' || opE=='T'))
+if(not((opE=='N' || opE=='T')))
     error('MESS:error_arguments','opE is not ''N'' or ''T''');
 end
 
-if(~(opB=='N' || opB=='T'))
+if(not((opB=='N' || opB=='T')))
     error('MESS:error_arguments','opB is not ''N'' or ''T''');
 end
 
-if (~isnumeric(B)) || (~ismatrix(B))
+if (not(isnumeric(B))) || (not(ismatrix(B)))
     error('MESS:error_arguments','B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if(~isfield(eqn,'E_'))
+if(not(isfield(eqn,'E_')))
     error('MESS:error_arguments','field eqn.E_ is not defined');
 end
 
@@ -77,14 +80,18 @@ switch opE
             %implement operation E_*B
             case 'N'
                 if(colE~=size(B,1))
-                    error('MESS:error_arguments','number of columns of E_ differs with number of rows of B');
+                    error('MESS:error_arguments',['number of columns ' ...
+                                        'of E_ differs with number ' ...
+                                        'of rows of B']);
                 end
                 C = eqn.E_*B;
             
             %implement operation E_*B'
             case 'T'
                 if(colE~=size(B,2))
-                    error('MESS:error_arguments','number of columns of E_ differs with number of columns of B');
+                    error('MESS:error_arguments',['number of columns ' ...
+                                        'of E_ differs with number ' ...
+                                        'of columns of B']);
                 end
                 C = eqn.E_*B';
         end
@@ -95,14 +102,18 @@ switch opE
             %implement operation E_'*B
             case 'N'
                 if(rowE~=size(B,1))
-                    error('MESS:error_arguments','number of rows of E_ differs with number of rows of B');
+                    error('MESS:error_arguments',['number of rows ' ...
+                                        'of E_ differs with number ' ...
+                                        'of rows of B']);
                 end
                 C = eqn.E_'*B;
                 
             %implement operation E_'*B'
             case 'T'
                 if(rowE~=size(B,2))
-                    error('MESS:error_arguments','number of rows of E_ differs with number of columns of B');
+                    error('MESS:error_arguments',['number of rows ' ...
+                                        'of E_ differs with number ' ...
+                                        'of columns of B']);
                 end
                 C = eqn.E_'*B';
         end

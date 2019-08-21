@@ -1,4 +1,56 @@
+function [Ar, Br, Cr] = bt_mor_rail_tol(k,tol,shifts,istest)
+% bt_mor_FDM_tol computes a reduced order model via the standard Lyapunov
+% balanced truncation (see e.g. [1]) for a finite difference discretized  
+% convection diffusion model on the unit square described in [2].
 %
+% Usage: 
+%    [Ar, Br, Cr] = bt_mor_rail_tol(k,tol,max_ord,n0,test)
+%
+% Inputs
+% 
+% k           refinement level of the model to use 
+%             (1-4, i.e. 1357-79841Dofs)
+%             (optinal, defaults to 1)
+%
+% tol         truncation tolerance for the Hankel singular values
+%             (optional; defalts to 1e-6)
+% 
+% shifts      shift selection used in ADI;  possible choices: 
+%               'heur'       :   Penzl heuristic shifts
+%               'projection' :   projection shifts using the last columns
+%                                of the solution factor
+%             (optional, defaults to 'heur')
+% 
+% istest      flag to determine whether this demo runs as a CI test or 
+%             interactive demo 
+%             (optional, defaults to 0, i.e. interactive demo)
+%
+% Outputs
+%
+% Ar, Br, Cr  the reduced orde system matrices.
+%
+% References
+% [1] A. C. Antoulas, Approximation of Large-Scale Dynamical Systems, Vol.
+%     6 of Adv. Des. Control, SIAM Publications, Philadelphia, PA, 2005.
+%     https://doi.org/10.1137/1.9780898718713.  
+%
+% [2] J. Saak, Effiziente numerische Lösung eines
+%     Optimalsteuerungsproblems für die Abkühlung von Stahlprofilen,
+%     Diplomarbeit, Fachbereich 3/Mathematik und Informatik, Universität
+%     Bremen, D-28334 Bremen (Sep. 2003).   
+%
+% [3] P. Benner, J. Saak, A semi-discretized heat transfer model for
+%     optimal cooling of steel profiles, in: P. Benner, V. Mehrmann, D.
+%     Sorensen (Eds.), Dimension Reduction of Large-Scale Systems, Vol. 45
+%     of Lect. Notes Comput. Sci. Eng., Springer-Verlag, Berlin/Heidelberg,
+%     Germany, 2005, pp. 353–356. https://doi.org/10.1007/3-540-27909-1_19. 
+%
+% [4] J. Saak, Efficient numerical solution of large scale algebraic matrix
+%     equations in PDE control and model order reduction, Dissertation,
+%     Technische Universität Chemnitz, Chemnitz, Germany (Jul. 2009).  
+%     URL http://nbn-resolving.de/urn:nbn:de:bsz:ch1-200901642
+%
+%%
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -15,150 +67,125 @@
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
-clear all, close all
-
-% Computes a standard ROM by solving the generalized lyapunov equations and
-% regaining the observability Gramian for the equivalent standard state
-% space system from that for the generalized system by multiplication with
-% M (see line 58).
+narginchk(0,4);
 
 % BT tolerance and maximum order for the ROM
-tol=1e-5;
-max_ord=250;
+if nargin<1, k=3; end
+if nargin<2, tol=1e-5; end
+if nargin<3, shifts='heur'; end
+if nargin<4, istest=0; end
+
 
 % ADI tolerance and maximum iteration number
-opts.adi.maxiter = 100;
-opts.adi.restol = 1e-10;
-opts.adi.rctol = 1e-16;
-opts.adi.info = 1;
-opts.adi.norm = 'fro';
+opts.adi.maxiter = 100;              % maximum iteration number
+opts.adi.res_tol = 1e-10;            % residual norm tolerance
+opts.adi.rel_diff_tol = 1e-16;       % relative change norm tolerance
+opts.adi.info = 1;                   % turn output on
+opts.norm = 'fro';                   % Frobenius norm for stopping criteria
 
 oper = operatormanager('default');
-%%
-% Problem data
-k=3;
-[eqn.E_,eqn.A_,eqn.B,eqn.C]=getrail(k);
-n=oper.size(eqn, opts);
-eqn.haveE=1;
-%%
-%Heuristic Parameters via basic Arnoldi 
-opts.adi.shifts.l0=25;
-opts.adi.shifts.kp=50;
-opts.adi.shifts.km=25;
-opts.adi.shifts.method='Wachspress';
-opts.adi.shifts.wachspress='T';
-opts.adi.shifts.b0=ones(n,1);
+%%  Problem data
+eqn = getrail(k);                           % load system matrices
+n = oper.size(eqn, opts);                   % number of equations
+%% Shift Parameters
+opts.shifts.num_desired=25;                 % number of parameters for 
+                                            % 'heur' and 'wachspress'
+switch lower(shifts)
+    case 'heur'
+        opts.shifts.method = 'heur';
+        opts.shifts.num_Ritz=50;            % number Arnoldi steps with F
+        opts.shifts.num_hRitz=25;           % Arnoldi steps with inv(F)
+        opts.shifts.b0=ones(n,1);           % initial guess for Arnoldi
+    case 'wachspress'
+        opts.shifts.method = 'wachspress';
+        opts.shifts.wachspress = 'T';
+    case 'projection'
+        opts.shifts.method = 'projection';
+end   
 
-opts.adi.shifts.p=mess_para(eqn,opts,oper);
+opts.shifts.p=mess_para(eqn,opts,oper); % compute shift parameters
 
-disp(opts.adi.shifts.p);
-%%
-eqn.type='N';
-tic
-[ZB,out]=mess_lradi(eqn,opts,oper);
-toc
-
-figure(1)
-semilogy(out.res);
-title('AXM^T + MXA^T = -BB^T');
-xlabel('number of iterations');
-ylabel('normalized residual norm');
-pause(1)
-
-disp('size ZB:')
-size(ZB)
-
-%%
-eqn.type = 'T';
-tic
-[ZC,out]=mess_lradi(eqn,opts,oper);
-toc
-
-figure(2)
-semilogy(out.res);
-title('A^TXM + M^TXA = -C^TC');
-xlabel('number of iterations');
-ylabel('normalized residual norm');
-pause(1);
-
-disp('size ZC:')
-size(ZC)
-
-%%
-
-[U0,S0,V0] = svd(ZC'*(eqn.E_*ZB),0);
-s0=diag(S0);
-ks=length(s0);
-k=ks;
-while (sum(s0(k-1:ks))<tol/2)&&(k>2)
-  k=k-1; 
+disp('(Initial) ADI shifts');
+disp(opts.shifts.p);
+%% Compute low-rank factor of Controllability Gramian
+eqn.type='N';                       % Lyapunov eq. for Controllability Gram.
+tic;
+outB = mess_lradi(eqn, opts, oper); % run ADI iteration
+toc;
+% residual norm plot
+if istest
+    if min(outB.res)>=opts.adi.res_tol
+        error('MESS:TEST:accuracy','unexpectedly innacurate result');
+    end
+else
+    figure(1);
+    semilogy(outB.res);
+    title('AXM^T + MXA^T = -BB^T');
+    xlabel('number of iterations');
+    ylabel('normalized residual norm');
+    pause(1);
 end
-k0=k
+disp('size outB.Z:');
+disp(size(outB.Z));
 
-r= min([max_ord k0]);
-fprintf(1,'reduced system order: %d\n\n',r);
-
-sigma_0=diag(S0);
-sigma_r=diag(S0(1:r,1:r));
-
-VB = ZB*V0(:,1:r);
-VC = ZC*U0(:,1:r);
-
-SB = VB*diag(ones(r,1)./sqrt(sigma_r));
-SC = VC*diag(ones(r,1)./sqrt(sigma_r));
-
-Ar = SC'*(eqn.A_*SB);
-Br = SC'*eqn.B;
-Cr = eqn.C*SB;
-Er = eye(r);
-
-
-%%
-nsample = 100;
-w = logspace(-3, 4, nsample);
-
-tr1=zeros(1,nsample); tr2=tr1; err=tr1; relerr=tr1;
-fprintf(['Computing TFMs of original and reduced order systems and ' ...
-         'MOR errors\n']) 
-
-for k=1:nsample
-  fprintf('\r Step %3d / %3d',k,nsample)
-  g1 = eqn.C / (1i*w(k)*eqn.E_ - eqn.A_) * eqn.B;
-  g2 = Cr / (1i*w(k)*Er - Ar) * Br;
-  err(k) = max(svds(g1-g2));
-  tr1(k) = max(svds(g1));
-  tr2(k) = max(svds(g2));
-  relerr(k)=err(k)/tr1(k);
+%% Compute low-rank factor of Observatibility Gramian
+eqn.type = 'T';                     % Lyapunov eq. for Observability Gram.
+tic;
+outC = mess_lradi(eqn, opts, oper); % run ADI iteration
+toc;
+% residual norm plot
+if istest
+    if min(outC.res)>=opts.adi.res_tol
+        error('MESS:TEST:accuracy','unexpectedly innacurate result');
+    end
+else
+    figure(2);
+    semilogy(outC.res);
+    title('A^TXM + M^TXA = -C^TC');
+    xlabel('number of iterations');
+    ylabel('normalized residual norm');
+    pause(1);
 end
-fprintf('\n\n');
+disp('size outC.Z:');
+disp(size(outC.Z));
 
-figure(3)
-subplot(2,1,1); 
-loglog(w, err); 
-title('absolute model reduction error')
-xlabel('\omega')
-ylabel('\sigma_{max}(G(j\omega) - G_r(j\omega))')
-subplot(2,1,2); 
-loglog(w, relerr);
-title('relative model reduction error')
-xlabel('\omega')
-ylabel(['\sigma_{max}(G(j\omega) - G_r(j\omega)) / \' ...
-        'sigma_{max}(G(j\omega))'])
+%% Compute reduced system matrices
+% Perform Square Root Method  
+opts.srm.tol=tol;
+opts.srm.max_ord=n;
+opts.srm.info=2;
+[TL,TR,hsv] = mess_square_root_method(eqn,opts,oper,outB.Z,outC.Z);
+%% compute ROM matrices
+Ar = TL'*oper.mul_A(eqn, opts, 'N', TR, 'N');
+Br = TL'*eqn.B;
+Cr = eqn.C*TR;
+Er = eye(size(Ar,1));
+%% Plots
+ROM.A=Ar;
+ROM.E=Er;
+ROM.B=Br;
+ROM.C=Cr;
+if istest
+    opts.sigma.info=0;
+else
+    opts.sigma.info=2;
+end
 
-figure(4)
-loglog(w, tr1)
-hold on
-loglog(w, tr2, 'r--')
-legend({'original system','reduced system'})
-xlabel('\omega')
-ylabel('\sigma_{max}(G(j\omega))')
-title('Transfer functions of original and reduced systems')
-hold off
+opts.sigma.fmin=-3;
+opts.sigma.fmax=4;
 
-figure(5)
-semilogy(diag(S0));
-title('Computed Hankel singular values');
-xlabel('index');
-ylabel('magnitude');
+err = mess_sigma_plot(eqn, opts, oper, ROM);
+
+if istest
+    if max(err)>tol
+        error('MESS:TEST:accuracy','unexpectedly innacurate result');
+    end
+else
+    figure;
+    semilogy(hsv);
+    title('Computed Hankel singular values');
+    xlabel('index');
+    ylabel('magnitude');
+end

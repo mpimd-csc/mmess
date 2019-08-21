@@ -52,7 +52,7 @@ for k = 1:n
     else
        big = A(k,k);  m = k;
     end
-    if big < 0, I = k; break, end
+    if big < 0, I = k; break; end
 
 %   Symmetric row/column permutations.
     if m ~= k
@@ -70,7 +70,7 @@ for k = 1:n
     end
 
     A(k,k) = sqrt( A(k,k) );
-    if k == n, break, end
+    if k == n, break; end
     A(k, k+1:n) = A(k, k+1:n) / A(k,k);
 
 %   For simplicity update the whole of the remaining submatrix (rather
@@ -83,7 +83,7 @@ end
 
 R = triu(A);
 if I > 0
-    if nargout < 3, error('Matrix must be positive semidefinite.'), end
+    if nargout < 3, error('Matrix must be positive semidefinite.'); end
     R = R(1:I-1,:);
 end
 

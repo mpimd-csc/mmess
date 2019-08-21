@@ -1,6 +1,17 @@
-function [p, AV] = mess_projection_shifts(eqn, opts, oper, V, W, p_old)
-
-%% Check data
+function p = mess_projection_shifts(eqn, opts, oper, V, W, p_old)
+%%function p = mess_projection_shifts(eqn, opts, oper, V, W, p_old)
+%
+% Internal helper function for usfs and mess_get_projection
+% shifts. Computes new shifts by implicitly or explicitly
+% projecting the E and A matrices to the span of V. Note that the
+% width of V must be a multiple of that of W, V is the newest part
+% of the ADI solution factor Z and the old shift
+% vector p_old passed in must have this multiple as its length.
+%
+% Whether or not the projection is computed implicitly from the
+% contents of V or by aexplicit projetion, is determined via
+% opts.shifts.implicitVtAV. 
+%
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -17,26 +28,30 @@ function [p, AV] = mess_projection_shifts(eqn, opts, oper, V, W, p_old)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
-if ~isfield(opts, 'adi') || ~isstruct(opts.adi)
-    error('MESS:control_data', 'ADI control structure opts.ADI missing.');
-end
-if ~isfield(opts.adi,'shifts') || ~isstruct(opts.adi.shifts)
+
+%% Check data
+if not(isfield(opts,'shifts')) || not(isstruct(opts.shifts))
     warning('MESS:control_data',['shift parameter control structure missing.', ...
-        'Switching to default l0 = 25.']);
-    opts.adi.shifts.l0 = 25;
+        'Switching to default num_desired = 25.']);
+    opts.shifts.num_desired = 25;
 else
-    if ~isfield(opts.adi.shifts,'l0')||~isnumeric(opts.adi.shifts.l0)
+    if not(isfield(opts.shifts,'num_desired')) || ...
+       not(isnumeric(opts.shifts.num_desired))
         warning('MESS:control_data',...
-            ['Missing or Corrupted opts.adi.shifts.l0 field.', ...
+            ['Missing or Corrupted opts.shifts.num_desired field.', ...
             'Switching to default: 25']);
-        opts.adi.shifts.l0 = 25;
+        opts.shifts.num_desired = 25;
+    end
+    if not(isfield(opts.shifts,'implicitVtAV'))|| isempty(opts.shifts.implicitVtAV)
+        opts.shifts.implicitVtAV = true;
     end
 end
-if ~isfield(eqn, 'haveE'), eqn.haveE = 0; end
-[eqn, erg] = oper.init(eqn, opts, 'A', 'E');
-if ~erg
+
+if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
+[result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A', 'E');
+if not(result)
     error('MESS:control_data', 'system data is not completely defined or corrupted');
 end
 
@@ -57,19 +72,19 @@ if L > 0 && any(p_old)
     Ir = eye(nW);
     iC = find(imag(p_old));
     iCh = iC(1 : 2 : end);
-    iR = find(~imag(p_old));
+    iR = find(not(imag(p_old)));
     isubdiag = [iR; iCh];
     h = 1;
 end
 
 %% Process previous shifts
-if L > 0 && any(p_old)
+if L > 0 && any(p_old) && opts.shifts.implicitVtAV
     while h <= L
         is = isubdiag(isubdiag < h);
         K(1, h) = 1;
         if isreal(p_old(h)) % real shift
             T(h, h) = p_old(h);
-            if ~isempty(is)
+            if not(isempty(is))
                 T(h, is) = 2 * p_old(h) * ones(1, length(is));
             end
             D = blkdiag(D, sqrt(-2 * p_old(h)));
@@ -80,7 +95,7 @@ if L > 0 && any(p_old)
             beta=rpc / ipc;
             T(h : h + 1, h : h + 1) = [3 * rpc, -ipc;
                                        ipc * (1 + 4 * beta^2), -rpc];
-            if ~isempty(is)
+            if not(isempty(is))
                 T(h : h+  1, is)=[4 * rpc; 
                                   4 * rpc * beta] * ones(1, length(is));
             end
@@ -90,9 +105,19 @@ if L > 0 && any(p_old)
     end
     S = kron(D \ (T * D), Ir); 
     K = kron(K * D, Ir); 
-else
+else  % explicit AV (unless already computed in mess_para)
     S = 0;
     K = 1;
+    if any(p_old) 
+        W = oper.mul_A(eqn, opts, eqn.type, V, 'N'); 
+        if isfield(eqn, 'haveUV') && eqn.haveUV
+            if eqn.type == 'T'
+                W = W + eqn.V * (eqn.U' * V);
+            else
+                W = W + eqn.U * (eqn.V' * V);
+            end
+       end
+    end
 end
 
 %% Compute projection matrices
@@ -102,6 +127,7 @@ r = sum(s > eps * s(1) * nV);
 st = v( : , 1 : r) * diag(1 ./ s(1 : r).^.5);
 U = V * st;
 
+
 %% Project V and compute Ritz values
 if eqn.haveE
     E_V = oper.mul_E(eqn, opts, eqn.type, V, 'N');
@@ -109,27 +135,10 @@ if eqn.haveE
     H = U' * W * K * st + G * (S * st);
     G = G * st;
     p = eig(H, G);
-%     AV = W * K + E_V * S;
 else
-    H = U' * (W * K) * st + U' * (V * S * st);
+    H = U' * (W * K) * st + U'*( V *( S * st ));
     p = eig(H);
-%     AV = W * K + V * S;
 end
-
-%% Test
-% if isfield(eqn, 'haveUV') && eqn.haveUV && (L > 0)
-%     if eqn.type == 'T'
-%         AV_ = oper.mul_A(eqn, opts, 'T', V, 'N') - eqn.V * (eqn.U' * V);
-%     else
-%         AV_ = oper.mul_A(eqn, opts, 'N', V, 'N') - eqn.U * (eqn.V' * V);
-%     end
-% else
-%     AV_ = oper.mul_A(eqn, opts, eqn.type, V, 'N');
-% end
-% err = norm(AV - AV_);
-% if ((err / norm(AV)) > 1e-10) && (err > 1e-10)
-%     err
-% end
 
 %% Postprocess new shifts
 
@@ -139,13 +148,13 @@ p = p(isfinite(p));
 p = p(abs(p) > eps);
 % make all shifts stable
 p(real(p) > 0) = -p(real(p) > 0);
-if ~isempty(p)
+if not(isempty(p))
     % remove small imaginary pertubations
     small_imag = find(abs(imag(p)) ./ abs(p) < 1e-12);
     p(small_imag) = real(p(small_imag));
     % sort (s.t. compl. pairs are together)
     p=sort(p);
-    l0 = min(opts.adi.shifts.l0, length(p));
-%     l0 = min(min(nW, opts.adi.shifts.l0), length(p));
-    p = mess_mnmx(p, l0);
+    if length(p) > opts.shifts.num_desired
+        p = mess_mnmx(p, opts.shifts.num_desired);
+    end
 end

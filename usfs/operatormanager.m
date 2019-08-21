@@ -1,31 +1,15 @@
-function op =operatormanager(name,flagmulA,flagpremulA,flagpostmulA,flagmulE,flagpremulE,flagpostmulE,flagsize,flagpresize,flagpostsize,flagsolA,flagpresolA,flagpostsolA,flagsolE,flagpresolE,flagpostsolE,flagsolApE,flagpresolApE,flagpostsolApE,flagmulApE,flagpremulApE,flagpostmulApE,flaginit,flaginitres,flagpreinitres,flagpostinitres,flaggetritzvals)
-%% function op = operatormanager(name,flagAadd,flagEadd,flagmulA,flagmulE,
-%% flagsizeA,flagsizeE,flagsolA,flagsolE,flagsolApE,flagmulApE,flaginit,flaginitres)
-%
-%  Generate structure with function handles.
+function oper = operatormanager(name)
+%% function oper = operatormanager(name)
 %
 %  Return structure with functionhandles that are implemented in folder
-%  name. The flags are optional and specifiy the function handles to
-%  return.
+%  name. An error is thrown if the necessary function handles are not
+%  given.
 %
-%  Calling sequence:
+% Input
+%   name            name of folder containing the function handle set
 %
-%    op = operatormanager(name)
-%    op = operatormanager(name,flagAadd,flagEadd,flagmulA,flagmulE,
-%       flagsizeA,flagsizeE,flagsolA,flagsolE,flagsolApE,flagmulApE)
-%
-%  Input:
-%
-%    name    name of folder which contains implemented function handles
-%    
-%    flag*   numeric (optional) flag~=0 op contain * function handle 
-%                               flag==0 op does not contain addition 
-%                               function handle
-%
-%  Output:
-%
-%    op      struct contains function handles     
-%
+% Output
+%	op              struct, containing the function handles
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -42,81 +26,83 @@ function op =operatormanager(name,flagmulA,flagpremulA,flagpostmulA,flagmulE,fla
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016
+%               2009-2019
 %
 
-%% check inputarguments
-na = nargin;
-if(~(na==1 || na==27))
-   error('MESS:control_data','Number of input arguments has to be 1 or 27.'); 
-end
+%% Check input parameter.
+assert(ischar(name), ...
+    'MESS:control_data', ...
+    'input argument name has to be a string.');
 
-if(~ischar(name))
-   error('MESS:control_data','input argument name has to be a string.');
-end
+%% Check path to function handles.
+[fhpath, ~, ~] = fileparts(mfilename('fullpath'));
+fhpath         = strcat(fhpath, '/', name);
 
-if(na==27&&~(isnumeric(flagmulA)&&isnumeric(flagpremulA)&&isnumeric(flagpostmulA)...
-   &&isnumeric(flagmulE)&&isnumeric(flagpremulE)&&isnumeric(flagpostmulE)&&...
-   isnumeric(flagsize)&&isnumeric(flagpresize)&&isnumeric(flagpostsize)...
-   &&isnumeric(flagsolA)&&isnumeric(flagpresolA)&&isnumeric(flagpostsolA)...
-   &&isnumeric(flagsolE)&&isnumeric(flagpresolE)&&isnumeric(flagpostsolE)...
-   &&isnumeric(flagsolApE)&&isnumeric(flagpresolApE)&&isnumeric(flagpostsolApE)...
-   &&isnumeric(flagmulApE)&&isnumeric(flagpremulApE)&&isnumeric(flagpostmulApE)...
-   &&isnumeric(flaginit)&&isnumeric(flaginitres)&&isnumeric(flagpreinitres)...
-   &&isnumeric(flagpostinitres)&&isnumeric(flaggetritzvals)));
-error('MESS:control_data','flag has to be numeric');
-end
+assert(any(exist(fhpath, 'dir')), ...
+    'MESS:control_data', ...
+    'theres no folder %s', fhpath);
 
-%% check path to function handles
-pa = which('operatormanager');
-pa = strrep(pa,'operatormanager.m','');
-pa = strcat(pa,name);
-
-%% check whether the directory exists
-if(~(exist(pa,'dir')))
-    error('MESS:control_data','theres no folder %s',path);
-end
-
-%% check function in path
-funcs = {'mul_A','mul_A_pre','mul_A_post','mul_E','mul_E_pre','mul_E_post',...
-    'size','size_pre','size_post','sol_A','sol_A_pre','sol_A_post',...
-    'sol_E','sol_E_pre','sol_E_post','sol_ApE','sol_ApE_pre','sol_ApE_post'...
-    ,'mul_ApE','mul_ApE_pre','mul_ApE_post','init','init_res','init_res_pre','init_res_post'};
+%% Check for minimal function handle set.
+funcs = { ...
+    'mul_A', ...
+    'mul_E', ...
+    'size', ...
+    'sol_A', ...
+    'sol_E', ...
+    'sol_ApE', ...
+    'mul_ApE', ...
+    'init', ...
+    'init_res'};
 for f = funcs
-   if(~exist(strcat(pa,'/',f{1},'_',name,'.m'),'file'))
-    error('MESS:check_data','file %s does not exist',strcat(f{1},'_',name,'.m'));
-   end
+    assert(any(exist(strcat(fhpath, '/', f{1}, '_', name, '.m'), ...
+        'file')), ...
+        'MESS:check_data', ...
+        'file %s does not exist', strcat(f{1}, '_', name, '.m'));
 end
 
-%% create op struct
-op.name = name;
-if(na==1)
+% Additional function check for state space transformed systems.
+if any(strfind(name, 'state_space_transformed'))
+    funcs = {'dss_to_ss', 'ss_to_dss'};
     for f = funcs
-       eval(sprintf('op.%s = @%s;',f{1},strcat(f{1},'_',name))); 
-    end
-    % add optional ritz value function.
-    if(exist(strcat(pa,'/','get_ritz_vals_',name,'.m'),'file'))
-      eval(sprintf('op.%s = @%s;','get_ritz_vals',strcat('get_ritz_vals_',name)));
-    end
-end
-
-%here it is necessary that order is not changed!
-if(na==27)
-    flags=[flagmulA,flagpremulA,flagpostmulA,flagmulE,flagpremulE,flagpostmulE,...
-        flagsize,flagpresize,flagpostsize,flagsolA,flagpresolA,flagpostsolA,...
-        flagsolE,flagpresolE,flagpostsolE,flagsolApE,flagpresolApE,flagpostsolApE,...
-        flagmulApE,flagpremulApE,flagpostmulApE,flaginit,...
-        flaginitres,flagpreinitres,flagpostinitres,flaggetritzvals];
-    i=1;
-    for f = funcs
-       if(flags(i))
-       eval(sprintf('op.%s = @%s;',f{1},strcat(f{1},'_',name)));
-       end
-       i = i+1;
-    end
-    if(flags(i))
-       eval(sprintf('op.%s = @%s;','get_ritz_vals',strcat('get_ritz_vals_',name)));
+        assert(any(exist(strcat(fhpath, '/', f{1}, '_', name, '.m'), ...
+            'file')), ...
+            'MESS:check_data', ...
+            'file %s does not exist', strcat(f{1}, '_', name, '.m'));
     end
 end
 
+%% Create oper structure.
+oper.name = name;
+
+funcs = dir(fhpath);
+
+for k = 3:length(funcs)
+    % Sort out functions with wrong naming scheme and not M-files.
+    [~,~,file_ext] = fileparts(funcs(k).name);
+    if not(any(strfind(funcs(k).name, name))) || not(strcmp(file_ext,'.m'))
+        continue;
+    end
+    
+    fname = strrep(funcs(k).name, strcat('_', name, '.m'), '');
+    
+    % Put the existing function into the function handle set.
+    eval(sprintf('oper.%s = @%s;', ...
+        fname, ...
+        strrep(funcs(k).name, '.m', '')));
+    
+    % Replace non-existing functions by do-nothing function.
+    if not((any(strfind(fname, '_pre'))) ...
+            || any(strfind(fname, '_post')) ...
+            || exist(strcat(fhpath, '/',fname, '_pre_', name, '.m'), ...
+            'file'))
+        eval(sprintf('oper.%s = @mess_do_nothing;', ...
+            strcat(fname, '_pre')));
+    end
+    if not((any(strfind(fname, '_pre'))) ...
+            || any(strfind(fname, '_post')) ...
+            || exist(strcat(fhpath, '/',fname, '_post_', name, '.m'), ...
+            'file'))
+        eval(sprintf('oper.%s = @mess_do_nothing;', ...
+            strcat(fname, '_post')));
+    end
 end
