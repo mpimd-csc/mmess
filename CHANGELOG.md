@@ -19,7 +19,7 @@
   * initial feedbacks for the Riccati solvers are now stored in the
     `opts` structure for the method rather than `eqn` 
 - The projection shift routine uses the flag `opts.shifts.implicitVtAV`. 
-  Default is `true`. If set to `false` $A\cdot{}V$ is computed explicitly.
+  Default is `true`. If set to `false` A*V is computed explicitly.
 - several consistency updates and bug fixes
 - general code cleaning and pretty printing
 - redesign of the demos
