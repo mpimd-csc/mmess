@@ -97,6 +97,7 @@ if isempty(E)
     eqn.E_ = speye(size(A,1));
 else
     eqn.E_ = E;
+    eqn.haveE = 1;
 end
 eqn.B = B;
 eqn.C = C;
@@ -255,10 +256,10 @@ end
 if opts.irka.info>1
     ROM = struct('A',Ar,'E',Er,'B',Br,'C',Cr,'D',[]);
     if not(isfield(opts,'sigma')), opts.sigma = struct(); end
-    if not(isfield(opts.sigma,'fmin')), opts.sigma.fmin=-8; end
-    if not(isfield(opts.sigma,'fmax')), opts.sigma.fmax=8; end
+    if not(isfield(opts.sigma,'fmin')), opts.sigma.fmin=-6; end
+    if not(isfield(opts.sigma,'fmax')), opts.sigma.fmax=6; end
     if not(isfield(opts.sigma,'nsample')), opts.sigma.nsample=100; end
-    mess_sigma_plot(eqn,opts,oper,ROM);
+    [~, ~, eqn, opts, oper] = mess_sigma_plot(eqn,opts,oper,ROM);
 end
 
 [eqn, opts, oper] = oper.mul_A_post(eqn, opts, oper);
