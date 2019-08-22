@@ -61,7 +61,9 @@ narginchk(0,2);
 if nargin==0
     version = 'FO';
 end
-
+if nargin<2
+    istest=0;
+end
 format longe;
 % set operation
 oper = operatormanager('so_2');

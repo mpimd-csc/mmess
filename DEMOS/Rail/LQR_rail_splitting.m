@@ -1,4 +1,4 @@
-function out =  LQR_rail_splitting(k, exp_action, method)
+function out =  LQR_rail_splitting(k, exp_action, method,istest)
 
 % Computes the optimal feedback via low-rank splitting schemes [1, 2] for 
 % the selective cooling of Steel profiles application described in [3,4,5].
@@ -79,7 +79,9 @@ if nargin < 3
     method.additive = false;
     method.symmetric = false;
 end
-
+if nargin < 4
+    istest = 0;
+end
 %% Equation parameters
 % Default (E, A, B, C) system
 oper = operatormanager('default');
@@ -115,7 +117,9 @@ tic;
 toc;
 
 %%
-t = opts.splitting.time_steps;
-figure;
-plot(t, out.ms);
-title('Ranks of approximations over time');
+if not(istest)
+    t = opts.splitting.time_steps;
+    figure;
+    plot(t, out.ms);
+    title('Ranks of approximations over time');
+end

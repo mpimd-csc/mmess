@@ -14,7 +14,7 @@
 %  constant terms, and low-rank solutions.  
 % 
 %  Using the user supplied functions (usfs) framework,
-%  M-M.E.S.S. enables the solution of no equations for several
+%  M-M.E.S.S. enables the solution of equations for several
 %  system structures. While implicitly M-M.E.S.S. always treats a
 %  system 
 %      . 

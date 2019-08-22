@@ -13,7 +13,7 @@
 - Patrick Kuerschner (RADI)
 - Jens Saak          (improved MOR functions, test framework, unit and
                       system tests, code and toolbox restructuring)
-- Tony Stillfjord    (splitting schemes for Differential Riccati equations)
+- Tony Stillfjord    (splitting schemes for DREs)
 - Steffen Werner     (RADI, improved Operator Manager, 
                       improved Riccati iteration)
 

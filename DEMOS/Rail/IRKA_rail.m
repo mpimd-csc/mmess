@@ -64,14 +64,22 @@ end
 eqn = getrail(k);
 %%
 if nargin<2
-    opts.irka.r = 10; 
+    opts.irka.r = 20; 
 else
     opts.irka.r = r; 
+end
+
+if nargin < 3
+    istest = 0;
 end
 opts.irka.maxiter =20;
 opts.irka.shift_tol = 1e-3;
 opts.irka.h2_tol = 1e-6;
-opts.irka.info = 1;
+if istest
+    opts.irka.info = 1;
+else
+    opts.irka.info = 2;
+end
 opts.irka.init = 'logspace';
 
 [Er,Ar,Br,Cr] = mess_tangential_irka(eqn.E_,eqn.A_,eqn.B,eqn.C,opts);

@@ -66,10 +66,17 @@ if nargin<2
 else
     opts.irka.r = r; 
 end
+if nargin < 3
+    istest = 0;
+end
 opts.irka.maxiter =20;
 opts.irka.shift_tol = 1e-2;
 opts.irka.h2_tol = 1e-6;
-opts.irka.info = 1;
+if istest
+    opts.irka.info = 1;
+else
+    opts.irka.info = 2;
+end
 opts.irka.init = 'logspace';
 
 [Er,Ar,Br,Cr,~,~,~,~,~] = mess_tangential_irka(E,A,B,C,opts);
