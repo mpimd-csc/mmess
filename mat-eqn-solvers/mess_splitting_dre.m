@@ -431,7 +431,7 @@ if eqn.LTV
         oper.eval_matrix_functions(eqn, opts, oper, t(end) - s);
 else
     opts.splitting.eval_matrix_functions = @(eqn, opts, oper, s) ...
-        do_nothing(eqn, opts, oper);    
+        mess_do_nothing(eqn, opts, oper);    
 end
 
 

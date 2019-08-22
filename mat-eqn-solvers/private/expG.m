@@ -65,5 +65,5 @@ else
 
 	D = (I + D0*L0'*(LB*(DB*(LB'*L0))))\D0;
 end
-
+D = (D + D') / 2; % prevent symmetry loss due to unsymmetric formulas above
 end
