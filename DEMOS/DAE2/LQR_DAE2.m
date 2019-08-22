@@ -37,12 +37,11 @@ function LQR_DAE2(problem,lvl,re,istest)
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
 %               2009-2019
 %
-%%
-% set operation
+%% Set operations
 oper = operatormanager('dae_2');
 
-%%
-% Problem data
+%% Problem data
+if nargin<1, problem='stokes'; end
 if nargin<2, lvl=1; end
 if nargin<3, re=500; end
 if nargin<4, istest=0; end

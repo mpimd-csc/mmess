@@ -53,8 +53,8 @@ opts.shifts.info = 1;
 opts.norm = 'fro';
 
 oper = operatormanager('dae_2');
-%%
-% Problem data
+%% Problem data
+if nargin<1, problem='stokes'; end
 if nargin<2, lvl=1; end
 if nargin<3, re=500; end
 if nargin<4, istest=0; end
