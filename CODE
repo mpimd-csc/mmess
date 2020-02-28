@@ -1,7 +1,7 @@
 name: Matrix Equations Sparse Solvers
 shortname: M.E.S.S.
 version: 2.0.1
-release-date: 2020-02-??
+release-date: 2020-02-28
 id: 10.5281/zenodo.3606345
 id-type: doi
 authors: MESS developer community
