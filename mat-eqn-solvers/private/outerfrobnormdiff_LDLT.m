@@ -16,7 +16,7 @@ function s = outerfrobnormdiff_LDLT(L1, D1, L2, D2)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
     [L, D] = mess_column_compression([L1, L2], 'N', blkdiag(D1, -D2), ...

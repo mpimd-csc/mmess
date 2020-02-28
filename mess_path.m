@@ -18,7 +18,7 @@ function mypath = mess_path
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 mypath = genpath_exclude(pwd,{'.git','html'}); 
 addpath(mypath);

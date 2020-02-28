@@ -79,7 +79,7 @@ function [nrm,k,T,V,eqn,fopts,oper] = mess_res2_norms(Z,Rmul,eqn,fopts,oper,reso
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %% check Rmul
@@ -176,7 +176,7 @@ v2 = r./T(1,2);
 T(2,1)=T(1,2)';
 
 % store vectors in V if needed
-if res.orth || nargout==4
+if res.orth || nargout>3
     V = zeros(n,res.maxiter+1);
     V(:,1) = v1;
     V(:,2)=v2;
@@ -203,7 +203,7 @@ for k=2:res.maxiter-1
     T(k,k+1)=norm(r);
     v1=v2;
     v2 = r./T(k,k+1);
-    if res.orth || nargout==4
+    if res.orth || nargout>3
         V(:,k+1)=v2;
     end
     T(k+1,k)=T(k,k+1)';

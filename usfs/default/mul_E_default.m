@@ -42,7 +42,7 @@ function C=mul_E_default(eqn, opts,opE,B,opB)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %% check input parameters

@@ -55,7 +55,7 @@ function [Ar, Br, Cr] = bt_mor_FDM_tol(tol,n0,shifts,istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 %%
 narginchk(0,4);
@@ -120,7 +120,7 @@ toc;
 
 if istest
     if min(outB.res)>=opts.adi.res_tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result');
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result');
     end
 else
     figure(1);
@@ -143,7 +143,7 @@ toc;
 
 if istest
     if min(outC.res)>=opts.adi.res_tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result');
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result');
     end
 else
     figure(2);
@@ -179,11 +179,11 @@ ROM.B = Br;
 ROM.C = Cr;
 ROM.E = eye(size(ROM.A,1));
 
-err = mess_sigma_plot(eqn, opts, oper, ROM);
+out = mess_sigma_plot(eqn, opts, oper, ROM); err = out.err;
 
 if istest
     if max(err)>tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result');
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result');
     end
 else
     figure;

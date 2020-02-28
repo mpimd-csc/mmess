@@ -239,7 +239,7 @@ function [out, eqn, opts, oper] = mess_lrnm(eqn, opts, oper)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2019
+%               2009-2020
 %
 
 %%

@@ -32,7 +32,7 @@ function n = size_dae_3_so(eqn, opts, oper)%#ok<INUSD>
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 n= 2*size(eqn.M_,1);

@@ -1,5 +1,5 @@
-function [M,D,K]=triplechain_MSD(n1,alpha,beta,v)
-% function [M,D,K]=triplechain_MSD(n1,alpha,beta,v)
+function [M,E,K]=triplechain_MSD(n1,alpha,beta,v)
+% function [M,E,K]=triplechain_MSD(n1,alpha,beta,v)
 %
 % Generates mass spring damper system of three coupled mass sprong damper
 % chains as in [1,example 2] with proportional damping. The resulting
@@ -7,7 +7,7 @@ function [M,D,K]=triplechain_MSD(n1,alpha,beta,v)
 %
 % Output:
 %
-% M,D,K    mass , damping and stiffness matrices of the system
+% M,E,K    mass , damping and stiffness matrices of the system
 %
 % Input:
 %
@@ -21,6 +21,26 @@ function [M,D,K]=triplechain_MSD(n1,alpha,beta,v)
 %     linear vibrating systems using Lyapunov equations
 %     SIAM J. Matrix Anal. Appl. vol.31 no.1 pp 18-39
 %
+
+%
+% This program is free software; you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation; either version 2 of the License, or
+% (at your option) any later version.
+%
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License
+% along with this program; if not, see <http://www.gnu.org/licenses/>.
+%
+% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
+%               2009-2020
+%
+
+
 m1=1;
 m2=2;
 m3=3;
@@ -59,9 +79,10 @@ K(3*n1+1, 3*n1+1)=k1+k2+k3+k0;
 %fractional damping is used in [1] but needs full matrices due to the sqrtm
 %SM=spdiags([sqrt(m1)*ones(1,n1) sqrt(m2)*ones(1,n1) sqrt(m3)*ones(1,n1)...
 %  sqrt(m0)]',0,3*n1+1,3*n1+1);
-%D=.02*(2*SM*sqrtm((SM\K)/SM)*SM);
+%E=.02*(2*SM*sqrtm((SM\K)/SM)*SM);
 
-D=alpha*M+beta*K;
-D(1,1)=D(1,1)+v;
-D(n1,n1)=D(n1,n1)+v;
-D(2*n1+1,2*n1+1)=D(2*n1+1,2*n1+1)+v;
+% here we want internal damping based on sparse matrices via Rayleigh damping:
+E=alpha*M+beta*K;
+E(1,1)=E(1,1)+v;
+E(n1,n1)=E(n1,n1)+v;
+E(2*n1+1,2*n1+1)=E(2*n1+1,2*n1+1)+v;

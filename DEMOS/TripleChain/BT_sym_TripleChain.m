@@ -52,7 +52,7 @@ function BT_sym_TripleChain(version,istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %%
@@ -64,7 +64,7 @@ end
 if nargin<2
     istest=0;
 end
-format longe;
+format long e;
 % set operation
 oper = operatormanager('so_2');
 % Problem data
@@ -116,7 +116,7 @@ toc;
 
 if istest
     if min(outB.res)>=1e-1
-       error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
    end
 else
     figure(1);
@@ -183,10 +183,10 @@ if istest
 else
     opts.sigma.info = 2;
 end
-err = mess_sigma_plot(eqn, opts, oper, ROM);
+out = mess_sigma_plot(eqn, opts, oper, ROM); err = out.err;
 if istest
     if max(err) > 1000
-        error('MESS:TEST:accuracy','unexpectedly innacurate result %g', max(err));
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result %g', max(err));
     end
 end    
 

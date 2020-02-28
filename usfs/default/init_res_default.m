@@ -34,7 +34,7 @@ function [ RHS, res0, eqn, opts, oper ] = init_res_default( eqn, opts, oper, RHS
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2019
+%               2009-2020
 %
 if (not(isnumeric(RHS))) || (not(ismatrix(RHS)))
     error('MESS:error_arguments','RHS has to ba a matrix');

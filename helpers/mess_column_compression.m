@@ -1,6 +1,8 @@
 function [Z, D] = mess_column_compression(Z, opZ, D, tol, info)
 %	Computes a compressed representation of Z (and D).
 %
+%    [Z, D] = mess_column_compression(Z, opZ, D, tol, info)
+%
 %   Input
 %       Z             matrix of interest
 %
@@ -22,8 +24,8 @@ function [Z, D] = mess_column_compression(Z, opZ, D, tol, info)
 %
 %   Output
 %       Z             compressed low rank factor
-%       D             compressed low rank factor, empty of D was empty
-%                     before
+%       D             compressed low rank factor, empty if D was empty
+%                     on input
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -40,7 +42,7 @@ function [Z, D] = mess_column_compression(Z, opZ, D, tol, info)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2019
+%               2009-2020
 %
 
 % Check and assign input arguments.

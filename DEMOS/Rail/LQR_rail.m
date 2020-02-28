@@ -73,7 +73,7 @@ function LQR_rail(k,shifts,inexact,Galerkin,istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2019
+%               2009-2020
 %
 
 %%
@@ -148,7 +148,7 @@ toc;
 
 if istest
     if min(outnm.res)>=opts.nm.res_tol
-       error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
    end
 else
     figure(1);
@@ -190,7 +190,7 @@ toc;
 
 if istest
     if min(outnm.res)>=opts.nm.res_tol
-       error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
    end
 else
     figure(2);

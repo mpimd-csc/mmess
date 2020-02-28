@@ -31,7 +31,7 @@ function [ W, res0, eqn, opts, oper ] = init_res_dae_2( eqn, opts, oper, RHS)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %% check data

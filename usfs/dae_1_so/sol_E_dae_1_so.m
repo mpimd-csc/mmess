@@ -38,7 +38,7 @@ function X = sol_E_dae_1_so(eqn, opts, opE, B, opB)%#ok<INUSL>
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 if (not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opE or opB is not a char');

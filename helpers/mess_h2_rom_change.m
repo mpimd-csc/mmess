@@ -26,7 +26,7 @@ function [romchg] = mess_h2_rom_change(E1,A1,B1,C1,E2,A2,B2,C2,rel)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 if nargin<8, error('to few inputs'); end

@@ -70,7 +70,7 @@ function [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = get_ritz_vals_so_2(eqn, opts, 
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 if isfield(opts.shifts, 'method') && ...

@@ -41,7 +41,7 @@ function X = sol_A_dae_2(eqn, opts, opA, B, opB)%#ok<INUSL>
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 

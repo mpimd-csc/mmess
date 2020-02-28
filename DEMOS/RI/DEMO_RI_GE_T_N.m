@@ -25,7 +25,7 @@ function DEMO_RI_GE_T_N(istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 %%
 if nargin<1, istest=0; end
@@ -133,7 +133,7 @@ fprintf(1, 'Filter  -> set tolerance vs. real residual: %e | %e\n', ...
 
 if istest
     assert(relControl < opts.ri.res_tol, ...
-        'MESS:TEST:accuracy','unexpectedly innacurate result');
+        'MESS:TEST:accuracy','unexpectedly inaccurate result');
     assert(relFilter < opts.ri.res_tol, ...
-        'MESS:TEST:accuracy','unexpectedly innacurate result');
+        'MESS:TEST:accuracy','unexpectedly inaccurate result');
 end

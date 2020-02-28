@@ -124,7 +124,7 @@ function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %%
@@ -178,10 +178,10 @@ end
 if not(isfield(opts,'nm')) || not(isstruct(opts.nm))
     error('MESS:control_data','Newton control structure opts.nm missing.');
 end
-if isfield(opts.nm,'restol') && isnumeric(opts.nm.restol)
+if isfield(opts.nm,'res_tol') && isnumeric(opts.nm.res_tol)
     out.res = [];
 end
-if isfield(opts.nm,'rctol') && isnumeric(opts.nm.rctol)
+if isfield(opts.nm,'rel_diff_tol') && isnumeric(opts.nm.rel_diff_tol)
     out.rc = [];
 end
 
@@ -540,13 +540,13 @@ for j = 2 : length(times)
         out.Ls = [{L}, out.Ls];
         out.Ds = [{D}, out.Ds];
     elseif eqn.LTV % for LTV 2 step BDF save last L anyway
-        out.Ls = [{L}, out.Ls(1:opts.bdf.step-1)];
+        out.Ls = [{L}, out.Ls(1:min(step, length(out.Ls)))];
     end
     out.Ks = [{nmout.K}, out.Ks];
-    if isfield(opts.nm,'restol') && isnumeric(opts.nm.restol)
+    if isfield(opts.nm,'res_tol') && isnumeric(opts.nm.res_tol)
         out.res = [nmout.res(end), out.res];
     end
-    if isfield(opts.nm,'rctol') && isnumeric(opts.nm.rctol)
+    if isfield(opts.nm,'rel_diff_tol') && isnumeric(opts.nm.rel_diff_tol)
         out.rc = [nmout.rc(end), out.rc];
     end
 

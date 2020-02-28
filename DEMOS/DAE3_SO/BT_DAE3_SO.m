@@ -65,7 +65,7 @@ function BT_DAE3_SO(model, tol, max_ord, maxiter, istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %% Input checks
@@ -265,7 +265,7 @@ eqnu.haveE = 1;
 
 operu = operatormanager('so_1');
 
-err = mess_sigma_plot(eqnu, opts, operu, ROM);
+out = mess_sigma_plot(eqnu, opts, operu, ROM); err = out.err;
 
 toc;
 %% final accuracy test used in the continuous integration system or
@@ -274,7 +274,7 @@ if istest
     % the errors are not always perfect in this example, but let's see
     % wether they are "good enough"...
     if (max(err) > 50*tol)
-        error('MESS:TEST:accuracy', ['unexpectedly innacurate result ' ...
+        error('MESS:TEST:accuracy', ['unexpectedly inaccurate result ' ...
                             'for %s %g %d %d (%g)'], model, tol, ...
               max_ord, maxiter,max(err));  
     end

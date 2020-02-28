@@ -28,7 +28,7 @@ function [ eqn, opts, oper ] = mul_E_post_dae_2( eqn, opts, oper )
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
   if(not(isfield(eqn, 'Scount'))) || not(isnumeric(eqn.Scount))
       error('MESS:error_arguments', ['field eqn.Scount is not defined. Did ' ...

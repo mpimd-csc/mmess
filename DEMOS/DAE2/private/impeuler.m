@@ -33,7 +33,7 @@ function [y,yr] = impeuler(E,A,B,C,Er,Ar,Br,Cr,tau,tmin,tmax,x0,xr0,alpha)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
   [L,U,P,Q] = lu(E-tau*A);

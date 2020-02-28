@@ -20,7 +20,7 @@ function [rw, Hp, Hm, Vp, Vm] = get_ritz_vals_dae_1_so(eqn, opts, oper, U, W, p_
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2019
+%               2009-2020
 %
 
 % Input data not completely checked!

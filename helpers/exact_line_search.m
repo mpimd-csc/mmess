@@ -16,7 +16,7 @@ function [ lambda ] = exact_line_search( W_old, DeltaK_old, W, DeltaK, S, S_old 
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %% Check input

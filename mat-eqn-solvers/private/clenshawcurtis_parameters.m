@@ -21,7 +21,7 @@ function [x, w] = clenshawcurtis_parameters(a, b, N)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 h = b-a; % interval length

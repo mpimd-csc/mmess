@@ -40,7 +40,7 @@ function [ V, eqn, opts, oper ]=mess_solve_shifted_system(eqn, opts, oper, pc, W
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %% Check input

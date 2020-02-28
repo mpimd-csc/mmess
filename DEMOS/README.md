@@ -3,7 +3,7 @@ the starting point for your own scripts. The directories serve the
 following purposes.
 
 **models/**
-  Contains the actual benchmark model data or functios for their generation
+  Contains the actual benchmark model data or functions for their generation
 
 **FDM/ Rail/**
   Both demonstrate the use of the *"default"* operators, i.e.,
@@ -32,4 +32,3 @@ following purposes.
 
 **RI/**
   Demonstrates the solver for Riccati equations with indefinite quadratic terms.
-  

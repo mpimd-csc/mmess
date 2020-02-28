@@ -21,7 +21,7 @@ function LQR_DAE2_SO(istest)
 %     ARGESIM-Reports, Vienna Univ. of Technology, ARGE Simulation News,
 %     Vienna, Austria, 2009, pp. 1232–1243, iSBN/ISSN: 978-3-901608-35-3.   
 %
-% [3] P. Benner, P. Kürschner, J. Saak, Improved second-order balanced
+% [3] P. Benner, P. Kürschner, J. Saak, Improved second-order balanced
 %     truncation for symmetric systems, IFAC Proceedings Volumes (7th
 %     Vienna International Conference on Mathematical Modelling) 45 (2)
 %     (2012) 758–762. https://doi.org/10.3182/20120215-3-AT-3016.00134. 
@@ -47,7 +47,7 @@ function LQR_DAE2_SO(istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %%
@@ -121,7 +121,7 @@ toc;
 
 if istest
     if min(outnm.res)>=opts.nm.res_tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
     end
 else
     figure(1);
@@ -161,7 +161,7 @@ toc;
 
 if istest
     if min(outradi.res)>=opts.radi.res_tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
     end
 else
     figure(2);

@@ -28,7 +28,7 @@ function bt_mor_DAE1_tol(istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %%
@@ -81,7 +81,7 @@ toc;
 
 if istest
     if min(outB.res)>=opts.adi.res_tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
     end
 else
     figure;
@@ -103,7 +103,7 @@ toc;
 
 if istest
     if min(outC.res)>=opts.adi.res_tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
     end
 else
     figure;
@@ -161,11 +161,11 @@ end
 opts.sigma.fmin=-3;
 opts.sigma.fmax=4;
 
-err = mess_sigma_plot(eqn, opts, oper, ROM);
+out = mess_sigma_plot(eqn, opts, oper, ROM); err = out.err;
 
 if istest
     if max(err)>5e-3
-        error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
     end   
 else
     figure;

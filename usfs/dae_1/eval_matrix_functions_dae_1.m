@@ -16,7 +16,7 @@ function [ eqn, opts, oper ] = eval_matrix_functions_dae_1( eqn, opts, oper, t )
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2019
+%               2009-2020
 %
 if eqn.LTV
     
@@ -37,7 +37,7 @@ if eqn.LTV
     end
     if size(eqn.C, 2) > st
         eqn.C = eqn.C( : , 1 : st) - (eqn.C( : , st + 1 : end) ...
-            / eqn.A_(st +1 : end, st + 1 : end)') * eqn.A_(1 : st, st+1 : end)';
+            / eqn.A_(st +1 : end, st + 1 : end)) * eqn.A_(st+1 : end, 1 : st);
     end
 end
 end

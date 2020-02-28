@@ -35,7 +35,7 @@ function LQR_DAE2(problem,lvl,re,istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 %% Set operations
 oper = operatormanager('dae_2');
@@ -79,6 +79,8 @@ switch lower(problem)
     end
     eqn.C=mat.mat_v.C{lvl};
     eqn.st=mat.mat_mg.nv(lvl);
+    otherwise
+      error('input ''problem'' must be either ''NSE'' or ''Stokes''');
 end
 %%
 % First we run the Newton-ADI Method
@@ -156,7 +158,7 @@ outradi = mess_lrradi(eqn, opts, oper);
 toc;
 
 if not(istest)
-    figure(2);
+    figure();
     semilogy(outradi.res);
     title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
     xlabel('number of iterations');
@@ -165,10 +167,10 @@ end
 
 %% compare
 if istest
-    if min(outnm.res)>=opts.nm.res_tol, error('MESS:TEST:accuracy','unexpectedly innacurate result'); end
-    if min(outradi.res)>=opts.radi.res_tol, error('MESS:TEST:accuracy','unexpectedly innacurate result'); end
+    if min(outnm.res)>=opts.nm.res_tol, error('MESS:TEST:accuracy','unexpectedly inaccurate result'); end
+    if min(outradi.res)>=opts.radi.res_tol, error('MESS:TEST:accuracy','unexpectedly inaccurate result'); end
 else
-    figure(3);
+    figure();
     ls_nm=[outnm.adi.niter];
     ls_radi=1:outradi.niter;
     

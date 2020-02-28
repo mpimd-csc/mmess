@@ -28,7 +28,7 @@ function [ eqn, opts, oper ] = init_res_post_dae_2( eqn, opts, oper )
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 [eqn, opts, oper] = mul_Pi_post(eqn,opts,oper);

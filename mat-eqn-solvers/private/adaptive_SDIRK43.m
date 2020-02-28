@@ -21,7 +21,7 @@ function [out, eqn, opts, oper] = adaptive_SDIRK43(eqn, opts, oper, h, L, t0)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 [n, p] = size(L);
@@ -65,7 +65,8 @@ if hj == 0
 end
 j = 1; % internal step
 u = L;
-while t(end) + hj <= tend
+while t(end) + hj < tend + eps % without eps the break condition can miss
+    % the last iteration step which leaves the field 'out' unset
     K = zeros(n, 5*p);
     
     for i = 1:5

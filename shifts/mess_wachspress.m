@@ -36,7 +36,7 @@ function p=mess_wachspress(a,b,alpha,TOL)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2019
+%               2009-2020
 %
 if not(isnumeric(a)) || (length(a) ~= 1)
     error('MESS:error_arguments','a has to be a numeric value');

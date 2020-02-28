@@ -38,7 +38,7 @@ function [TL,TR,hsv,eqn,opts,oper] = mess_square_root_method(eqn,opts,oper,ZB,ZC
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %% Check necessary control data
 [result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
 [eqn, opts, oper] = oper.mul_E_pre(eqn,opts,oper);

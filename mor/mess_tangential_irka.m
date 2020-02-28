@@ -1,27 +1,41 @@
-function [Er,Ar,Br,Cr,S,b,c,V,W] = mess_tangential_irka(E,A,B,C,opts)
+function [Er,Ar,Br,Cr,S,b,c,V,W] = mess_tangential_irka(varargin)
 % The tangential IRKA method with automatic selection of initial shifts and
 % tangential directions.
 %
 % Call
-%   [Er,Ar,Br,Cr,S,c,V,W] = mess_tangential_irka(E,A,B,C,opts)
+%   [Er,Ar,Br,Cr,S,b,c,V,W] = mess_tangential_irka(E,A,B,C,opts)
+%
+%   [Er,Ar,Br,Cr,S,c,V,W] = mess_tangential_irka(M,E,K,B,Cp,Cv,opts)
+%
+%   [Er,Ar,Br,Cr,S,c,V,W] = mess_tangential_irka(eqn,opts,oper)
 %
 % Inputs:
 %  E,A,B,C    The mass, system, input and output matrices describing the
 %             original system
+%
+%  M,E,K,B,   The mass, system, input and output matrices describing the
+%  Cp,Cv      original system
+%
 %  opts       optional options structure with substructure 'irka'
 %             
 % Input fields in struct opts.irka:
 %
 %  r          The reduced order (optional, default: 25)
+%
 %  maxiter    maximum iteration number for the IRKA iteration 
 %             (optional, default: 25)
+%
 %  shift_tol  bound for the relative change of the IRKA shifts used as
 %             stopping criterion (optional, default: 1e-2)
+%
 %  h2_tol     bound for the relative change of the H2-norm compared to the
 %             last stable ROM (optional, default: 100*eps)
+%
 %  info       0  : silent (default)
 %             1  : print status info in each IRKA step
-%             >1 : compute and show the sigma and error plots
+%             >1 : compute and show the sigma and error plots 
+%                  (only for matrix inputs)
+%
 %  init       shift and direction initialization choice: (optional)
 %              'subspace' chooses a random subspace and uses it to compute
 %                         projected shifts and directions from the projected 
@@ -33,6 +47,7 @@ function [Er,Ar,Br,Cr,S,b,c,V,W] = mess_tangential_irka(E,A,B,C,opts)
 %              'rom'      an asymptotically stable initial guess for the
 %                         reduced model of order r is given in opts.irka.Er,
 %                         opts.irka.Ar, opts.irka.Br, opts.irka.Cr.
+%
 %  flipeig    flag marking whether or not to correct the signs of shifts in
 %             the wrong halfplane. (optional, default: 1)
 %
@@ -60,7 +75,44 @@ function [Er,Ar,Br,Cr,S,b,c,V,W] = mess_tangential_irka(E,A,B,C,opts)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
+
+
+%% Choose usfs set if matrices were passed in
+if nargin==5 % default first order system
+    oper = operatormanager('default');
+elseif nargin==7 % second order system
+    oper = operatormanager('so_2');
+end
+
+%% Fill equation structure if matrices were passed in
+if nargin==5
+    eqn.A_ = varargin{2};
+    if isempty(varargin{1})
+        eqn.E_ = speye(size(varargin{2},1));
+    else
+        eqn.E_ = varargin{1};
+        eqn.haveE = 1;
+    end
+    eqn.B = full(varargin{3});
+    eqn.C = full(varargin{4});
+    opts = varargin{5};
+elseif nargin==7
+    eqn.M_ = varargin{1};
+    eqn.E_ = varargin{2};
+    eqn.K_ = varargin{3};
+    eqn.haveE = 1;
+    eqn.B = [full(varargin{4}); zeros(size(varargin{4}))];
+    eqn.C = [full(varargin{5}), full(varargin{6})];
+    opts = varargin{7};
+end
+
+%%
+if nargin==3
+    eqn = varargin{1};
+    opts = varargin{2};
+    oper = varargin{3};
+end
 
 %% check field opts.irka
 if not(isfield(opts,'irka')) || not(isstruct(opts.irka))
@@ -89,27 +141,20 @@ if not(isfield(opts.irka,'flipeig')) || isempty(opts.irka.flipeig)
     opts.irka.flipeig = 1;
 end
 
-%% Choose usfs set
-oper = operatormanager('default');
-%% Fill equation structure
-eqn.A_ = A;
-if isempty(E)
-    eqn.E_ = speye(size(A,1));
-else
-    eqn.E_ = E;
-    eqn.haveE = 1;
-end
-eqn.B = B;
-eqn.C = C;
 %% Initialize used usfs
+[result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
+if not(result)
+    error('MESS:data', 'Equation  data seems to be incomplete');
+end
 [eqn, opts, oper] = oper.mul_A_pre(eqn, opts, oper);
 [eqn, opts, oper] = oper.mul_E_pre(eqn, opts, oper);
 [eqn, opts, oper] = oper.sol_ApE_pre(eqn, opts, oper);
 
 %% Initialization
 n = oper.size(eqn, opts);
-m = size(B,2);
-p = size(C,1);
+m = size(eqn.B,2);
+p = size(eqn.C,1);
+
 % new field saving whether the reduced order model is stable
 isstab = zeros(opts.irka.maxiter,1);
 
@@ -117,14 +162,14 @@ isstab = zeros(opts.irka.maxiter,1);
 initial_rom=0;
 switch opts.irka.init
     case 'subspace'
-        U = orth(randn(n,opts.irka.r));
+        U = get_initial_subspace(n,opts.irka.r);
         [T,S] = eig(full(U'*(oper.mul_A(eqn, opts, 'N', U, 'N'))),...
         full(U'*(oper.mul_E(eqn, opts, 'N', U, 'N'))));
         [ S, perm ] = mess_make_proper(diag(S));
         S = S';
         T = T(:,perm);
-        b = (T\U'*B).';
-        c = C*U*T;
+        b = (T\U'*eqn.B).';
+        c = eqn.C*U*T;
     case 'random'
         S = abs(randn(opts.irka.r,1));
         b = randn(m,opts.irka.r);
@@ -140,7 +185,8 @@ switch opts.irka.init
         Cr = opts.irka.Cr;
         [T,S] = eig(Ar,Er);
         if any(real(diag(S))>=0)
-            error('The initial guess for the reduced system must be asymptotically stable!');
+            error(['The initial guess for the reduced system must ' ...
+                   'be asymptotically stable!']); 
         end
         [ S, perm ] = mess_make_proper(diag(S));
         S = S';
@@ -165,8 +211,8 @@ for iter = 1:opts.irka.maxiter
     W = zeros(n,opts.irka.r);
     j = 1;
     while(j < opts.irka.r+1)        
-        x = oper.sol_ApE(eqn, opts,'N',S(j),'N',B*b(:,j),'N');
-        y = oper.sol_ApE(eqn, opts,'T',S(j),'T',C'*c(:,j),'N');
+        x = oper.sol_ApE(eqn, opts,'N',S(j),'N',eqn.B*b(:,j),'N');
+        y = oper.sol_ApE(eqn, opts,'T',S(j),'T',eqn.C'*c(:,j),'N');
         if(imag(S(j)) ~= 0)
             V(:,j:j+1) = [real(x) imag(x)];
             W(:,j:j+1) = [real(y) imag(y)];
@@ -190,8 +236,8 @@ for iter = 1:opts.irka.maxiter
     %% Compute new ROM
 
     Ar = W'*oper.mul_A(eqn, opts, 'N', V, 'N');
-    Br = W'*B;
-    Cr = C*V;    
+    Br = W'*eqn.B;
+    Cr = eqn.C*V;    
     Er = eye(opts.irka.r); %by construction   
     %% Update interpolation points/tangential directions
     [T,S] = eig(Ar);
@@ -204,8 +250,8 @@ for iter = 1:opts.irka.maxiter
     if not(isempty(wrongsign))
         if (opts.irka.flipeig)
             warning('MESS:IRKA:unstable',...
-            'IRKA step %d : %d non-stable reduced eigenvalues have been flipped.\n', ...
-            iter, length(wrongsign));
+            ['IRKA step %d : %d non-stable reduced eigenvalues have ' ...
+             'been flipped.\n'], iter, length(wrongsign)); 
         else
             warning('MESS:IRKA:unstable',...
             'IRKA step %d : %d non-stable reduced eigenvalues detected.\n', ...
@@ -239,8 +285,8 @@ for iter = 1:opts.irka.maxiter
     end
     %% If dsired print status message
     if opts.irka.info
-        fprintf('IRKA step %3d, rel. chg. shifts = %e , rel. H2-norm chg. ROM = %e\n',...
-            iter, shiftchg, romchg);
+        fprintf(['IRKA step %3d, rel. chg. shifts = %e , rel. H2-norm ' ...
+                 'chg. ROM = %e\n'], iter, shiftchg, romchg); 
     end
     
     %% evaluate stopping criteria
@@ -253,13 +299,14 @@ if ((iter == opts.irka.maxiter) && not((shiftchg < opts.irka.shift_tol)))
       'IRKA: No convergence in %d iterations.\n', opts.irka.maxiter);
 end
 
-if opts.irka.info>1
+if opts.irka.info>1 && nargin>3
     ROM = struct('A',Ar,'E',Er,'B',Br,'C',Cr,'D',[]);
     if not(isfield(opts,'sigma')), opts.sigma = struct(); end
     if not(isfield(opts.sigma,'fmin')), opts.sigma.fmin=-6; end
     if not(isfield(opts.sigma,'fmax')), opts.sigma.fmax=6; end
     if not(isfield(opts.sigma,'nsample')), opts.sigma.nsample=100; end
-    [~, ~, eqn, opts, oper] = mess_sigma_plot(eqn,opts,oper,ROM);
+    if not(isfield(opts.sigma,'info')), opts.sigma.info=opts.irka.info; end
+    [~, eqn, opts, oper] = mess_sigma_plot(eqn,opts,oper,ROM);
 end
 
 [eqn, opts, oper] = oper.mul_A_post(eqn, opts, oper);

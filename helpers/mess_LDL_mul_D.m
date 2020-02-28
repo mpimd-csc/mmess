@@ -31,7 +31,7 @@ function Y = mess_LDL_mul_D(eqn,D,X)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 % Do a consistency check on the inputs (no full check is performed though)

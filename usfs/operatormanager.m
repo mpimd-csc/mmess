@@ -9,7 +9,7 @@ function oper = operatormanager(name)
 %   name            name of folder containing the function handle set
 %
 % Output
-%	op              struct, containing the function handles
+%	oper            struct, containing the function handles
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@ function oper = operatormanager(name)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %% Check input parameter.

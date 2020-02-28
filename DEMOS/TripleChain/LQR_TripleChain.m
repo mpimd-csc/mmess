@@ -62,7 +62,7 @@ function LQR_TripleChain(n1, usfs, shifts, istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 %%
 narginchk(0,4);
@@ -154,7 +154,7 @@ toc;
 
 if istest
     if min(outnm.res)>=opts.nm.res_tol
-       error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
    end
 else
     figure(1);
@@ -192,7 +192,7 @@ toc;
 
 if istest
     if min(outradi.res)>=opts.radi.res_tol
-       error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
    end
 else
     figure(2);
@@ -210,7 +210,7 @@ if istest
     nrmNM=norm(outnm.K,'fro');
     if nrm/nrmNM >= 1e-9
         error('MESS:TEST:accuracy',...
-            'unexpectedly innacurate result: ||K_NM - K_RADI||_F / ||K_NM||_F=%g',nrm/nrmNM);
+            'unexpectedly inaccurate result: ||K_NM - K_RADI||_F / ||K_NM||_F=%g',nrm/nrmNM);
     end 
 else
     figure(3);

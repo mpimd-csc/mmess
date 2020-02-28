@@ -78,7 +78,7 @@ function Lyapunov_rail_LDL_ADI(k,shifts,implicit,istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 %%
 narginchk(0,4);
@@ -134,7 +134,7 @@ toc;
 
 if istest
     if min(out.res)>=opts.adi.res_tol
-       error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
    end
 else
     figure(1);
@@ -162,7 +162,7 @@ toc;
 
 if istest
     if min(out.res)>=opts.adi.res_tol
-       error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
    end
 else
     figure(2);
@@ -176,9 +176,19 @@ disp(size(out1.Z));
 
 %% Difference of Lyapunov solutions
 if k<3
-    err = norm(out.Z * out.Z' - out1.Z * out1.D * out1.Z') / norm(out.Z * out.Z');
-    fprintf('Relative difference between solution with and without LDL^T: \t %g\n', err);
-     if err>1e-14
-         error('MESS:TEST:accuracy','unexpectedly innacurate result');
-     end
+    % This is mainly for consistency checking on our continuous
+    % integration tests. 
+    % NEVER FORM SUCH DYADIC PRODUCTS IN PRODUCTION CODE!!!
+    err = norm(out.Z * out.Z' - out1.Z * out1.D * out1.Z') /...
+          norm(out.Z * out.Z');
+    fprintf(['Relative difference between solution with and without ' ...
+             'LDL^T: \t %g\n'], err); 
+    if err>1e-12
+        if implicit
+            shifts = [shifts '(implicit)'];
+        end
+        error('MESS:TEST:accuracy',...
+              ['unexpectedly inaccurate result relative difference',...
+               ' %e > 1e-12 in case %s'],err,shifts);
+    end
 end

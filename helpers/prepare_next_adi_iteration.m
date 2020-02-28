@@ -17,7 +17,7 @@ function [ opts, out, stop ] = prepare_next_adi_iteration( opts, out, res, rc, o
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %% Check input

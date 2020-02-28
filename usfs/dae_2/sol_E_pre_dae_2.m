@@ -28,7 +28,7 @@ function [ eqn, opts, oper ] = sol_E_pre_dae_2( eqn, opts, oper )
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
   alpha=-1/50;
   if isfield(eqn,'st')&&isnumeric(eqn.st)

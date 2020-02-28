@@ -24,7 +24,7 @@ function bt_mor_DAE2(problem,lvl,re,istest)
 % P. Benner, J. Saak, M. M. Uddin, Balancing based model reduction for 
 % structured index-2 unstable descriptor systems with application to flow
 % control, Numerical Algebra, Control and Optimization 6 (1) (2016) 1–20. 
-% https://doir.org/10.3934/naco.2016.6.1.
+% https://doi.org/10.3934/naco.2016.6.1.
 
 
 % This program is free software; you can redistribute it and/or modify
@@ -41,7 +41,7 @@ function bt_mor_DAE2(problem,lvl,re,istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2019
+%               2009-2020
 %
 
 % ADI tolerance and maximum iteration number
@@ -91,6 +91,8 @@ switch lower(problem)
         st=eqn.st;
         eqn.haveE=1;
         n=size(eqn.E_,1);
+    otherwise 
+        error('input ''problem'' must be either ''NSE'' or ''Stokes''');
 end
 %%
 eqn.type='N';
@@ -116,7 +118,7 @@ outB = mess_lradi(eqn,opts,oper);
 toc;
 
 if not(istest)
-    figure(1);
+    figure();
     semilogy(outB.res);
     title('AXM^T + MXA^T = -BB^T');
     xlabel('number of iterations');
@@ -156,7 +158,7 @@ outC = mess_lradi(eqn, opts, oper);
 toc;
 
 if not(istest)
-    figure(2);
+    figure();
     semilogy(outC.res);
     title('A^TXM + M^TXA = -C^TC');
     xlabel('number of iterations');
@@ -217,12 +219,12 @@ end
 opts.sigma.fmin=-3;
 opts.sigma.fmax=4;
 
-err = mess_sigma_plot(eqn, opts, oper, ROM);
+out = mess_sigma_plot(eqn, opts, oper, ROM); err = out.err;
 
 toc;
 %%  
 if istest
-    if max(err)>=opts.srm.tol, error('MESS:TEST:accuracy','unexpectedly innacurate result'); end
+    if max(err)>=opts.srm.tol, error('MESS:TEST:accuracy','unexpectedly inaccurate result'); end
 else
     figure;
     semilogy(hsv);

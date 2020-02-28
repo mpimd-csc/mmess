@@ -15,7 +15,7 @@ function [L, D, eqn, opts, oper] = expF(eqn, opts, oper, h, IQL, IQD, L0, D0, t0
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 if nargin < 9
     t0 = 0;

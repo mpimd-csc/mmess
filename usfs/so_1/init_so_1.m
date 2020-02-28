@@ -79,7 +79,7 @@ function [result, eqn, opts, oper] = init_so_1(eqn, opts, oper, flag1, flag2)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %start checking

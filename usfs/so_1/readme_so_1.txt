@@ -7,9 +7,9 @@ Mx" + D x' + K x 	= B u
 y 	= C x
 
 Transformed to First Order System
-|-K 0||x' |= |0  -K||x | + |0|
-|0  M||x''|  |-K -D||x'|   |B|u
-   E   x'  =  A      x   +  B
+|-K 0||x'|= |0  -K||x | + |0|
+|0  M||x"|  |-K -D||x'|   |B|u
+   E   x' =  A      x   +  B
 
 Attention the Matrix M D K are symmetric and quadratic.
 K is a fullrank Matrix.
@@ -19,3 +19,4 @@ eqn.M_
 eqn.K_
 eqn.E_
 eqn.B
+eqn.C

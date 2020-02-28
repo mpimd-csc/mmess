@@ -169,7 +169,7 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %  MMESS (Jens Saak, October 2013)
@@ -396,7 +396,7 @@ switch opts.shifts.method
             if isempty(p)
                 if  (i < 5)
                     warning('MESS:mess_para',['Could not compute initial projection shifts. ',...
-                        'Going to retry with random RHS.']);
+                        'Going to retry with random right hand side.']);
                     U = rand(size(U));
                 else
                     error('MESS:mess_para','Could not compute initial projection shifts.');

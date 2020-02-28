@@ -15,7 +15,7 @@ function [L, D] = expG(eqn, opts, oper, h, L0, D0, t0)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 L = L0;
 I = eye(size(D0));

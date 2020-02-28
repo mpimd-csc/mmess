@@ -25,8 +25,7 @@ function LQR_DAE3_SO(model,istest)
 %     Reduction of Large-Scale Systems, volume 45 of Lecture Notes in 
 %     Computational Science and Engineering, pages 83–115. Springer-Verlag, 
 %     Berlin/Heidelberg, 2005.
-%
-%
+
 % This program is free software; you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
 % the Free Software Foundation; either version 2 of the License, or
@@ -41,7 +40,7 @@ function LQR_DAE3_SO(model,istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 %%
 narginchk(0,2);
@@ -111,7 +110,7 @@ toc;
 
 if istest
     if min(outnm.res)>=opts.nm.res_tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
     end
 else
     figure(1);
@@ -154,7 +153,7 @@ toc;
 
 if istest
     if min(outradi.res)>=opts.radi.res_tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
     end
 else
     figure(2);

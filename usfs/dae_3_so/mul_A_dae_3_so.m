@@ -31,7 +31,7 @@ function C = mul_A_dae_3_so(eqn, opts, opA, B, opB)%#ok<INUSL>
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %     A = [ 0 I 0;

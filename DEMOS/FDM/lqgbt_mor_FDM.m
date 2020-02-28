@@ -123,7 +123,7 @@ toc;
 
 if istest
     if min(outC.res)>=opts.nm.res_tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result');
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result');
     end
 else
     figure(1);
@@ -145,7 +145,7 @@ toc;
 
 if istest
     if min(outB.res)>=opts.nm.res_tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result');
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result');
     end
 else
     figure(2);
@@ -182,7 +182,7 @@ ROM.B = Br;
 ROM.C = Cr;
 ROM.E = eye(size(ROM.A,1));
 
-err = mess_sigma_plot(eqn, opts, oper, ROM);
+out = mess_sigma_plot(eqn, opts, oper, ROM); err = out.err;
 
 %%
 % Report.
@@ -190,6 +190,6 @@ err = mess_sigma_plot(eqn, opts, oper, ROM);
 
 if istest
     if max(err)>=tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result');
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result');
     end    
 end

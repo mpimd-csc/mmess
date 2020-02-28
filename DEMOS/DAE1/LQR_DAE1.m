@@ -31,7 +31,7 @@ function LQR_DAE1(istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 %%
 if nargin<1, istest=0; end
@@ -91,7 +91,7 @@ outnm = mess_lrnm(eqn, opts, oper);
 toc;
 if istest
     if min(outnm.res)>=opts.nm.res_tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result in LRNM'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result in LRNM'); 
     end
 else
     figure(1);
@@ -128,7 +128,7 @@ toc;
 
 if istest
     if min(outradi.res)>=opts.radi.res_tol
-        error('MESS:TEST:accuracy','unexpectedly innacurate result in RADI'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result in RADI'); 
     end
 else
     figure(2);

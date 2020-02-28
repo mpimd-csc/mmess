@@ -30,7 +30,7 @@ function out = LQR_LTV_smallscale_BDF(k, istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 if nargin < 1
     k = 2;

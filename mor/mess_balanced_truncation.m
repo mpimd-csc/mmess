@@ -1,4 +1,5 @@
-function [Er,Ar,Br,Cr,outinfo]=mess_balanced_truncation(E,A,B,C,max_order,trunc_tol,info,opts)
+function [Er,Ar,Br,Cr,outinfo]=mess_balanced_truncation(E,A,B,C,max_order,trunc_tol,...
+                                                  info,opts)
 % Lyapunov Balanced truncation for descriptor systems with invertible E.
 %
 %  [Er,Ar,Br,Cr,outinfo]=mess_balanced_truncation(E,A,B,C,max_order,trunc_tol,info,opts)
@@ -47,7 +48,7 @@ function [Er,Ar,Br,Cr,outinfo]=mess_balanced_truncation(E,A,B,C,max_order,trunc_
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 narginchk(4,8);

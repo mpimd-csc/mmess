@@ -10,17 +10,19 @@ release will receive a DOI for proper citation there. The DOI for this
 version and a sample BibTeX entry can be found below.
 
 ##DOI
-The DOI for version 2.0 is
-[10.5281/zenodo.3368844](http://doi.org/10.5281/zenodo.3368844)
+The DOI for version 2.0.1 is
+[10.5281/zenodo.3606345](http://doi.org/10.5281/zenodo.3606345)
 
 ##BibTeX
-@Misc{SaaKB19-mmess-2.0,
+```
+@Misc{SaaKB19-mmess-2.0.1,
   key =			 {MMESS},
   author =		 {Saak, J. and K\"{o}hler, M. and Benner, P.},
-  title =		 {{M-M.E.S.S.}-2.0 -- The Matrix Equations Sparse
+  title =		 {{M-M.E.S.S.}-2.0.1 -- The Matrix Equations Sparse
                   Solvers library}, 
-  howpublished = {DOI:10.5281/zenodo.3368844},
-  month =		 aug,
-  year =		 2019,
+  howpublished = {DOI:10.5281/zenodo.3606345},
+  month =		 feb,
+  year =		 2020,
   note =		 {see also:\url{www.mpi-magdeburg.mpg.de/projects/mess}}
 }
+```

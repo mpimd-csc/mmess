@@ -33,7 +33,7 @@ function LQR_FDM_unstable(n0, n_unst, istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 narginchk(0,3);
 if nargin<1, n0 = 20; end
@@ -136,7 +136,7 @@ for type=['T','N']
     %% print output
     if istest
         if min(outB.res)>=opts.nm.res_tol
-            error('MESS:TEST:accuracy','unexpectedly innacurate result');
+            error('MESS:TEST:accuracy','unexpectedly inaccurate result');
         end
     else
         figure(1);
@@ -165,7 +165,7 @@ for type=['T','N']
     %% print output
     if istest
         if min(outB2.res)>=opts.nm.res_tol
-            error('MESS:TEST:accuracy','unexpectedly innacurate result');
+            error('MESS:TEST:accuracy','unexpectedly inaccurate result');
         end
     else
         figure(2);

@@ -27,7 +27,7 @@ function X = mess_dense_nm(A,B,C,E,X0,S)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2019
+%               2009-2020
 %
 
 % check for available Lyapunov solver

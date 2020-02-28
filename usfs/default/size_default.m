@@ -33,7 +33,7 @@ function n = size_default(eqn, opts, oper)%#ok<INUSD>
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 if(not(isfield(eqn,'A_')))
     error('MESS:error_arguments','field eqn.A_ is not defined');

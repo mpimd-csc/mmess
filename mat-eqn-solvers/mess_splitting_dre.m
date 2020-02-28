@@ -183,7 +183,7 @@
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 
 %%
@@ -261,6 +261,11 @@ if not(isfield(opts.splitting.quadrature, 'order'))
         end
     end
      
+end
+
+if strcmp(opts.splitting.quadrature.type, 'clenshawcurtis')
+    opts.splitting.quadrature.order = opts.splitting.quadrature.order ...
+        + rem(opts.splitting.quadrature.order, 2);
 end
 
 if strcmp(opts.splitting.quadrature.type, 'adaptive') && ...

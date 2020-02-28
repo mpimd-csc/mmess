@@ -16,7 +16,7 @@ function [ eqn, opts, oper ] = eval_matrix_functions_default( eqn, opts, oper, t
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2019
+%               2009-2020
 %
 if eqn.LTV
     

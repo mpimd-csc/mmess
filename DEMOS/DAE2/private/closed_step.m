@@ -1,5 +1,17 @@
 function closed_step(eqn,Ar,Br,Cr,problem,K,Kr,istest)
+% Simple validation of the DAE2 MESS closed loop example via a basic
+% step response computation 
 %
+%  ope_step(eqn,Ar,Br,Cr,problem, istest)
+%
+% INPUTS:
+% eqn          The original system equation structure
+% Ar,Br,Cr     The reduced order system matrices
+% K,Kr         full and reduced order feedback matrices
+% problem      'NSE' or 'Stokes' switching between the Stokes demo or the
+%               linearized Navier-Stokes-Equation
+% istest        flag to determine whether this demo runs as a CI test or 
+%               interactive demo
 
 %
 % This program is free software; you can redistribute it and/or modify
@@ -16,7 +28,7 @@ function closed_step(eqn,Ar,Br,Cr,problem,K,Kr,istest)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2019
+%               2009-2020
 %
 x0=zeros(size(eqn.A_,1),1);
 xr0=zeros(size(Ar,1),1);
@@ -39,13 +51,17 @@ relerr=abs(abserr./y);
  
 %%
 if istest
-    if max(abserr)>=1e-6
-        error('MESS:TEST:accuracy','unexpectedly innacurate result'); 
+    maerr = max(abserr);
+    if maerr>=1e-6
+        error('MESS:TEST:accuracy',['unexpectedly inaccurate result ' ...
+                            'in closed loop simulation. Maximum ' ...
+                            'absolute error %e > 1e-6'], maerr); 
+
     end
 else
     colors=['y','m','c','r','g','b','k'];
     
-    figure(20);
+    figure();
     hold on;
     for j=1:size(eqn.C,1)
         plot(T(range),y(j,range),colors(j));
@@ -63,10 +79,8 @@ else
             'out4','out4 red','out5','out5 red','Location','EastOutside');
     end
     hold off;
-    figure(20);
     %%
-    figure(21);
-    
+    figure();    
     for j=1:size(eqn.C,1)
         semilogy(T(range),abserr(j,range),colors(j));
         if j==1, hold on; end
@@ -82,7 +96,7 @@ else
     end
     hold off;    
     
-    figure(22);
+    figure();
     
     for j=1:size(eqn.C,1)
         semilogy(T(range),relerr(j,range),colors(j));

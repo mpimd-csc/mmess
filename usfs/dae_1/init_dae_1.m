@@ -42,7 +42,7 @@ function [result, eqn, opts, oper] = init_dae_1(eqn, opts, oper, flag1, flag2)
 % along with this program; if not, see <http://www.gnu.org/licenses/>.
 %
 % Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2019
+%               2009-2020
 %
 
 %% check input Paramters
@@ -134,7 +134,7 @@ if not(eqn.LTV)
     end
     if size(eqn.C, 2) > st
         eqn.C = eqn.C( : , 1 : st) - (eqn.C( : , st + 1 : end) ...
-            / eqn.A_(st +1 : end, st + 1 : end)') * eqn.A_(1 : st, st+1 : end)';
+            / eqn.A_(st +1 : end, st + 1 : end)) * eqn.A_(st+1 : end, 1 : st);
     end
 end
 end
