@@ -1,14 +1,14 @@
-function BT_TripleChain(version, istest)
+function BT_TripleChain(variant, istest)
 %
 % Computes a reduced order model (ROM) for the triple chain example of
-% Truhar and Veselic [1] via Balanced truncation, e.g. [2]. 
+% Truhar and Veselic [1] via Balanced truncation, e.g. [2].
 %
 % Usage:   BT_TripleChain(version, istest)
 %
-% Input: 
-% 
-% version  Decides the Balanced Truncation version to use.
-%          Possible values: 
+% Input:
+%
+% variant  Decides the Balanced Truncation version to use.
+%          Possible values:
 %          'FO' for reduction of the first order form to first order form
 %          'VV' velocity-velocity balancing of the second order form to
 %               second order form.
@@ -19,44 +19,33 @@ function BT_TripleChain(version, istest)
 %          'VP' velocity-position balancing of the second order form to
 %               second order form.
 %
-% istest      flag to determine whether this demo runs as a CI test or 
+% istest      flag to determine whether this demo runs as a CI test or
 %             interactive demo
 %             (optional, defaults to 0, i.e. interactive demo)
 %
 % References:
 %
-% [1] N. Truhar and K. Veselic, An efficient method for estimating the 
-%     optimal dampers’ viscosity for linear vibrating systems using 
+% [1] N. Truhar and K. Veselic, An efficient method for estimating the
+%     optimal dampers’ viscosity for linear vibrating systems using
 %     Lyapunov equation, SIAM J. Matrix Anal. Appl., 31 (2009), pp. 18–39.
 %
 % [2] A. C. Antoulas, Approximation of Large-Scale Dynamical Systems, Vol.
 %     6 of Adv. Des. Control, SIAM Publications, Philadelphia, PA, 2005.
-%     https://doi.org/10.1137/1.9780898718713. 
+%     https://doi.org/10.1137/1.9780898718713
+%
+
+%
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
 
 %%
-
-%
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
-%
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
-
 narginchk(0,2)
 
-if nargin==0, version = 'FO'; end
+if nargin==0, variant = 'FO'; end
 if nargin<2, istest=0; end
 
 format long e;
@@ -67,10 +56,10 @@ oper = operatormanager('so_1');
 
 n1=500;
 alpha=.002;
-beta=alpha;
+Beta=alpha;
 v=5;
 
-[eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,beta,v);
+[eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,Beta,v);
 
 s  = size(eqn.K_,1);
 O = zeros(s,1);
@@ -105,17 +94,17 @@ opts.shifts.method = 'projection';
 %%
 % Compute controlability Gramian factor
 eqn.type = 'N';
-tic;
+t_mess_lradi = tic;
 outB = mess_lradi(eqn, opts, oper);
-toc;
-
+t_elapsed1 = toc(t_mess_lradi);
+fprintf(1,'mess_lradi took %6.2f seconds \n',t_elapsed1);
 if istest
     if min(outB.res)>=1e-1
-       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result');
    end
 else
     figure(1);
-    semilogy(outB.res);
+    semilogy(outB.res,'linewidth',3);
     title('0= AXM^T + MXA^T -BB^T');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -128,17 +117,19 @@ disp(size(outB.Z));
 %%
 % Compute observability Gramian factor
 eqn.type = 'T';
-tic;
+t_mess_lradi =tic;
 outC = mess_lradi(eqn, opts, oper);
-toc;
+t_elapsed2 = toc(t_mess_lradi);
+fprintf(1,'mess_lradi took %6.2f seconds \n' ,t_elapsed2);
+
 
 if istest
     if min(outC.res)>=1e-1
-       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result');
    end
 else
     figure(2);
-    semilogy(outC.res);
+    semilogy(outC.res,'linewidth',3);
     title('0= A^TXM + M^TXA -C^TC');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -149,16 +140,16 @@ disp('size outC.Z:');
 disp(size(outC.Z));
 
 
-switch upper(version)
+switch upper(variant)
     case 'FO'
         %%
         % Compute first order ROM
         opts.srm.max_ord = 150;
         opts.srm.tol = eps;
         opts.srm.info = 1;
-        
+
         [TL,TR] = mess_square_root_method(eqn,opts,oper,outB.Z,outC.Z);
-        
+
         ROM.E = eye(size(TL,2));
         ROM.A = TL'*oper.mul_A(eqn, opts, 'N', TR, 'N');
         ROM.B = TL'*eqn.B;
@@ -171,19 +162,19 @@ switch upper(version)
         U = outB.Z(s+1:end,:);
         V = outC.Z(s+1:end,:);
     case 'PV'
-        U = outB.Z(s+1:end,:); 
+        U = outB.Z(s+1:end,:);
         V = outC.Z(1:s,:);
     case 'VP'
         U = outB.Z(1:s,:);
         V = outC.Z(s+1:end,:);
 end
-if not(strcmp(version,'FO'))
+if not(strcmp(variant,'FO'))
     max_ord = 75;
-    tol = eps; 
-    info = 1;
-    
-    [TL,TR] = square_root_method_SO(eqn.M_, max_ord, tol, info, U, V);
-    
+    tol = eps;
+    inform = 1;
+
+    [TL,TR] = square_root_method_SO(eqn.M_, max_ord, tol, inform, U, V);
+
     ROM.M = eye(size(TL,2));
     ROM.E = TL'*(eqn.E_*TR);
     ROM.K = TL'*(eqn.K_*TR);
@@ -193,10 +184,10 @@ if not(strcmp(version,'FO'))
 end
 %%
 % plot results
-opts.sigma.fmin = 1e-4; 
+opts.sigma.fmin = 1e-4;
 opts.sigma.fmax = 1e0;
-opts.sigma.nsample = 200;
-if istest 
+opts.sigma.nsample = 400;
+if istest
     opts.sigma.info = 1;
 else
     opts.sigma.info = 2;
@@ -206,5 +197,5 @@ if istest
     if max(err) > 1000
         error('MESS:TEST:accuracy','unexpectedly inaccurate result %g',max(err));
     end
-end    
+end
 

@@ -1,16 +1,17 @@
 function X = sol_E_dae_1_so(eqn, opts, opE, B, opB)%#ok<INUSL>
-%% function sol_E_dae_1_so solves opE(E)*X = opB(B) resp. performs X=opE(E)\opB(B)
+%% function sol_E_dae_1_so solves opE(E)*X = opB(B), i.e., 
+% it performs X=opE(E)\opB(B) with E as in (2) in help mess_usfs_dae1_so 
 %
 % Input:
-%   eqn     structure contains data for E (M_,K_)
+%   eqn     structure contains data for E (here M_,K_)
 %
-%   opts    struct contains parameters for the algorithm
+%   opts    struct contains parameters for all algorithms used
 %
 %   opE     character specifies the form of opE(E)
-%           opE = 'N' solves E *X = opB(B)
-%           opE = 'T' sovles E'*X = opB(B)
+%           opE = 'N' solves E  * X = opB(B)
+%           opE = 'T' sovles E' * X = opB(B)
 %
-%   B       p-x-q matrix 
+%   B       p-x-q matrix, the right hand side for the solve
 %
 %   opB     character specifies the form of opB(B)
 %           opB = 'N' solves opE(E)*X = B
@@ -18,28 +19,21 @@ function X = sol_E_dae_1_so(eqn, opts, opE, B, opB)%#ok<INUSL>
 %
 % Output
 %
-%   X       matrix fullfills equation opE(E)*X = opB(B)
+%   X       matrix fulfills equation opE(E)*X = opB(B)
 %
 %   uses no other dae_1_so function
-%% check input Paramters
+%
+% See also mess_usfs_dae_1_so
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
+%% check input Paramters
 if (not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opE or opB is not a char');
 end
@@ -64,114 +58,61 @@ elseif (not(isfield(eqn,'E_')) || not(isnumeric(eqn.E_)))
     error('MESS:equation_data',...
         'Empty or Corrupted field D detected in equation structure.')
 end
-if (not(isfield(eqn,'isSym')))
-    isSym = 0;
-else
-    isSym = eqn.isSym;
-end
+
 if not(isfield(eqn, 'nd'))    || not(isnumeric(eqn.nd))
     error('MESS:nd',...
     'Missing or Corrupted nd field detected in equation structure.');
 end
 
 nd = eqn.nd;
+one = 1 : nd;
+twob = (nd + 1) : (2 * nd);
+
 if(opB == 'N')
-    rowB = size(B, 1);
+    rows = size(B, 1);
 else
-    rowB = size(B, 2);
+    rows = size(B, 2);
 end
 
-if(2 * nd ~= rowB)
-    error('MESS:error_arguments', 'number of rows of B differs from number of cols of E ( 2 * nd)');
+if(2 * nd ~= rows)
+    error('MESS:error_arguments', ...
+        'number of rows of B differs from number of cols of E ( 2 * nd)');
 end
 
+if issymmetric(eqn.E_) && issymmetric(eqn.M_)
+    opE = 'N';   % let us avoid unnecessary transposition of matrices
+end
 
 %% solve
-if isSym
-    switch opE
-        
-        case 'N'
-            switch opB
-                
-                
-                case 'N'
-                    Db = eqn.E_(1 : nd, 1 : nd) * B(1:nd,:);
-                    X1 = eqn.M_(1 : nd, 1 : nd) \ (B(nd + 1 : end, :) - Db);
-                    X = [X1; B(1 : nd, :)];
-                    
-                    
-                case 'T'
-                    Db = eqn.E_ (1 : nd, 1 : nd) * B(:,1:nd)';
-                    X1 = eqn.M_(1 : nd, 1 : nd) \ (B( : , nd + 1 : end)' - Db);
-                    X = [X1; B( : , 1 : nd)'];
-            end
-            
-        case 'T'
-            switch opB
-                
-                
-                case 'N'
-                    X2 = eqn.M_(1 : nd, 1 : nd) \ B(1 : nd, :);
-                    X1 = eqn.E_(1 : nd, 1 : nd) * X2;
-                    X = [B(nd + 1 : end, :) - X1; X2];
-                    
-                    
-                case 'T'
-                    X2 = eqn.M_(1 : nd, 1 : nd) \ B( : , 1 : nd)';
-                    X1 = eqn.E_(1 : nd, 1 : nd) * X2;
-                    X = [B( : , nd + 1 : end)' - X1(1 : nd, :); X2];
-            end
-            
-    end
-else
-    switch opE
-        
-        case 'N'
-            switch opB
-                
-                
-                case 'N'
-                    Db = eqn.E_(1 : nd, 1 : nd) * B(1 : nd , : );
-                    X1 = eqn.M_(1 : nd, 1 : nd) \ (B(nd + 1 : end, :) - Db);
-                    X = [X1; B(1 : nd, :)];
-                    
-                    
-                case 'T'
-                    Db = eqn.E_ * B(:,1:nd)';
-                    X1 = eqn.M_(1 : nd, 1 : nd) \ (B( : , nd + 1 : end)' - Db);
-                    X = [X1; B( : , 1 : nd)'];
-            end
-            
-        case 'T'
-            switch opB
-                
-                
-                case 'N'
-                    X2 = eqn.M_(1 : nd, 1 : nd)' \ B(1 : nd, :);
-                    X1 = eqn.E_(1 : nd, 1: nd)' * X2;
-                    X = [B(nd + 1 : end, :) - X1(1 : nd, :); X2];
-                    
-                    
-                case 'T'
-                    X2 = eqn.M_(1 : nd, 1 : nd)' \ B( : , 1 : nd)';
-                    X1 = eqn.E_(1 : nd, 1 : nd)' * X2;
-                    X = [B( : , nd + 1 : end)' - X1(1 : nd, :); X2];
-            end
-            
-    end
-end
+switch opE
 
+    case 'N'
+        switch opB
+
+            case 'N'
+                X1 = eqn.M_(one, one) \ B(twob, :);
+                X = [X1; eqn.M_(one, one) \ ...
+                    (B(one , : ) - eqn.E_(one, one) * X1)];
+
+            case 'T'
+                X1 = eqn.M_(one, one) \ B(:, twob)';
+                X = [X1; eqn.M_(one, one) \ ...
+                    (B(:, one)' - eqn.E_(one, one) * X1)];
+
+        end
+
+    case 'T'
+        switch opB
+
+            case 'N'
+                X1 = eqn.M_(one, one)' \ B(twob, :);
+                X = [X1; eqn.M_(one, one)' \ ...
+                    (B(one , : ) - eqn.E_(one, one)' * X1)];
+
+            case 'T'
+                X1 = eqn.M_(one, one)' \ B(:, twob)';
+                X = [X1; eqn.M_(one, one)' \ ...
+                    (B(:, one)' - eqn.E_(one, one)' * X1)];
+
+        end
 end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%    Performace tests
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%   for opE = 'N' compared three variants:
-%   Var 1:
-%                 Db = eqn.E_ * [B; zeros(na - nd, cols)];
-%                 C1 = B(1 : nd, :) - Db(1 : nd, :);
-%   Var 2:
-%                 Db = eqn.E_ * [B(1 : nd, :); zeros(na, cols)];
-%                 C1 = B(1 : nd, :) - Db(1 : nd, :);
-%   Var 3:
-%                 C1 = B(1 : nd, :) - eqn.E_(1 : nd, 1 : nd) * B(1 : nd, :);
-%   --> Variant 1 fastest (Jul. 2013 MATLAB R2012a 7.14.0.739)

@@ -1,11 +1,11 @@
 function [ V, eqn, opts, oper ]=mess_solve_shifted_system_BDF(eqn, opts, oper, pc, W)
-% Solves (Ã + p*E)V = W for V, Ã = tau*beta*A - 0.5*E 
+% Solves (Ã + p*E)V = W for V, Ã = tau*beta*A - 0.5*E
 %  or Ã = tau*beta*A - 0.5*E - UV^T (BDF scheme)
 %
-%  Solves (Ã + p*E)V = W for V, Ã = tau*beta*A - 0.5*E 
+%  Solves (Ã + p*E)V = W for V, Ã = tau*beta*A - 0.5*E
 %   or Ã = tau*beta*A - 0.5*E - UV^T if eqn.type == 'N'
-%  Solves (Ã + p*E)^T*V = W for V, Ã = tau*beta*A - 0.5*E 
-%   or Ã = tau*beta*A - 0.5*E - UV^T if eqn.type == 'T' 
+%  Solves (Ã + p*E)^T*V = W for V, Ã = tau*beta*A - 0.5*E
+%   or Ã = tau*beta*A - 0.5*E - UV^T if eqn.type == 'T'
 %   (BDF scheme)
 %
 %
@@ -30,22 +30,13 @@ function [ V, eqn, opts, oper ]=mess_solve_shifted_system_BDF(eqn, opts, oper, p
 %  oper      contains function handles with operations for A and E
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% Check input
 

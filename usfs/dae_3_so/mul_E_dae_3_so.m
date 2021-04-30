@@ -21,22 +21,13 @@ function C = mul_E_dae_3_so(eqn, opts, opE, B, opB)%#ok<INUSL>
 %
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% check input Paramters
 if (not(ischar(opE)) || not(ischar(opB)))
@@ -69,75 +60,75 @@ np = size(eqn.G_,1);
 
 if (opB=='N' && (size(B,1)==(2*nv+np))) || (opB=='T' && (size(B,2)==(2*nv+np)))
     switch opE
-        
+
         case 'N'
             switch opB
-                
+
                 %implement operation E_*B
                 case 'N'
                     C = [B(1:nv,:);
                         eqn.M_*B(nv+1:2*nv,:)+eqn.alpha*eqn.G_'*B(2*nv+1:end,:);
                         eqn.alpha*eqn.G_*B(nv+1:2*nv,:)];
-                    
+
                     %implement operation E_*B'
                 case 'T'
                     C = [B(:,1:nv)';
                         eqn.M_*B(:,nv+1:2*nv)'+eqn.alpha*eqn.G_'*B(:,2*nv+1:end)';
                         eqn.alpha*eqn.G_*B(:,nv+1:2*nv)'];
-                    
+
             end
-            
+
         case 'T'
-            
+
             switch opB
                 %implement operation E_'*B
                 case 'N'
                     C = [B(1:nv,:);
                         eqn.M_'*B(nv+1:2*nv,:)+eqn.alpha*eqn.G_'*B(2*nv+1:end,:);
                         eqn.alpha*eqn.G_*B(nv+1:2*nv,:)];
-                    
+
                     %implement operation E_'*B'
                 case 'T'
                     C = [B(:,1:nv)';
                         eqn.M_'*B(:,nv+1:2*nv)'+eqn.alpha*eqn.G_'*B(:,2*nv+1:end)';
                         eqn.alpha*eqn.G_*B(:,nv+1:2*nv)'];
-                    
+
             end
-            
+
     end
-    
+
 elseif (opB=='N' && (size(B,1)==(2*nv))) || (opB=='T' && (size(B,2)==(2*nv)))
     switch opE
-        
+
         case 'N'
             switch opB
-                
+
                 %implement operation E_*B
                 case 'N'
                     C = [B(1:nv,:);
                         eqn.M_*B(nv+1:2*nv,:)];
-                    
+
                     %implement operation E_*B'
                 case 'T'
                     C = [B(:,1:nv)';
                         eqn.M_*B(:,nv+1:2*nv)'];
-                    
+
             end
-            
+
         case 'T'
-            
+
             switch opB
                 %implement operation E_'*B
                 case 'N'
                     C = [B(1:nv,:);
                         eqn.M_'*B(nv+1:2*nv,:)];
-                    
+
                     %implement operation E_'*B'
                 case 'T'
                     C = [B(:,1:nv)';
                         eqn.M_'*B(:,nv+1:2*nv)'];
             end
-            
+
     end
 else
     error('MESS:error_arguemnts', 'B has wrong number of cols');

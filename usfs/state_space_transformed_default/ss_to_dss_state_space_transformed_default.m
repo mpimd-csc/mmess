@@ -32,6 +32,14 @@ function C = ss_to_dss_state_space_transformed_default...
 % This function uses another default function size_default(eqn, opts) to
 % obtain the number of rows of matrix A_ in structure eqn.
 
+%
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
+%
+
 %% Check input parameters.
 assert(ischar(fac) && ischar(opFac) && ischar(opB), ...
     'MESS:error_arguments', ...
@@ -92,7 +100,7 @@ if eqn.haveE % Case of non-identity E matrix.
                                 'with number of columns of B']);
                             C = eqn.EL * B';
                     end
-                    
+
                 case 'T'
                     switch opB
                         case 'N' % Implement operation EL'*B.
@@ -108,7 +116,7 @@ if eqn.haveE % Case of non-identity E matrix.
                                 'number of columns of B']);
                             C = eqn.EL' * B';
                     end
-                    
+
             end
         case 'U'
             switch opFac
@@ -127,7 +135,7 @@ if eqn.haveE % Case of non-identity E matrix.
                                 'with number of columns of B']);
                             C = eqn.EU * B';
                     end
-                    
+
                 case 'T'
                     switch opB
                         case 'N' % Implement operation EU'*B.
@@ -143,7 +151,7 @@ if eqn.haveE % Case of non-identity E matrix.
                                 'number of columns of B']);
                             C = eqn.EU' * B';
                     end
-                    
+
             end
     end
 else % Case of E_ = I_n, was set by init.

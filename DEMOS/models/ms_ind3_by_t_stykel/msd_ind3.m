@@ -5,7 +5,7 @@ function [E,A,B,C,M,D,K,G,Pl,Pr] = msd_ind3(g,mas,k1,k2,d1,d2)
 %       E*x'(t) = A*x(t) + B*u(t),
 %          y(t) = C*x(t),
 %
-% with 
+% with
 %  E = [ I 0 0 ], A = [ 0  I  0  ], B = [0 ], C =[ C1, C2, C3 ],
 %      [ 0 M 0 ]      [ K  D -G' ]      [B2]
 %      [ 0 0 0 ]      [ G  0  0  ]      [0 ]
@@ -22,31 +22,31 @@ function [E,A,B,C,M,D,K,G,Pl,Pr] = msd_ind3(g,mas,k1,k2,d1,d2)
 %     k1  = the (g-1)-by-1 array of spring constants of the first type
 %     k2  = the g-by-1 array of spring constants of the second type
 %     d1  = the (g-1)-by-1 array of spring constants of the first type
-%     d2  = the g-by-1 array of spring constants of the second type 
+%     d2  = the g-by-1 array of spring constants of the second type
 %
-% Note: 1) if mas=[], k1=[], k2=[], d1=[], d2=[], then the matrices 
-%          M,K and D are as in [1]. 
+% Note: 1) if mas=[], k1=[], k2=[], d1=[], d2=[], then the matrices
+%          M,K and D are as in [1].
 %       2) Elements of mas, k1, k2, d1, d2 should be positive
 %
 % OUTPUT:
-%      E   real n-by-n sparse matrix with 
+%      E   real n-by-n sparse matrix with
 %           n = (nx+1)*ny+nx*(ny+1)+(nx+1)*ny+nx*(ny+1)
-%      A   real n-by-n sparse matrix 
-%      B   real n-by-m sparse matrix, m is the number of inpits 
+%      A   real n-by-n sparse matrix
+%      B   real n-by-m sparse matrix, m is the number of inpits
 %           ( here B = e_{g+1} )
 %      C   real p-by-n sparse matrix, p is the number of outputs
 %           ( here C = [ e_1, e_2, e_{q-1} ]' )
-%     Pr   the spectral projector onto the right deflating subspace 
+%     Pr   the spectral projector onto the right deflating subspace
 %          corresponding to the finite eigenvaluesof s*E-A (sparse)
-%     Pl   the spectral projector onto the left deflating subspace 
+%     Pl   the spectral projector onto the left deflating subspace
 %          corresponding to the finite eigenvaluesof s*E-A (sparse)
 %
 % DESCIPTION:
 %     The i-th mass of weight m_i is connected to the (i+1)-st mass
 %     by a spring and a damper with constants k1_i and d1_i, respectively,
-%     and also to the ground by a spring and a damper with constants 
-%     k2_i and d2_i, respectively. Additionally, the first mass is 
-%     connected to the last one by a rigid bar and it is influenced by 
+%     and also to the ground by a spring and a damper with constants
+%     k2_i and d2_i, respectively. Additionally, the first mass is
+%     connected to the last one by a rigid bar and it is influenced by
 %     the control u(t). The position of the 1-st, 2-nd and (g-1)-st masses
 %     is measured.
 %
@@ -71,8 +71,8 @@ function [E,A,B,C,M,D,K,G,Pl,Pr] = msd_ind3(g,mas,k1,k2,d1,d2)
 %            d2_1                   d2_i                                   d2_g
 %
 % REFERENCE:
-% [1] V. Mehrmann, T. Stykel. Balanced truncation model reduction for 
-%     large-scale systems in descriptor form, in Dimension Reduction of 
+% [1] V. Mehrmann, T. Stykel. Balanced truncation model reduction for
+%     large-scale systems in descriptor form, in Dimension Reduction of
 %     Large-Scale Systems, P. Benner, V. Mehrmann, and D. Sorensen (eds.),
 %     Springer-Verlag, Berlin/Heidelberg, 2005, pp.83--115
 %
@@ -98,7 +98,7 @@ if isempty(d2), d2  = 5*ones(g,1); d2(1) = 10;d2(g) = 10;end
 % matrix M
 M = spdiags(mas,0,g,g);
 
-% matrix K 
+% matrix K
 K = spdiags(k1,-1,g,g);
 K=K+K'-spdiags([0; k1]+k2+[k1; 0],0,g,g);
 
@@ -108,7 +108,7 @@ D = D+D'-spdiags([0; d1]+d2+[d1; 0],0,g,g);
 
 % matrix G
 G = zeros(1,g);
-G(1)=1; 
+G(1)=1;
 G(end)=-1;
 
 % matrix E
@@ -142,7 +142,7 @@ disp(['n = ',int2str(n),', nf = ', int2str(n-3), ', ninf = ', int2str(3)]);
 disp(['m = ',int2str(m),',  p = ',int2str(p)]);
 
 iM=spdiags(1./mas,0,g,g);  %speye(g)/mas;
-G=sparse(1,g); 
+G=sparse(1,g);
 G(1,1)=1; G(1,g)=-1;
 GG=iM*G'/(G*iM*G');
 Pi=speye(g)-GG*G;

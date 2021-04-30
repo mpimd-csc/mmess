@@ -1,5 +1,4 @@
 function C = mul_A_dae_1(eqn, opts, opA, B, opB)%#ok<INUSL>
-
 %% function mul_A perfoms operation C = opA(A_)*opB(B)
 %
 % Input:
@@ -18,22 +17,13 @@ function C = mul_A_dae_1(eqn, opts, opA, B, opB)%#ok<INUSL>
 %           opB = 'T' performs opA(A_)*B'
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %     A = [J1 J2;
 %          J3 J4]   J4 regular
@@ -58,7 +48,7 @@ if(not((opB == 'N' || opB == 'T')))
 end
 
 if (not(isnumeric(B))) || (not(ismatrix(B)))
-    error('MESS:error_arguments','B has to ba a matrix');
+    error('MESS:error_arguments','B has to be a matrix');
 end
 
 %% check data in eqn structure
@@ -73,52 +63,55 @@ end
 
 n = size(eqn.A_,1);
 st = eqn.st;
+one = 1:st;
+two = st + 1 : n;
 %% perfom multiplication
 switch opA
-    
+
     case 'N'
         switch opB
-            
+
             %implement operation A_*B
             case 'N'
                 if(st > size(B,1))
-                    error('MESS:error_arguments', 'number of cols of A_ differs with rows of B');
+                    error('MESS:error_arguments', ...
+                          'number of cols of A_ differs with rows of B');
                 end
-                C = eqn.A_(1 : st, 1 : st) * B(1 : st, : ) - eqn.A_(1 : st, st + 1 : n) * ...
-                    (eqn.A_(st + 1 : n, st + 1 : n) \ (eqn.A_(st + 1 : n, 1 : st) * ...
-                    B(1 : st, : )));
-            
+                C = eqn.A_(one, one) * B - eqn.A_(one, two) * ...
+                    (eqn.A_(two, two) \ (eqn.A_(two, one) * B));
+
             %implement operation A_*B'
             case 'T'
                 if(st > size(B, 2))
-                    error('MESS:error_arguments', 'number of cols of A_ differs with cols of B');
+                    error('MESS:error_arguments', ...
+                          'number of cols of A_ differs with cols of B');
                 end
-                C = eqn.A_(1 : st, 1 : st) * B( : , 1 : st)' - eqn.A_(1 : st, st + 1 : n) * ...
-                    (eqn.A_(st + 1 : n, st + 1 : n) \ (eqn.A_(st + 1 : n, 1 : st) * ...
-                    B( : , 1 : st)'));
+                C = eqn.A_(one, one) * B' - eqn.A_(one, two) * ...
+                    (eqn.A_(two, two) \ (eqn.A_(two, one) * B'));
         end
-        
+
     case 'T'
         switch opB
-            
+
             %implement operation A_'*B
             case 'N'
                 if(st > size(B, 1))
-                    error('MESS:error_arguments', 'number of rows of A_ differs with rows of B');
+                    error('MESS:error_arguments', ...
+                          'number of rows of A_ differs with rows of B');
                 end
-                C = eqn.A_(1 : st, 1 : st)' * B(1 : st, : ) - eqn.A_(st + 1 : n, 1 : st)' * ...
-                    (eqn.A_(st + 1 : n, st + 1 : n)' \ (eqn.A_(1 : st, st + 1 : n)' * ...
-                    B(1 : st, : )));
-                
+                C = eqn.A_(one, one)' * B - eqn.A_(two, one)' * ...
+                    (eqn.A_(two, two)' \ (eqn.A_(one, two)' * B));
+
             %implement operatio A_'*B'
             case 'T'
                 if(st > size(B, 2))
-                    error('MESS:error_arguments', 'number of rows of A_ differs with cols of B');
+                    error('MESS:error_arguments', ...
+                          'number of rows of A_ differs with cols of B');
                 end
-                C = eqn.A_(1 : st, 1 : st)' * B( : , 1 : st)' - eqn.A_(st + 1 : n, 1 : st)' * ...
-                    (eqn.A_(st + 1 : n, st + 1 : n)' \ (eqn.A_(1 : st, st + 1 : n)' * ...
-                    B( : , 1 : st)'));
+                C = eqn.A_(one, one)' * B' - ...
+                    eqn.A_(two, one)' * (eqn.A_(two, two)' \ ...
+                    (eqn.A_(one, two)' * B'));
         end
-        
+
 end
 end

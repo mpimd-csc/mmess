@@ -13,7 +13,7 @@ function [Y] = care_nwt_fac(Y0,A,B,C,tol,maxsteps)
 %  B         Matrix from (CARE)
 %  C         Matrix from (CARE)
 %  tol       stopping criterion, i.e. the iteration is stopped if
-%                  |R(X)|_F/max(1,|Y'Y|_F) <= tol 
+%                  |R(X)|_F/max(1,|Y'Y|_F) <= tol
 %                  , default sqrt(eps*n)
 %
 %  maxsteps  maximum number of iteration steps, default 50
@@ -22,20 +22,11 @@ function [Y] = care_nwt_fac(Y0,A,B,C,tol,maxsteps)
 %  Y        approximate factor solution of CARE so that X=Y'Y
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
-%
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Peter Benner 2005
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
 
 narginchk(4,6);
@@ -43,13 +34,13 @@ n = size(A,1);
 
 %% check matrix sizes
 if size(A,2) ~= n
-    error('A must be square.');  
+    error('A must be square.');
 end
-if size(B,1) ~= n 
-    error('B must have the same number of rows as A.');  
+if size(B,1) ~= n
+    error('B must have the same number of rows as A.');
 end
 if size(C,2) ~= n
-    error('C must have the same number of columns as A.');  
+    error('C must have the same number of columns as A.');
 end
 
 if nargin < 6,  maxsteps = 50;  end
@@ -76,7 +67,7 @@ else
 end
 YA    = Y*A;
 YB    = Y*B;
-nres  = norm(C'*C + YA'*Y + Y'*YA - YB*YB','fro');     
+nres  = norm(C'*C + YA'*Y + Y'*YA - YB*YB','fro');
 Xnorm = norm(Y*Y','fro');
 Err = nres/max(1,Xnorm);
 onemore     = 0;
@@ -85,11 +76,11 @@ convergence = Err <= tol;
 %% Newton iteration
 while (iter < maxsteps) && ((not(convergence)) || (convergence && (onemore < 2)))
   % Here one may employ RRQR to compress W.
-  W        = [C; YB'*Y]; 
-  Y        = lyap_sgn_fac(A - B*(YB)'*Y,W); 
+  W        = [C; YB'*Y];
+  Y        = lyap_sgn_fac(A - B*(YB)'*Y,W);
   YA       = Y*A;
   YB       = Y*B;
-  nres     = norm(C'*C + YA'*Y + Y'*YA - (Y'*YB)*(YB'*Y),'fro');     
+  nres     = norm(C'*C + YA'*Y + Y'*YA - (Y'*YB)*(YB'*Y),'fro');
   Xnorm    = norm(Y*Y','fro');
   iter = iter + 1;
 % Uncomment next line for verbose mode.

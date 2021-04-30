@@ -2,75 +2,66 @@ function HINFR_rail(k, istest)
 % Computes the a robust suboptimal Hinf feedback via the low-rank
 % Riccati iteration [1] using the RADI method [2] for the selective cooling of
 % Steel profiles application described in [3,4,5].
-% 
+%
 % Usage: HINFR_rail(k, istest)
 %
-% Inputs: 
-% 
-% k           refinement level of the model to use 
-%             (1-4, i.e. 1357-79841Dofs)
-%             (optinal, defaults to 1)
+% Inputs:
 %
-% istest      flag to determine whether this demo runs as a CI test or 
+% k           refinement level of the model to use
+%             (0 - 5, i.e. 109 - 79841 Dofs)
+%             (optinal, defaults to 2, i.e. 1357 Dofs)
+%
+% istest      flag to determine whether this demo runs as a CI test or
 %             interactive demo
 %             (optional, defaults to 0, i.e. interactive demo)
 %
 % References:
-% [1] A. Lanzon, Y. Feng, B. D. O. Anderson, An iterative algorithm to 
+% [1] A. Lanzon, Y. Feng, B. D. O. Anderson, An iterative algorithm to
 %     solve algebraic Riccati equations with an indefinite quadratic term,
 %     2007 European Control Conference (ECC), pp. 3033--3039, 2007.
 %     https://doi.org/10.23919/ecc.2007.7068239
 %
 % [2] P. Benner, Z. Bujanović, P. Kürschner, J. Saak, RADI: A low-rank
-%     ADI-type algorithm for large scale algebraic Riccati equations, 
-%     Numer. Math. 138 (2) (2018) 301–330. 
-%     https://doi.org/10.1007/s00211-017-0907-5.
+%     ADI-type algorithm for large scale algebraic Riccati equations,
+%     Numer. Math. 138 (2) (2018) 301–330.
+%     https://doi.org/10.1007/s00211-017-0907-5
 %
 % [3] J. Saak, Efficient numerical solution of large scale algebraic matrix
 %     equations in PDE control and model order reduction, Dissertation,
-%     Technische Universität Chemnitz, Chemnitz, Germany (Jul. 2009).  
+%     Technische Universität Chemnitz, Chemnitz, Germany (Jul. 2009).
 %     URL http://nbn-resolving.de/urn:nbn:de:bsz:ch1-200901642
 %
 % [4] P. Benner, J. Saak, A semi-discretized heat transfer model for
 %     optimal cooling of steel profiles, in: P. Benner, V. Mehrmann, D.
 %     Sorensen (Eds.), Dimension Reduction of Large-Scale Systems, Vol. 45
 %     of Lect. Notes Comput. Sci. Eng., Springer-Verlag, Berlin/Heidelberg,
-%     Germany, 2005, pp. 353–356. https://doi.org/10.1007/3-540-27909-1_19. 
+%     Germany, 2005, pp. 353–356. https://doi.org/10.1007/3-540-27909-1_19
 %
 % [5] J. Saak, Efficient numerical solution of large scale algebraic matrix
 %     equations in PDE control and model order reduction, Dissertation,
-%     Technische Universität Chemnitz, Chemnitz, Germany (Jul. 2009).  
+%     Technische Universität Chemnitz, Chemnitz, Germany (Jul. 2009).
 %     URL http://nbn-resolving.de/urn:nbn:de:bsz:ch1-200901642
 %
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
-%
+
 
 %%
 narginchk(0,2);
-if nargin<1, k=1; end
+if nargin<1, k=2; end
 if nargin<2, istest=0; end
 
 %% set operation
 oper = operatormanager('default');
 
 %% Problem data
-eqn = getrail(k);
+eqn = mess_get_linear_rail(k);
 % Reformulate as normalized Hinf control problem.
 eqn.B1 = eqn.B;
 eqn.B2 = eqn.B;
@@ -109,21 +100,22 @@ opts.ri.info           = 1;
 %% Solve the equation.
 eqn.type = 'T';
 gam      = 10;
-eqn.B1   = 1/gam * eqn.B1; 
-tic;
+eqn.B1   = 1/gam * eqn.B1;
+t_mess_lrri = tic;
 out = mess_lrri(eqn, opts, oper);
-toc;
+t_elapsed = toc(t_mess_lrri);
+fprintf(1,'mess_lrri took %6.2f seconds \n' , t_elapsed );
 
 %% Residual behavior.
 if istest
     if min(out.res) >= opts.ri.res_tol
-       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result');
    end
 else
     figure(1);
-    semilogy(out.res);
+    semilogy(out.res,'linewidth',3);
     hold on;
-    for i = 1:length(out.radi), semilogy(out.radi(i).res); end
+    for i = 1:length(out.radi), semilogy(out.radi(i).res,'linewidth',3); end
     hold off;
     title('0= C_1^TC_1 + A^TXM + M^TXA  + M^TX(\gamma^{-2}B_1B_1^T - B_2B_2^T)XM');
     xlabel('number of iterations');

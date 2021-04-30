@@ -11,7 +11,7 @@ function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
 %
 %   opts                struct contains parameters for the algorithm
 %
-%   oper                struct contains function handles for operation 
+%   oper                struct contains function handles for operation
 %                       with A and E
 %
 % Output
@@ -21,14 +21,14 @@ function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
 %   eqn.B       dense (n x m1) matrix B (if eqn.LTV = 0)
 %               (optional)
 %
-%   eqn.B_time  function handle with scalar input t returning a dense 
+%   eqn.B_time  function handle with scalar input t returning a dense
 %               (n x m1) matrix B (if eqn.LTV = 1)
 %               (optional)
 %
 %   eqn.C       dense (m2 x n) matrix C (if eqn.LTV = 0)
 %               (optional)
 %
-%   eqn.C_time  function handle with scalar input t returning a dense 
+%   eqn.C_time  function handle with scalar input t returning a dense
 %               (m2 x n) matrix C (if eqn.LTV = 1)
 %               (optional)
 %
@@ -45,6 +45,12 @@ function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
 %               if haveE = 0: matrix E is assumed to be the identity
 %               (optional)
 %
+%   eqn.LTV     possible  values: 0, 1, false, true
+%               indicates autonmous (false) or
+%               non-autonomous (true) differential
+%               Riccati equation
+%               (optional, default: 0)
+%
 %   Depending on the operator chosen by the operatormanager, additional
 %   fields may be needed. For the "default", e.g., eqn.A_ and eqn.E_ hold
 %   the A and E matrices. For the second order types these are given
@@ -55,9 +61,8 @@ function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
 %   opts.bdf.time_steps             possible  values: (N x 1) array
 %                                   array containing the time steps
 %
-%   opts.bdf.step                   possible  values: 1, 2, 3, 4, 5, 6
-%                                   use p-step  BDF method with 1<=p<=6
-%                                   (1<=p<=2 if eqn.LTV = 1)
+%   opts.bdf.step                   possible  values: 1, 2, 3, 4
+%                                   use p-step  BDF method with 1<=p<=4
 %                                   (optional, default: 1)
 %
 %   opts.bdf.info                   possible  values: 0, 1, false, true
@@ -78,12 +83,6 @@ function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
 %                                   verbose mode for column compression
 %                                   (optional, default: 0)
 %
-%   eqn.LTV                         possible  values: 0, 1, false, true
-%                                   indicates autonmous (false) or
-%                                   non-autonomous (true) differential
-%                                   Riccati equation
-%                                   (optional, default: 0)
-%                               
 %   opts.nm                         struct for control parameters of
 %                                   mess_lrnm
 %
@@ -99,7 +98,7 @@ function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
 %
 %   out.Ds  cell array with solution factor D for every time step
 %           (only if opts.bdf.save_solution = 1)
-%                               
+%
 %
 % If optional input arguments are missing they may be set to default values
 % and a 'MESS:control_data' warning is printed. to turn warnings off use
@@ -110,22 +109,13 @@ function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
 %   See also mess_lrnm, mess_lradi, mess_para, operatormanager.
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -144,7 +134,7 @@ t1 = opts.bdf.time_steps(2);
 tend = opts.bdf.time_steps(end);
 opts.bdf.tau = t1 - opts.t0;
 tau_original = opts.bdf.tau;
-eq_err = norm(opts.bdf.time_steps - (opts.t0 : opts.bdf.tau : tend));
+eq_err = norm(opts.bdf.time_steps - linspace(opts.t0, tend, length(opts.bdf.time_steps)));
 if eq_err > eps * length(opts.bdf.time_steps)
     error('MESS:control_data',...
         'opts.bdf.time_steps has to contain equidistant time steps.');
@@ -159,7 +149,7 @@ if not(isfield(opts.bdf,'trunc_tol')),  ...
     opts.bdf.trunc_tol=eps * oper.size(eqn, opts); end
 if not(isfield(opts.bdf, 'trunc_info')), opts.bdf.trunc_info = 0; end
 if not(isfield(opts.bdf,'save_solution')),  opts.bdf.save_solution=0; end
-if opts.bdf.step > 2 
+if opts.bdf.step > 2
     if not(isfield(opts.bdf,'startup_iter') )
         opts.bdf.startup_iter = 8;
     end
@@ -191,7 +181,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if not(isfield(opts,'adi')) || not(isstruct(opts.adi))
     error('MESS:control_data','ADI control structure opts.adi missing.');
-end 
+end
 if not(isfield(opts.adi,'compute_sol_fac'))||not(isnumeric(opts.adi.compute_sol_fac)) || ...
     (not(opts.adi.compute_sol_fac))
     warning('MESS:compute_sol_fac', ...
@@ -229,7 +219,7 @@ if not(isfield(eqn, 'LTV')),  eqn.LTV=0; end
 if isfield(opts,'LDL_T') && opts.LDL_T==0
     warning('MESS:control_data',['The BDF code does only support ' ...
                         'LDL_T solutions.\n Setting opts.LDL_T=1']);
-end   
+end
 opts.LDL_T = 1;
 if not(isfield(eqn,'type'))
     eqn.type='N';
@@ -262,7 +252,7 @@ if not(isfield(eqn, 'L0')) || not(isnumeric(eqn.L0))
             ['Initial condition factor L0 is not defined or corrupted.',...
              ' Setting it to the zero vector.']);
     n = oper.size(eqn, opts);
-    eqn.L0 = zeros(n,1); 
+    eqn.L0 = zeros(n,1);
 end
 if not(isfield(eqn, 'D0')) || not(isnumeric(eqn.D0))
     warning('MESS:control_data', ...
@@ -383,7 +373,7 @@ for j = 2 : length(times)
     opts.bdf.tau = times(j - 1) - times(j);
     if j <= extra_steps && opts.bdf.step == step
         % additional smaller time steps with one order less
-        opts.bdf.step = opts.bdf.step - 1; 
+        opts.bdf.step = opts.bdf.step - 1;
     end
     opts.bdf.beta = beta(opts.bdf.step);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -401,7 +391,7 @@ for j = 2 : length(times)
     % Set order and beta
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %     opts.bdf.step = min(step, j - 1);
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % update E' * L
@@ -473,7 +463,7 @@ for j = 2 : length(times)
         L_lengths(2 : step) = L_lengths(1 : end - 1);
     end
     L_lengths(1) = size(L, 2);
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % update D blocks for S
@@ -490,7 +480,7 @@ for j = 2 : length(times)
     else
         Ds = [{D}, Ds]; %#ok<AGROW>
     end
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % update C/B and S
@@ -501,7 +491,7 @@ for j = 2 : length(times)
         eqn.B = [B, ETL];
     end
     eqn.S = blkdiag(opts.bdf.tau * opts.bdf.beta * Iq, alphaDs);
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % perform column compression
@@ -513,20 +503,20 @@ for j = 2 : length(times)
         [eqn.B, eqn.S] = mess_column_compression(eqn.B, 'N', eqn.S, ...
             opts.bdf.trunc_tol, opts.bdf.trunc_info);
     end
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % perform the actual step computations
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     nmout = mess_lrnm(eqn, opts, oper);
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % perform column compression
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [L, D] = mess_column_compression(nmout.Z, 'N', nmout.D, ...
         opts.bdf.trunc_tol, opts.bdf.trunc_info);
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % print status information

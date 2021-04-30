@@ -1,17 +1,17 @@
 function y=lyapunov(Z,x,eqn,oper,opts, D)
 % Computes matrix vector product with the Lyapunov operator.
 %
-% Input:           
+% Input:
 %  Z         Low-rank solution factor of the Riccati equation
 %  x         vector for matrix vector product
-%  eqn       structure with data for A, E and fields G  
+%  eqn       structure with data for A, E and fields G
 %                  eqn.E(optional, eqn.haveE specifies whether it is
 %                  there) in the above equation with ZZ' or LDL' approximating X
 %                  eqn.haveUV specfies whether feedback is there
-%                  
+%
 %  oper      structure contains function handles for operations with
 %                  A, E
-%  opts      full options structure (passed on to function handles in oper) 
+%  opts      full options structure (passed on to function handles in oper)
 %
 %  D         solution factor D for the LDL^T
 %            decomposition, i.e., opts.LDL_T=1
@@ -21,22 +21,13 @@ function y=lyapunov(Z,x,eqn,oper,opts, D)
 %  y        result of matrix vector product
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 if eqn.type=='N'
   adjoint='T';
@@ -45,7 +36,7 @@ else
 end
 
 if isempty(D) && opts.LDL_T
-    error('LDL^T formulation needs D to get passed.'); 
+    error('LDL^T formulation needs D to get passed.');
 end
 
 if eqn.haveE

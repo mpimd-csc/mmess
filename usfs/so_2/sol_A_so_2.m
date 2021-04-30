@@ -1,34 +1,8 @@
 function X=sol_A_so_2(eqn, opts,opA,B,opB)%#ok<INUSL>
-
 % function X=sol_A_so_2(eqn, opts,opA,B,opB)
 %
-% The second order system
-%
-%   M x"(t) + D x'(t) + K x(t) = B u(t)
-%                         y(t) = C x(t)
-%       
-% is transformed to the first order system
-%
-%   E z'(t) = A z(t) + G u(t)
-%      y(t) = L z(t)
-%  
-% where
-%
-%      | D  M|
-%   E= | M  0|
-%   
-%      |-K  0|
-%   A= | 0  M|
-%   
-%      | B |
-%   G= | 0 |
-%   
-%   L= [C  0]
-%   
-%         | x(t)  |
-%   z(t)= | x'(t) | .
-%   
-% Matrices M, D, K are assumed to be quadratic, symmetric and positive definit.
+% Call help mess_usfs_so_2 to see the description of the second order
+% system and its transformed first order system
 %
 %
 % This function returns X = A\B, where matrix A given by structure eqn and input matrix B could be transposed.
@@ -47,7 +21,7 @@ function X=sol_A_so_2(eqn, opts,opA,B,opB)%#ok<INUSL>
 %           opB = 'T' solves opA(A)*X = B'
 %
 %   Output:
-%                                       |-K  0|  
+%                                       |-K  0|
 %   X       matrix fullfilling equation | 0  M| *X= opB(B)
 %
 %   This function does not use other so3 functions.
@@ -55,22 +29,13 @@ function X=sol_A_so_2(eqn, opts,opA,B,opB)%#ok<INUSL>
 % ATTENTION: opA is not used since matrix A is symmetric
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% check input parameters
 if (not(ischar(opA)) || not(ischar(opB)))
@@ -102,23 +67,23 @@ rowA = 2*rowK;
 
 %% perform solve operations
 switch opB
-    
+
     % implement solve A*X = B
     case 'N'
         if (rowA ~= size(B,1))
             error('MESS:error_arguments','number of rows of A differs with number of rows of B');
         end
-        
+
         X1 =  eqn.K_\B(1:rowK,:);
         X2 =  eqn.M_\B(rowK+1:end,:);
         X  =  [-X1;X2];
-        
+
     % implement solve A*X = B'
     case 'T'
         if(rowA ~= size(B,2))
             error('MESS:error_arguments','number of rows of A differs with number of columns of B');
         end
-        
+
         X1 =  eqn.K_\B(:,1:rowK)';
         X2 =  eqn.M_\B(:,rowK+1:end)';
         X  =  [-X1;X2];

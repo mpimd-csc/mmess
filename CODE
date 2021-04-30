@@ -1,15 +1,15 @@
-name: Matrix Equations Sparse Solvers
-shortname: M.E.S.S.
-version: 2.0.1
-release-date: 2020-02-28
-id: 10.5281/zenodo.3606345
+name: Matrix Equations Sparse Solvers (for Matlab and Octave)
+shortname: M-M.E.S.S.
+version: 2.1
+release-date: 2021-04-30
+id: 10.5281/zenodo.4719688
 id-type: doi
 authors: MESS developer community
 copyright holders: Jens Saak, Martin Köhler, Peter Benner
 orcids: 0000-0001-5567-963, 0000-0003-2338-9904, 0000-0003-3362-4103
-topic: large sparse matrix equations 
+topic: large sparse matrix equations
 type: Toolbox
-license: GPL v2
+license: BSD 2-Clause
 license-type: Open
 repository: private development / public releases
 repository-type: git

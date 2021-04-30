@@ -10,7 +10,7 @@ function X = sol_E_dae_1(eqn, opts, opE, B, opB) %#ok<INUSL>
 %           opE = 'N' solves E *X = opB(B)
 %           opE = 'T' sovles E'*X = opB(B)
 %
-%   B       p-x-q matrix 
+%   B       p-x-q matrix
 %
 %   opB     character specifies the form of opB(B)
 %           opB = 'N' solves opE(E)*X = B
@@ -21,25 +21,16 @@ function X = sol_E_dae_1(eqn, opts, opE, B, opB) %#ok<INUSL>
 %   X       matrix fullfills equation opE(E)*X = opB(B)
 %
 %   uses no other dae_1 function
-%% check input Paramters
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
+%% check input Paramters
 if (not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opE or opB is not a char');
 end
@@ -69,17 +60,17 @@ st = eqn.st;
 
 %% solve
 switch opE
-    
+
     case 'N'
         switch opB
-            
+
             %implement solve A_*X=B
             case 'N'
                 if(st ~= size(B, 1))
                     error('MESS:error_arguments','number of rows of A_ differs with rows of B');
                 end
                 X = eqn.E_(1 : st, 1 : st) \ B;
-            
+
             %implement solve A_*X=B'
             case 'T'
                 if(st ~= size(B, 2))
@@ -87,17 +78,17 @@ switch opE
                 end
                 X = eqn.E_(1 : st, 1 : st) \ B';
         end
-        
+
     case 'T'
         switch opB
-            
+
             %implement solve A_'*X=B
             case 'N'
                 if(st ~= size(B, 1))
                     error('MESS:error_arguments','number of cols of A_ differs with rows of B');
                 end
                 X = eqn.E_(1 : st, 1 : st)' \ B;
-                
+
             %implement solve A_'*X=B'
             case 'T'
                 if(st ~= size(B, 2))
@@ -105,7 +96,7 @@ switch opE
                 end
                 X = eqn.E_(1 : st, 1 : st)' \ B';
         end
-        
+
 end
 
 end

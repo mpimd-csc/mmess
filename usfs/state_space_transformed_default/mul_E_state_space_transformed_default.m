@@ -27,22 +27,13 @@ function C = mul_E_state_space_transformed_default(eqn, opts, opE, B, opB)
 % obtain the number of rows of matrix E_ in structure eqn.
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
-%
+
 
 %% Check input parameters.
 assert(ischar(opE) && ischar(opB), ...
@@ -82,7 +73,7 @@ switch opE
                     ['number of columns of E_ differs with ' ...
                     'number of rows of B']);
                 C = eqn.E_ * B;
-                
+
             case 'T' % Implement operation E_*B'.
                 assert(colE == size(B, 2), ...
                     'MESS:error_arguments', ...
@@ -90,7 +81,7 @@ switch opE
                     'number of columns of B']);
                 C = eqn.E_ * B';
         end
-        
+
     case 'T'
         switch opB
             case 'N' % Implement operation E_'*B.
@@ -99,7 +90,7 @@ switch opE
                     ['number of rows of E_ differs with ' ...
                     'number rows of B']);
                 C = eqn.E_' * B;
-                
+
             case 'T' % Implement operation E_'*B'.
                 assert(rowE == size(B, 2), ...
                     'MESS:error_arguments', ...
@@ -107,7 +98,7 @@ switch opE
                     'number of columns of B']);
                 C = eqn.E_' * B';
         end
-        
+
 end
 
 end

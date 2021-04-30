@@ -1,27 +1,18 @@
 function [out, eqn, opts, oper] = adaptive_SDIRK43(eqn, opts, oper, h, L, t0)
-% Solve the system E(t)' \dot{z}(t) = A(t)' z(t) with z(0) = L over 
+% Solve the system E(t)' \dot{z}(t) = A(t)' z(t) with z(0) = L over
 % the interval [t0, t0 + h]. If t0 is omitted it is assumed to be 0.
 % If eqn.type == 'N', instead solve E(t) \dot{z}(t) = A(t) z(t) .
 % The method coefficients are taken from [1, p.100].
-% 
+%
 % [1] Hairer, E. and Wanner, G., Solving Ordinary Differential Equations
 % II: Stiff and Differential-Algebraic Problems, 2nd Ed., Springer, 2002.
+
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
-%
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
 
 [n, p] = size(L);
@@ -29,8 +20,6 @@ normL = norm(L);
 errest_order = 3;
 tend = t0 + h;
 TOL = opts.exp_action.tol;
-%     errest_order = errest_order - 1; % EPUS
-%     TOL = tend * TOL;
 
 c = [1/4, 3/4, 11/20, 1/2, 1];
 aij= [     1/4,         0,      0,      0,   0;
@@ -65,10 +54,10 @@ if hj == 0
 end
 j = 1; % internal step
 u = L;
-while t(end) + hj < tend + eps % without eps the break condition can miss
+while t(end) + hj < tend + eps * tend % without eps the break condition can miss
     % the last iteration step which leaves the field 'out' unset
     K = zeros(n, 5*p);
-    
+
     for i = 1:5
         [eqn, opts, oper] = ...
             opts.splitting.eval_matrix_functions(eqn, opts, oper, ...
@@ -79,11 +68,11 @@ while t(end) + hj < tend + eps % without eps the break condition can miss
         % (A + pE)\RHS, so scale by -1/(aih*h)
         coeff = -1/(aij(i,i)*hj);
         RHS = coeff * RHS;
-        
+
         K(:, (i-1)*p+1:i*p) = oper.sol_ApE(eqn, opts, eqn.type, ...
                                            coeff, eqn.type, RHS, 'N');
     end
-    
+
     % 4th-order approximation:
     %     v2 = u + hj*(   25/24*k1 - 49/48*k2 +
     %                  + 125/16*k3 - 85/12*k4 + 1/4*k5);
@@ -97,23 +86,23 @@ while t(end) + hj < tend + eps % without eps the break condition can miss
     %                      + 25/32*k3 + 0*k4 + 1/4*k5);
     errest = hj/(1+normL)*norm(K*B(:,p+1:2*p));
     %         errest = errest / hj; % EPUS
-    
+
     if errest > TOL % redo step
         hj = (0.9*TOL/errest)^(1/(errest_order)) * hj;
     else
         t(end+1) = t(end) + hj; %#ok<AGROW>
-        
+
         % New step size
         hj = (0.95*TOL/errest)^(1/errest_order) * hj;
-        
+
         j = j+1;
         u = v;
-        
+
         if abs(t(end) - tend) < eps % We are at the final time
             out.Z = v;
             break
         end
-        
+
         % Ensure that we end up precisely at tend
         if t(end) + hj > tend
             hj = tend-t(end);

@@ -8,7 +8,7 @@ function [y,yr] = impeuler(E,A,B,C,Er,Ar,Br,Cr,tau,tmin,tmax,x0,xr0,alpha)
 % E,A,B,C      The original system matrices
 % Er,Ar,Br,Cr  The reduced order system matrices
 % tau          time step size
-% tmin         start time 
+% tmin         start time
 % tmax         end time
 % x0, x0r      initial states of the full and reduced order models
 % alpha        step height for the input step function
@@ -19,34 +19,25 @@ function [y,yr] = impeuler(E,A,B,C,Er,Ar,Br,Cr,tau,tmin,tmax,x0,xr0,alpha)
 
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
   [L,U,P,Q] = lu(E-tau*A);
   [Lr,Ur,Pr] = lu(Er-tau*Ar);
- 
+
  ntau=ceil((tmax-tmin)/tau);
  y=zeros(size(C,1),ntau);
  yr=y;
  for i=1:ntau
-    if not(mod(i,ceil(ntau/10))) 
-      fprintf('\r Implicit Euler step %d / %d',i,ntau); 
+    if not(mod(i,ceil(ntau/10)))
+      fprintf('\r Implicit Euler step %d / %d',i,ntau);
     end
-    if i<0.1*ntau
+    if i<(0.1*ntau)
         x=Q*(U\(L\(P*(E*x0))));
         xr=Ur\(Lr\(Pr*(Er*xr0)));
     else
@@ -62,8 +53,3 @@ function [y,yr] = impeuler(E,A,B,C,Er,Ar,Br,Cr,tau,tmin,tmax,x0,xr0,alpha)
   fprintf('\n\n');
 end
 
-function alpha= smoother(alpha,i,ntau)
- if i<0.2*ntau
-    alpha=sin((10*pi*(i-0.1*ntau)/ntau)-0.5*pi)*alpha;
- end
-end

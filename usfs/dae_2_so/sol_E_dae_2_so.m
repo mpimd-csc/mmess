@@ -19,26 +19,17 @@ function X = sol_E_dae_2_so(eqn, opts, opE, B, opB)%#ok<INUSL>
 % Output
 %
 %   X       matrix fullfills equation opE(E)*X = opB(B)
-%
-%% check input Paramters
+
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
+%% check input Paramters
 if (not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opE or opB is not a char');
 end
@@ -65,38 +56,38 @@ np = size(eqn.G_,1);
 
 %% solve
 if (opB=='N' && (size(B,1)==(2*nv+np))) || (opB=='T' && (size(B,2)==(2*nv+np)))
-    
+
     switch opE
-        
+
         case 'N'
             switch opB
-                
+
                 %implement solve E*X=B
                 case 'N'
                     X = [B(1:nv,:);
                         [eqn.M_,eqn.alpha*eqn.G_'; ...
                         eqn.alpha*eqn.G_,sparse(np,np)] \ B(nv+1:end,:)
                         ];
-                    
+
                     %implement solve A*X=B'
                 case 'T'
                     X = [B(:,1:nv)';
                         [eqn.M_,eqn.alpha*eqn.G_'; ...
                         eqn.alpha*eqn.G_,sparse(np,np)] \ B(:,nv+1:end)'
                         ];
-                    
+
             end
-            
+
         case 'T'
             switch opB
-                
+
                 %implement solve E'*X=B
                 case 'N'
                     X = [B(1:nv,:);
                         [eqn.M_',eqn.alpha*eqn.G_'; ...
                         eqn.alpha*eqn.G_,sparse(np,np)] \ B(nv+1:end,:)
                         ];
-                    
+
                     %implement solve A_'*X=B'
                 case 'T'
                     X = [B(:,1:nv)';
@@ -104,9 +95,9 @@ if (opB=='N' && (size(B,1)==(2*nv+np))) || (opB=='T' && (size(B,2)==(2*nv+np)))
                         eqn.alpha*eqn.G_,sparse(np,np)] \ B(:,nv+1:end)'
                         ];
             end
-            
+
     end
-    
+
 elseif (opB=='N' && (size(B,1)==(2*nv))) || (opB=='T' && (size(B,2)==(2*nv)))
     error('MESS:error_usage','sol_E_dae_2_so is only coded for shift parameter computation');
 else

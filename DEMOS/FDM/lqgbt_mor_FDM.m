@@ -1,22 +1,22 @@
 function [Ar, Br, Cr] = lqgbt_mor_FDM(tol,max_ord,n0,istest)
-% LQGBT_MOR_FDM computes a reduced order model via the lienar quadratic 
-% Gaussian balanced truncation [1] for a finite difference discretized 
+% LQGBT_MOR_FDM computes a reduced order model via the lienar quadratic
+% Gaussian balanced truncation [1] for a finite difference discretized
 % convection diffusion model on the unit square described in [2].
 %
-% Usage: 
+% Usage:
 %    [Ar, Br, Cr] = lqgbt_mor_FDM(tol,max_ord,n0,test)
 %
 % Inputs
 %
 % tol         truncation tolerance for the LQG characteristic values
-% 
+%
 % max_ord     maximum allowed order for the reuced order model
 %
 % n0          n0^2 gives the dimension of the original model, i.e. n0 is
 %             the number of degrees of freedom per spatial direction
-% 
-% istest      flag to determine whether this demo runs as a CI test or 
-%             interactive demo 
+%
+% istest      flag to determine whether this demo runs as a CI test or
+%             interactive demo
 %             (optional, defaults to 0, i.e. interactive demo)
 %
 % Outputs
@@ -25,32 +25,21 @@ function [Ar, Br, Cr] = lqgbt_mor_FDM(tol,max_ord,n0,istest)
 %
 % References
 % [1] D. Mustafa, K. Glover, Controller design by H∞ -balanced truncation,
-%     IEEE Trans. Autom. Control 36 (6) (1991) 668–682. 
-%     https://doi.org/10.1109/9.86941. 
+%     IEEE Trans. Autom. Control 36 (6) (1991) 668–682.
+%     https://doi.org/10.1109/9.86941
 %
-% [2] T. Penzl, Lyapack Users Guide, Tech. Rep. SFB393/00-33, 
-%     Sonderforschungsbereich 393 Numerische Simulation auf massiv 
-%     parallelen Rechnern, TU Chemnitz, 09107 Chemnitz, Germany, 
-%     available from http://www.tu-chemnitz.de/sfb393/sfb00pr.html. (2000).
+% [2] T. Penzl, Lyapack Users Guide, Tech. Rep. SFB393/00-33,
+%     Sonderforschungsbereich 393 Numerische Simulation auf massiv
+%     parallelen Rechnern, TU Chemnitz, 09107 Chemnitz, Germany,
+%     available from http://www.tu-chemnitz.de/sfb393/sfb00pr.html (2000).
+%
 
 %
-
-%
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
-%
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2017
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
 
 %%
@@ -64,7 +53,7 @@ if nargin<2
     max_ord = 250;
 end
 if nargin<3
-    n0 = 60; % n0 = number of grid points in either space direction; 
+    n0 = 60; % n0 = number of grid points in either space direction;
              % n = n0^2 is the problem dimension!
              % (Change n0 to generate problems of different size.)
 end
@@ -116,10 +105,11 @@ opts.nm.tau           = 0.1;
 %%
 % Solve the filter Riccati equation.
 %   A*X + X*A' - X*C'*C*X + B*B' = 0
-tic;
+t_mess_lrnm = tic;
 eqn.type = 'N';
 outC = mess_lrnm(eqn, opts, oper);
-toc;
+t_elapsed1 = toc(t_mess_lrnm);
+fprintf(1,'mess_lrnm took %6.2f seconds \n',t_elapsed1);
 
 if istest
     if min(outC.res)>=opts.nm.res_tol
@@ -127,7 +117,7 @@ if istest
     end
 else
     figure(1);
-    semilogy(outC.res);
+    semilogy(outC.res,'linewidth',3);
     title('AX + XA^T - XC^TCX + BB^T = 0');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -138,10 +128,11 @@ end
 %%
 % Solve the regulator Riccati equation.
 %   A'*X + X*A - X*B*B'*X + C'*C = 0
-tic;
+t_mess_lrnm = tic;
 eqn.type = 'T';
 outB = mess_lrnm(eqn, opts, oper);
-toc;
+t_elapsed2 = toc(t_mess_lrnm);
+fprintf(1,'mess_lrnm took %6.2f seconds \n' ,t_elapsed2);
 
 if istest
     if min(outB.res)>=opts.nm.res_tol
@@ -149,7 +140,7 @@ if istest
     end
 else
     figure(2);
-    semilogy(outB.res);
+    semilogy(outB.res,'linewidth',3);
     title('A^TX + XA - XBB^TX + C^TC = 0');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -160,9 +151,9 @@ end
 %%
 % % Model reduction by square root method.
 opts.srm.tol=tol;
-opts.srm.max_ord = max_ord; 
+opts.srm.max_ord = max_ord;
 opts.srm.info=1;
-[TL, TR, hsv, eqn, opts, ~] = mess_square_root_method(eqn,opts,oper,...
+[TL, TR, ~, eqn, opts, ~] = mess_square_root_method(eqn,opts,oper,...
     outB.Z,outC.Z);
 
 Ar = TR'*(eqn.A_*TL);
@@ -191,5 +182,5 @@ out = mess_sigma_plot(eqn, opts, oper, ROM); err = out.err;
 if istest
     if max(err)>=tol
         error('MESS:TEST:accuracy','unexpectedly inaccurate result');
-    end    
+    end
 end

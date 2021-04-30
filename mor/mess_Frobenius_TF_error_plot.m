@@ -9,9 +9,9 @@ function [eqn,opts,oper] = mess_Frobenius_TF_error_plot(eqn, opts, oper, Er,Ar,B
 %
 %   opts                struct contains parameters for the algorithm
 %
-%   oper                struct contains function handles for operation 
+%   oper                struct contains function handles for operation
 %                       with A and E
-% 
+%
 %   Er,Ar,Br,Cr,Dr      reduced order model matrices
 %
 % fmin, fmax   left and right bounds of the frequency range. They will be
@@ -20,33 +20,24 @@ function [eqn,opts,oper] = mess_Frobenius_TF_error_plot(eqn, opts, oper, Er,Ar,B
 % nsample      number of transfer function samples to take in the plot
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 if (floor(fmin)==fmin) && (floor(fmax)==fmax)
     w=logspace(fmin,fmax,nsample);
 else
-    w=logspace(log10(fmin),log10(fmax),nsample);     
+    w=logspace(log10(fmin),log10(fmax),nsample);
 end
 
 tr1=zeros(1,nsample); tr2=tr1; err=tr1; relerr=tr1;
 
 fprintf(['Computing TFMs of original and reduced order systems and ' ...
-         'MOR errors\n']) 
+         'MOR errors\n'])
 %% preprocess shifted solver
 [eqn, opts, oper] = oper.sol_ApE_pre(eqn, opts, oper);
 
@@ -72,20 +63,20 @@ fprintf('\n\n');
 [eqn, opts, oper] = oper.sol_ApE_post(eqn, opts, oper);
 
 figure
-subplot(2,1,1); 
-loglog(w, err); 
+subplot(2,1,1);
+loglog(w, err);
 title('absolute model reduction error')
 xlabel('\omega')
 ylabel('\sigma_{max}(G(j\omega) - G_r(j\omega))')
 axis tight
-subplot(2,1,2); 
+subplot(2,1,2);
 loglog(w, relerr);
 title('relative model reduction error')
 xlabel('\omega')
 ylabel(['\sigma_{max}(G(j\omega) - G_r(j\omega)) / \' ...
         'sigma_{max}(G(j\omega))'])
 axis tight
-    
+
 figure
 loglog(w, tr1)
 hold on

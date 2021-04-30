@@ -1,5 +1,5 @@
 function X = sol_A_dae_1(eqn, opts, opA, B, opB)%#ok<INUSL>
-%  function sol_A solves solves opA(A_)*X = opB(B) 
+%  function sol_A solves solves opA(A_)*X = opB(B)
 %
 % Input:
 %  eqn       structure with field A_
@@ -11,8 +11,8 @@ function X = sol_A_dae_1(eqn, opts, opA, B, opB)%#ok<INUSL>
 %  B         p-x-q matrix
 %
 %  opB       character specifies the form of opB(B)
-%                  opB = 'N' solves A_*X=B   
-%                  opB = 'T' solves A_*X=B^T 
+%                  opB = 'N' solves A_*X=B
+%                  opB = 'T' solves A_*X=B^T
 %
 % Output:
 %  X       matrix fullfills equation opA(A_)X = opB(B)
@@ -20,22 +20,13 @@ function X = sol_A_dae_1(eqn, opts, opA, B, opB)%#ok<INUSL>
 % uses size_dae_1
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 
 %% check input Paramters
@@ -63,7 +54,7 @@ end
 
 if not(isfield(eqn, 'st'))    || not(isnumeric(eqn.st))
     error('MESS:st',...
-    'Missing or Corrupted st field detected in equation structure.');
+    'Missing or corrupted st field detected in equation structure.');
 end
 
 n = size(eqn.A_,1);
@@ -87,43 +78,47 @@ end
 
 %% solve
 switch opA
-    
+
     case 'N'
         switch opB
-            
+
             %implement solve A_*X=B
             case 'N'
                 if(n ~= size(B, 1))
-                    error('MESS:error_arguments','number of rows of A_ differs with rows of B');
+                    error('MESS:error_arguments', ...
+                          'number of rows of A_ differs with rows of B');
                 end
                 X = eqn.A_ \ B;
-            
+
             %implement solve A_*X=B'
             case 'T'
                 if(n ~= size(B, 2))
-                    error('MESS:error_arguments','number of rows of A_ differs with cols of B');
+                    error('MESS:error_arguments', ...
+                          'number of rows of A_ differs with cols of B');
                 end
                 X = eqn.A_ \ B';
         end
-        
+
     case 'T'
         switch opB
-            
+
             %implement solve A_'*X=B
             case 'N'
                 if(n ~= size(B, 1))
-                    error('MESS:error_arguments','number of cols of A_ differs with rows of B');
+                    error('MESS:error_arguments', ...
+                          'number of cols of A_ differs with rows of B');
                 end
                 X = eqn.A_' \ B;
-                
+
             %implement solve A_'*X=B'
             case 'T'
                 if(n ~= size(B, 2))
-                    error('MESS:error_arguments','number of cols of A_ differs with cols of B');
+                    error('MESS:error_arguments', ...
+                          'number of cols of A_ differs with cols of B');
                 end
                 X = eqn.A_' \ B';
         end
-        
+
 end
 X = X(1 : st, :);
 end

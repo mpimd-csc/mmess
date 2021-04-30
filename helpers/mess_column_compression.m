@@ -28,28 +28,19 @@ function [Z, D] = mess_column_compression(Z, opZ, D, tol, info)
 %                     on input
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
-%
+
 
 % Check and assign input arguments.
 if(issparse(Z))
     % This is just a safety measure that is hopefully never executed
     Z = full(Z);
-    
+
     warning('MESS:dense',...
         ['Converting low rank factor to dense format. ' ...
         'This should never be necessary.']');
@@ -86,25 +77,25 @@ end
 if isempty(D)
     if strcmp(opZ, 'N')
         % Z*Z' case.
-        [U, S, ~] = svd(Z,0);
-        
+        [U, S, ~] = svd(Z, 'econ');
+
         L = S;
         S = diag(S);
         l = length(find(S.^2 > tol * S(1)^2));
         Z = U * L(:, 1:l);
-        
+
         if info
             fprintf(1, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 2), tol);
         end
     else
         % Z'*Z case.
-        [~, S, V] = svd(Z,0);
-        
+        [~, S, V] = svd(Z, 'econ');
+
         L = S;
         S = diag(S);
         l = length(find(S.^2 > tol * S(1)^2));
-        Z = L(1:l, :) * V;
-        
+        Z = (L(1:l, :) * V)';
+
         if info
             fprintf(1, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 1), tol);
         end
@@ -116,11 +107,11 @@ else
         RDR    = R * D * R';
         [V, S] = eig(0.5 * (RDR + RDR'));
         S      = diag(S);
-        
+
         r = abs(S) > tol * max(abs(S));
         Z = Q * V(:, r);
         D = diag(S(r));
-        
+
         if info
             fprintf(1, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 2), tol);
         end
@@ -130,11 +121,11 @@ else
         RDR    = R * D * R';
         [V, S] = eig(0.5 * (RDR + RDR'));
         S      = diag(S);
-        
+
         r = abs(S) > tol * max(abs(S));
         Z = (Q * V(:, r))';
         D = diag(S(r));
-        
+
         if info
             fprintf(1, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 1), tol);
         end

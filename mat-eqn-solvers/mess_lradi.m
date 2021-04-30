@@ -193,22 +193,13 @@ function [out, eqn, opts, oper] = mess_lradi(eqn, opts, oper)
 %   See also mess_para, operatormanager.
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% check field opts.adi
 if not(isfield(opts, 'adi')) || not(isstruct(opts.adi))
@@ -411,10 +402,8 @@ if isfield(opts.shifts, 'method') && ...
         end
     end
 else
-    if not((isfield(opts.shifts, 'p')) && isnumeric(opts.shifts.p) && ...
-            isvector(opts.shifts.p))
-        error('MESS:shifts', ...
-            'Found empty shift vector. Please provide proper shifts.');
+    if not(isfield(opts.shifts, 'p'))
+        init_shifts = 1;
     else
         illelgal_shifts = 0;
         % Check if all shifts are in the open left half plane
@@ -425,7 +414,7 @@ else
         while i <= length(opts.shifts.p)
             if not((isreal(opts.shifts.p(i))))
                 if (opts.shifts.p(i+1) ~= conj(opts.shifts.p(i)))
-                    illelgal_shifts = 1; 
+                    illelgal_shifts = 1;
                 end
                 i = i + 1;
             end
@@ -671,7 +660,7 @@ while i < opts.adi.maxiter + 1
             mess_accumulateK(eqn, opts, oper, out, pc, V);
     else
         % perform a double step with the known solution for the conjugate
-        % shift 
+        % shift
         a = 2 * sqrt(-real(pc));
         b = real(pc) / imag(pc);
         V1 = a * (real(V) + b * imag(V));
@@ -795,6 +784,12 @@ end
 
 if not(isempty(outer_res))
     out.Riccati_res = outer_res(out.niter);
+end
+
+if out.niter == opts.adi.maxiter
+    warning('MESS:ADI:convergence',...
+        ['LR-ADI reached maximum iteration number.',...
+         'results may be inaccurate!']);
 end
 
 %%

@@ -38,22 +38,13 @@ function [H,V] = mess_arn(eqn, opts, oper, opA)
 %   uses operatorfunctions size, sol_A, mul_A, sol_E, mul_E
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 
 % Input data not completely checked!e
@@ -148,11 +139,11 @@ V(:, 1) = (1.0 / norm(b0)) * b0;
 beta = 0;
 %% perform Arnoldi method
 for j = 1 : k
-    
+
     if j > 1
         V(:, j) = (1.0 / beta) * w;
     end
-       
+
     % no eqn.type cases needed, eigenvalues are the same for transposed
     % operator
     if opA == 'I' %Perform inverse Arnodi
@@ -252,19 +243,19 @@ for j = 1 : k
             end
         end
     end
-    
-    
+
+
 %     b0 = w;
     for k=1:2 %repeated MGS
         for i = 1 : j
             g = V(:, i)' * w;
             H(i, j) = H(i, j) + g;
-            w = w -   V(:, i) * g; 
+            w = w -   V(:, i) * g;
         end
     end
     beta = norm(w);
     H(j + 1, j) = beta;
-    
+
 end
 
 V(:, k + 1) = (1.0 / beta) * w;

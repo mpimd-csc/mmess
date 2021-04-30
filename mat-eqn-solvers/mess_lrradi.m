@@ -21,13 +21,13 @@ function [out, eqn, opts, oper] = mess_lrradi(eqn, opts, oper)
 %   out                 struct containing solutuions and output information
 %
 % Input fields in struct eqn:
-%   eqn.A_      sparse (n x n) matrix A
-%
-%   eqn.E_      sparse (n x n) matrix E
-%
 %   eqn.B       dense (n x m1) matrix B
 %
 %   eqn.C       dense (m2 x n) matrix C
+%
+%   eqn.S       dense (m1 x m1) matrix (N) or (m2 x m2) matrix (T)
+%               expected to be symmetric
+%               (required for LDL^T formulation)
 %
 %   eqn.U       dense (n x m3) matrix U
 %               (optional, required if eqn.V is present)
@@ -57,8 +57,25 @@ function [out, eqn, opts, oper] = mess_lrradi(eqn, opts, oper)
 %               many beginning columns of U and V does not be
 %               (optional, default: size(eqn.U, 2))
 %
+%   Depending on the operator chosen by the operatormanager, additional
+%   fields may be needed. For the "default", e.g., eqn.A_ and eqn.E_ hold
+%   the A and E matrices. For the second order types these are given
+%   implicitly by the M, D, K matrices stored in eqn.M_, eqn.E_ and eqn.K_,
+%   respectively.
 %
 % Input fields in struct opts:
+%   opts.LDL_T                  possible  values: 0, 1, false, true
+%                               use LDL^T formulation for the RHS and
+%                               solution
+%                               (optional, default: 0)
+%
+%   opts.norm                   possible  values: 2, 'fro'
+%                               use 2-norm (2) or Frobenius norm ('fro') to
+%                               compute residual and relative change norms
+%                               in case projection is used
+%                               (opts.nm.projection.freq > 0) norm will
+%                               automatically be set to 2
+%                               (optional, default: 'fro')
 %
 %   opts.radi.Z0                possible values: dense (n x m4) matrix
 %                               initial stabilizing solution factor
@@ -85,6 +102,14 @@ function [out, eqn, opts, oper] = mess_lrradi(eqn, opts, oper)
 %                               set if opts.radi.compute_res = 0
 %                               (optional, default: C' for 'T' or B for 
 %                               'N')
+%
+%   opts.radi.S0                possible values: dense (m5 x m5) matrix
+%                               initial Riccati residual factor such that
+%                               R(X0) = W0 * S0 * W0', if 
+%                               opts.radi.compute_res = 1, this factor is
+%                               computed out of Z0 and Y0
+%                               (required for LDL^T formulation if
+%                                opts.radi.W0 was explicitly set)
 %
 %   opts.radi.K0                possible values: dense 'T': (m1 x n) 
 %                               matrix, 'N':  (m2 x n) matrix
@@ -120,13 +145,13 @@ function [out, eqn, opts, oper] = mess_lrradi(eqn, opts, oper)
 %                               maximum RADI iteration number
 %                               (optional, default: 100)
 %
-%   opts.radi.res_tol            possible  values: scalar >= 0
+%   opts.radi.res_tol           possible  values: scalar >= 0
 %                               stopping tolerance for the relative
 %                               RADI residual norm; if res_tol = 0 the
 %                               relative residual norm is not evaluated
 %                               (optional, default: 0)
 %
-%   opts.radi.rel_diff_tol             possible  values: scalar >= 0
+%   opts.radi.rel_diff_tol      possible  values: scalar >= 0
 %                               stopping tolerance for the relative
 %                               change of the RADI solution Z;
 %                               if res_tol = 0 the relative
@@ -178,8 +203,8 @@ function [out, eqn, opts, oper] = mess_lrradi(eqn, opts, oper)
 % warning('OFF', 'MESS:control_data').
 %
 % The feedback matrix K can be accumulated during the iteration:
-%     eqn.type = 'N' -> K = E*X*C'
-%     eqn.type = 'T' -> K = E'*X*B
+%     eqn.type = 'N' -> K = (E*X*C')'
+%     eqn.type = 'T' -> K = (E'*X*B)'
 %
 %
 % Output fields in struct out:
@@ -191,6 +216,10 @@ function [out, eqn, opts, oper] = mess_lrradi(eqn, opts, oper)
 %   out.Y           small square solution factor, the solution is
 %                   opts.radi.get_ZZt = 0: X = Z*inv(Y)*Z'
 %                   (opts.radi.compute_sol_fac = 1 and not only initial K0)
+%
+%   out.D           solution factor for LDL^T formulation, the solution is
+%                   opts.LDL_T = 1: X = Z*D*Z'
+%                   (opts.LDL_T = 1)
 %
 %   out.K           stabilizing Feedback matrix
 %
@@ -224,23 +253,12 @@ function [out, eqn, opts, oper] = mess_lrradi(eqn, opts, oper)
 %   See also mess_lrradi_get_shifts, operatormanager.
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009 - 2018
-%
-
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -281,6 +299,14 @@ if not(isfield(eqn, 'type'))
 elseif (eqn.type ~= 'N') && (eqn.type ~= 'T')
     error('MESS:equation_type', ...
         'Equation type must be either ''T'' or ''N''');
+end
+
+if not(isfield(opts, 'LDL_T')), opts.LDL_T = 0; end
+
+if opts.LDL_T
+    if not(isfield(eqn, 'S')) || not(isnumeric(eqn.S))
+        error('MESS:control_data', 'eqn.S is not defined or corrupted');
+    end
 end
 
 if eqn.type == 'T'
@@ -396,12 +422,6 @@ if not(isfield(opts.radi, 'trunc_info')), opts.radi.trunc_info = 0; end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % List all currently unsupported options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if isfield(opts, 'LDL_T') && opts.LDL_T
-    warning('MESS:control_data', ...
-        'Option LDL_T currently not supported. Setting to false.');
-end
-opts.LDL_T = false; % We need this to apply oper.init_res later.
-
 if isfield(opts, 'bdf') && not(isempty(opts.bdf))
     error( 'MESS:control_data', 'Options bdf not supported.');
 end
@@ -416,18 +436,22 @@ end
 % Check for initial values 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialize projected residual factor in case of DAE
-% oper.init_res assumes that opts.adi.LDL_T is defined.
-% It is set to false above in the code.
+% oper.init_res assumes that opts.LDL_T is defined.
 [eqn, opts, oper] = oper.init_res_pre(eqn, opts, oper);
 
 onlyK = 0;
-if isfield(opts.radi, 'Z0') && not(isempty(opts.radi.Z0))
+hasZ0 = isfield(opts.radi, 'Z0') && not(isempty(opts.radi.Z0));
+hasY0 = isfield(opts.radi, 'Y0') && not(isempty(opts.radi.Y0));
+hasW0 = isfield(opts.radi, 'W0') && not(isempty(opts.radi.W0));
+hasS0 = isfield(opts.radi, 'S0') && not(isempty(opts.radi.S0));
+hasK0 = isfield(opts.radi, 'K0') && not(isempty(opts.radi.K0));
+if hasZ0
     % Stabilizing initial solution.
     Z   = opts.radi.Z0;
     nZ0 = size(Z, 2);
     
     % Initial middle term.
-    if isfield(opts.radi, 'Y0') && not(isempty(opts.radi.Y0))
+    if hasY0
         Y = opts.radi.Y0;
     else
         Y = eye(size(Z, 2));
@@ -442,10 +466,22 @@ if isfield(opts.radi, 'Z0') && not(isempty(opts.radi.Z0))
     end
     
     % Initial residual.
-    if isfield(opts.radi, 'W0') && not(isempty(opts.radi.W0))
+    if hasW0
         % Case: Initial residual is given.
-        [W, res0, eqn, opts, oper] = ...
-            oper.init_res(eqn, opts, oper, opts.radi.W0);
+        W = opts.radi.W0;
+        if opts.LDL_T
+            assert(hasS0, ...
+                'MESS:control_data', ...
+                'Missing or corrupted opts.radi.S0 field.');
+            if isdiag(opts.radi.S0)
+                eqn.S_diag = diag(opts.radi.S0);
+            else
+                [eqn.U_diag, eqn.S_diag] = eig(opts.radi.S0);
+                eqn.S_diag               = diag(eqn.S_diag);
+                W                        = W * eqn.U_diag;
+            end
+        end
+        [W, res0, eqn, opts, oper] = oper.init_res(eqn, opts, oper, W);
     elseif opts.radi.compute_res
         % Case: Initial residual has to be computed.
         AZ = oper.mul_A(eqn, opts, eqn.type, Z, 'N');
@@ -454,6 +490,7 @@ if isfield(opts.radi, 'Z0') && not(isempty(opts.radi.Z0))
         else
             EZ = Z;
         end
+        
         if eqn.sizeUV1
             if eqn.type == 'T'
                 UU = eqn.V(:, 1:eqn.sizeUV1);
@@ -470,27 +507,48 @@ if isfield(opts.radi, 'Z0') && not(isempty(opts.radi.Z0))
             UDV = [];
         end
         
-        D0 = blkdiag([zeros(size(Y)), Y \ eye(size(Y)); ...
-            Y \ eye(size(Y)), zeros(size(Y))], UDV, ...
-            -eye(m), eye(size(eqn.CC, 2)));
-        
-        [pC, ~, eqn, opts, oper] = oper.init_res(eqn, opts, oper, eqn.CC);
+        if opts.LDL_T
+            D0 = blkdiag([zeros(size(Y)), Y \ eye(size(Y)); ...
+                Y \ eye(size(Y)), zeros(size(Y))], UDV, ...
+                -eye(m), eqn.S);
+        else
+            D0 = blkdiag([zeros(size(Y)), Y \ eye(size(Y)); ...
+                Y \ eye(size(Y)), zeros(size(Y))], UDV, ...
+                -eye(m), eye(size(eqn.CC, 2)));
+        end
         
         [G, S] = mess_column_compression( ...
-            [AZ, EZ, UU, VV, EZ * (Y \ (Z' * eqn.BB)), pC], 'N', ...
+            [AZ, EZ, UU, VV, EZ * (Y \ (Z' * eqn.BB)), eqn.CC], 'N', ...
             D0, opts.radi.trunc_tol, opts.radi.trunc_info);
         
-        assert(all(diag(S) > 0), ...
-            'MESS:control_data', ...
-            ['The resulting residual of the initial solution has to ' ...
-            'be positive semi-definite.']);
+        if opts.LDL_T || not(all(diag(S) > 0))
+            if not(opts.LDL_T)
+                warning('MESS:control_data', ...
+                    ['The intiial residual is indefinite, ' ...
+                    'change to LDL^T approach!']);
+                opts.LDL_T = 1;
+            end
+            
+            W          = G;
+            eqn.S_diag = diag(S);
+        else
+            W = G * diag(sqrt(diag(S)));
+        end
         
-        [W, res0, eqn, opts, oper] = ...
-            oper.init_res(eqn, opts, oper, G * sqrt(S));
+        [W, res0, eqn, opts, oper] = oper.init_res(eqn, opts, oper, W);
     else
         % Case: Initial residual is given as right hand-side (Bernoulli).
-        [W, res0, eqn, opts, oper] = ...
-            oper.init_res(eqn, opts, oper, eqn.CC);
+        W = eqn.CC;
+        if opts.LDL_T
+            if isdiag(eqn.S)
+                eqn.S_diag = diag(eqn.S);
+            else
+                [eqn.U_diag, eqn.S_diag] = eig(eqn.S);
+                eqn.S_diag               = diag(eqn.S_diag);
+                W                        = W * eqn.U_diag;
+            end
+        end
+        [W, res0, eqn, opts, oper] = oper.init_res(eqn, opts, oper, W);
     end
     
     % Initial stabilizing feedback.
@@ -521,7 +579,7 @@ if isfield(opts.radi, 'Z0') && not(isempty(opts.radi.Z0))
             end
         end
     end
-elseif isfield(opts.radi, 'K0') && not(isempty(opts.radi.K0))
+elseif hasK0
     % Stabilizing initial feedback.
     if eqn.type == 'T'
         eqn.V(: , end-m+1:end) = opts.radi.K0';
@@ -530,13 +588,36 @@ elseif isfield(opts.radi, 'K0') && not(isempty(opts.radi.K0))
     end
     
     % Assign the corresponding residual.
-    if isfield(opts.radi, 'W0') && not(isempty(opts.radi.W0))
-        [W, res0, eqn, opts, oper] = ...
-            oper.init_res(eqn, opts, oper, opts.radi.W0);
+    if hasW0
+        W = opts.radi.W0;
+        
+        if opts.LDL_T
+            assert(hasS0, ...
+                'MESS:control_data', ...
+                'Missing or corrupted opts.radi.S0 field.');
+            if isdiag(opts.radi.S0)
+                eqn.S_diag = opts.radi.S0;
+            else
+                [eqn.U_diag, eqn.S_diag] = eig(opts.radi.S0);
+                eqn.S_diag               = diag(eqn.S_diag);
+                W                        = W * eqn.U_diag;
+            end
+        end
     else
-        [W, res0, eqn, opts, oper] = ...
-            oper.init_res(eqn, opts, oper, eqn.CC);
+        W = eqn.CC;
+        
+        if opts.LDL_T
+            if isdiag(eqn.S)
+                eqn.S_diag = diag(eqn.S);
+            else
+                [eqn.U_diag, eqn.S_diag] = eig(eqn.S);
+                eqn.S_diag               = diag(eqn.S_diag);
+                W                        = W * eqn.U_diag;
+            end
+        end
     end
+    
+    [W, res0, eqn, opts, oper] = oper.init_res(eqn, opts, oper, W);
     
     % Other initial values.
     Z     = zeros(oper.size(eqn, opts), 0);
@@ -548,7 +629,18 @@ else
     Z         = zeros(oper.size(eqn, opts), 0);
     nZ0       = 0;
     Y         = [];
-    [W, res0, eqn, opts, oper] = oper.init_res(eqn, opts, oper, eqn.CC);
+    
+    W = eqn.CC;
+    if opts.LDL_T
+        if isdiag(eqn.S)
+            eqn.S_diag = diag(eqn.S);
+        else
+            [eqn.U_diag, eqn.S_diag] = eig(eqn.S);
+            eqn.S_diag               = diag(eqn.S_diag);
+            W                        = W * eqn.U_diag;
+        end
+    end
+    [W, res0, eqn, opts, oper] = oper.init_res(eqn, opts, oper, W);
 end
 p = size(W, 2); % size of residual factor.
 
@@ -747,7 +839,7 @@ while i < opts.radi.maxiter + 1
     if i_shift > nShifts
         i_shift = 1;
         tsh     = tic;
-        
+
         [eqn, opts, oper, nShifts] = ...
             mess_lrradi_get_shifts(eqn, opts, oper, W, Z, Y);
         
@@ -771,6 +863,10 @@ while i < opts.radi.maxiter + 1
     [V, eqn, opts, oper] = ...
         mess_solve_shifted_system(eqn, opts, oper, pc, W);
     
+    if opts.LDL_T
+        V = V * diag(eqn.S_diag);
+    end
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % update low rank solution factor
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -778,19 +874,24 @@ while i < opts.radi.maxiter + 1
         % The shift pc is real. Only perform a single step of the method.
         V     = real(V);
         VtB   = V' * eqn.BB;
-        Y_new = eye(p) + VtB * VtB';
+        
+        if opts.LDL_T
+            Y_new = diag(eqn.S_diag);
+        else
+            Y_new = eye(p);
+        end
+        Y_new = Y_new + VtB * VtB';
         
         if opts.radi.compute_sol_fac || opts.radi.compute_sol_facpart
             % Only store part of Z used for shift generation.
             nZ = size(Z, 2);
+            % Expand the Z matrix.
             if opts.radi.compute_sol_facpart
                 ind = max(nZ-maxcolZ+p, 0)+1 : max(min(maxcolZ, nZ), 0);
+                Z(:, 1:min(maxcolZ, i*p + nZ0)) = [Z(:, ind), sqrt(-2*pc)*V];
             else
-                ind = 1:nZ;
+                Z(:, nZ+1:nZ+p) = sqrt(-2*pc)*V;
             end
-            
-            % Expand the Z matrix.
-            Z(:, 1:min(maxcolZ, i*p + nZ0)) = [Z(:, ind), sqrt(-2*pc)*V];
             
             if opts.radi.compute_sol_fac, Y = blkdiag(Y, Y_new); end
         end
@@ -829,22 +930,27 @@ while i < opts.radi.maxiter + 1
         BB = [Vr; Vi];
         CC = [si/sa * eye(p); sr/sa * eye(p)];
         
-        Y_new = blkdiag(eye(p), 1/2 * eye(p)) ...
-            - 1/(4 * sr) * (AA * AA') - 1/(4 * sr) * (BB * BB') ...
-            - 1/2 * (CC * CC');
+        if opts.LDL_T
+            Y_new = blkdiag(diag(eqn.S_diag), 1/2 * diag(eqn.S_diag)) ...
+                - 1/(4 * sr) * (AA * AA') - 1/(4 * sr) * (BB * BB') ...
+                - 1/2 * (CC * (diag(eqn.S_diag) * CC'));
+        else
+            Y_new = blkdiag(eye(p), 1/2 * eye(p)) ...
+                - 1/(4 * sr) * (AA * AA') - 1/(4 * sr) * (BB * BB') ...
+                - 1/2 * (CC * CC');
+        end
         
         if opts.radi.compute_sol_fac || opts.radi.compute_sol_facpart
             % Only store part of Z used for shift generation.
             nZ = size(Z, 2);
-            % Z = [Z, V1, V2];
+            % Expand the Z matrix. Z = [Z, V1, V2];
             if opts.radi.compute_sol_facpart
                 ind = max(nZ-maxcolZ+2*p, 0)+1:max(min(maxcolZ, nZ), 0);
+                Z(:, 1:min( maxcolZ, (i+1)*p + nZ0)) = [Z(:, ind), V1, V2];
             else
-                ind = 1:nZ;
+                Z(:, nZ+1:nZ+2*p) = [V1, V2];
             end
             
-            % Expand the Z matrix.
-            Z(:, 1:min( maxcolZ, (i+1)*p + nZ0)) = [Z(:, ind), V1, V2];
             if opts.radi.compute_sol_fac
                 Y = blkdiag(Y, Y_new);
             end
@@ -884,7 +990,11 @@ while i < opts.radi.maxiter + 1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if opts.radi.res_tol
         % Low-rank residual norm computation.
-        res(i) = norm(W' * W, opts.norm) / res0;
+        if opts.LDL_T
+            res(i) = riccati_LR(W, [], opts, diag(eqn.S_diag), []) / res0;
+        else
+            res(i) = riccati_LR(W, [], opts, [], []) / res0;
+        end
     end
     
     if opts.radi.rel_diff_tol
@@ -937,6 +1047,14 @@ if opts.radi.res_tol
     out.res = res(1:out.niter);
 end
 
+% warn the user if we have stopped before reaching the desired accuracy.
+if (out.niter == opts.radi.maxiter) && ...
+        not(out.res(end) < opts.radi.res_tol)
+    warning('MESS:RADI:convergence',...
+        ['LR-RADI was stopped by the maximum iteration count.',...
+        ' Results may be inaccurate.'] );
+end
+
 if opts.radi.rel_diff_tol
     out.rc = rc(1:out.niter);
 end
@@ -950,10 +1068,16 @@ else
 end
 
 if opts.radi.compute_sol_fac && not(onlyK)
-    if opts.radi.get_ZZt
+    if opts.radi.get_ZZt && not(opts.LDL_T)
         R     = chol(Y);
         out.Z = mess_column_compression(Z / R, 'N', [], ...
             opts.radi.trunc_tol, opts.radi.trunc_info);
+    elseif opts.LDL_T
+        Yinv           = Y \ eye(size(Y, 1));
+        Yinv           = 0.5 * (Yinv + Yinv');
+        [out.Z, out.D] = mess_column_compression(Z, 'N', Yinv, ...
+            opts.radi.trunc_tol, opts.radi.trunc_info);
+        out.Y          = out.D \ eye(size(out.D, 1));
     else
         out.Z = Z;
         out.Y = Y;
@@ -984,6 +1108,10 @@ end
 % Delete short cuts for right hand-side and quadratic term.
 eqn = rmfield(eqn, 'BB');
 eqn = rmfield(eqn, 'CC');
+
+if isfield(eqn, 'S_diag')
+    eqn = rmfield(eqn, 'S_diag');
+end
 
 if isfield(opts.shifts, 'tmp')
     opts.shifts = rmfield(opts.shifts, 'tmp');

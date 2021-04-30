@@ -1,19 +1,19 @@
 function [out, eqn, opts, oper] = mess_exp_action(eqn, opts, oper, h, L, t0)
 % Computes the matrix exponential action expm(h*(E\A))*L where L is a
 % skinny block matrix.
-% 
+%
 % Computes (expm(h*(E'\A'))*L if eqn.type == 'T'
 % Computes (expm(h*(E\A))*L if eqn.type == 'N'
-% 
-% If t0 is given as input and eqn.LTV == 1, instead solve the LTV system 
+%
+% If t0 is given as input and eqn.LTV == 1, instead solve the LTV system
 %   E(t)'\dot{x}(t) = A(t)' x(t) (eqn.type == 'T')
 %   E(t)\dot{x}(t) = A(t) x(t)   (eqn.type == 'N')
 % over the interval [t0, t0 + h].
-% 
-% NOTE: Only the Krylov and adaptive SDIRK43 methods are implemented for 
+%
+% NOTE: Only the Krylov and adaptive SDIRK43 methods are implemented for
 % the autonomous case so far! Only adaptive SDIRK43 for the LTV case,
 % through 'LTV'.
-% 
+%
 %
 % Input and output:
 %   eqn       structure containing equation data
@@ -23,7 +23,7 @@ function [out, eqn, opts, oper] = mess_exp_action(eqn, opts, oper, h, L, t0)
 %   oper      contains function handles with operations for A and E
 %
 % Input:
-% 
+%
 %   h         contains step size h
 %
 %   L         contains block matrix L
@@ -37,7 +37,7 @@ function [out, eqn, opts, oper] = mess_exp_action(eqn, opts, oper, h, L, t0)
 %       use this method to compute matrix exponential actions on block
 %       matrices
 %       (optional, default 'Krylov')
-% 
+%
 %   opts.exp_action.tol
 %       possible values: scalar > 0
 %       tolerance for matrix exponential actions (means different things
@@ -49,35 +49,27 @@ function [out, eqn, opts, oper] = mess_exp_action(eqn, opts, oper, h, L, t0)
 %       the absolute maximum of Krylov iterations to run (due to memory
 %       limitations)
 %       (optional, defaults to a number corresponding to about 4GB memory)
-% 
+%
 %
 % Output:
 %  out              structure containing the following:
-% 
+%
 %  out.Z            the matrix expontial action
-% 
-%  out.converged    flag for the iterative methods, which is 1 if the 
+%
+%  out.converged    flag for the iterative methods, which is 1 if the
 %                   method converged and 0 otherwise
-% 
+%
 %  out.errest       the final error estimate (residual)
+
+
 %
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
-%
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -91,7 +83,7 @@ if not(isfield(opts, 'exp_action')) ...
                                 'structure opts.exp_action ' ...
                                 'missing.  Using default Krylov method.']);
 	opts.exp_action.method = 'Krylov';
-end 
+end
 
 if not(isfield(opts.exp_action, 'tol'))
     opts.exp_action.tol = 1e-4;
@@ -100,40 +92,40 @@ end
 if strcmp(opts.exp_action.method, 'Krylov')
     if eqn.LTV
         error('MESS:control_data', ...
-        ['LTV problem specified, but opts.exp_action.method=', ... 
+        ['LTV problem specified, but opts.exp_action.method=', ...
          '''Krylov''. Use option ''LTV'' instead.']);
     end
-    
+
     if not(isfield(opts.exp_action, 'Krylov')) ...
         || not(isstruct(opts.exp_action.Krylov))
         opts.exp_action.Krylov = {};
     end
-    
+
     if not(isfield(opts.exp_action.Krylov, 'kabsmax'))
         [n, p] = size(L);
 
         mmem = 8*4*1024^3; % 4 GB
         kabsmax = mmem / n / p;
-    else 
+    else
         kabsmax = opts.exp_action.Krylov.kabsmax;
     end
-  
+
 elseif strcmp(opts.exp_action.method, 'adaptiveSDIRK')
     % No extra parameters for this method. Tolerance
     % is set globally in opts.exp_action.tol
     if eqn.LTV
         error('MESS:control_data', ...
-        ['LTV problem specified, but opts.exp_action.method=', ... 
+        ['LTV problem specified, but opts.exp_action.method=', ...
          '''adaptiveSDIRK''. Use option ''LTV'' instead.']);
     end
-    
+
     if not(eqn.LTV)
         % Assume time interval [0, h] for backwards compatibility
         if nargin < 6
             t0 = 0;
         end
     end
-       
+
 
 elseif strcmp(opts.exp_action.method, 'LTV')
     % Like the previous method, this one also needs no extra parameters
@@ -141,23 +133,23 @@ elseif strcmp(opts.exp_action.method, 'LTV')
         error('MESS:control_data', ...
             'opts.exp_action.method = ''LTV'' but eqn.LTV = 0.');
     end
-        
+
     if nargin < 6  % No t0 given
         error('MESS:control_data', ...
-            ['LTV problem specified, but no initial time set for call ' ... 
+            ['LTV problem specified, but no initial time set for call ' ...
              'to mess_exp_action']);
     end
 
-    
-else 
+
+else
     error('MESS:control_data', ['Chosen method for matrix exponential ' ...
         'actions: ', opts.exp_action.method, ' is not supported']);
-    
+
 end
 
 
 switch opts.exp_action.method
- 
+
     case 'Krylov'
         [n, p] = size(L);
         normL = norm(L);
@@ -172,7 +164,7 @@ switch opts.exp_action.method
                                              x, ...
                                              'N'), ...
                                   'N');
-        
+
         % Subspace reloading intentionally disabled for now,
         % but structure kept for future enhancement
         if true %not(isfield(opts.exp_action.Krylov, 'subspace'))
@@ -182,8 +174,8 @@ switch opts.exp_action.method
             [Vk, R] = qr(L, 0); % also, here Vk = U1
             Hk = [];
         else
-            subspace = opts.exp_action.Krylov.subspace; %#ok<UNRCH> 
-            
+            subspace = opts.exp_action.Krylov.subspace; %#ok<UNRCH>
+
             Vk = subspace.Vk;
             Hk = subspace.Hk;
             Ukp1 = subspace.Ukp1;
@@ -200,21 +192,21 @@ switch opts.exp_action.method
 
         if p*kmax > n
             kmax = floor(n/p);
-        end   
+        end
 
         converged = false;
         while not(converged)
 
             for k = kmin:kmax
                 Uk = Vk(:, (k-1)*p+1:k*p);
-                
+
                 Wk = Afun(Uk);
-                
+
                 for i = 1:k % Orthogonalize
                     Ui = Vk(:, (i-1)*p+1:i*p);
                     Hik = Ui'*Wk;
                     Wk = Wk - Ui*Hik;
-                    Hk((i-1)*p+1:i*p, (k-1)*p+1:k*p) = Hik; 
+                    Hk((i-1)*p+1:i*p, (k-1)*p+1:k*p) = Hik;
                 end
 
                 [Ukp1, Hkp1] = qr(Wk,0);
@@ -252,7 +244,7 @@ switch opts.exp_action.method
                 Vk(:, k*p+1:(k+1)*p) = Ukp1;
                 Hk(k*p+1:(k+1)*p, (k-1)*p+1:k*p) = Hkp1;
 
-            end 
+            end
 
             kmin = kmax + 1;
             kmax = kmax + 3; % Add two blocks in every step
@@ -268,30 +260,30 @@ switch opts.exp_action.method
                 subspace.R = R;
                 opts.exp_action.Krylov.subspace = subspace;
                 warning('MESS:exp_action', ...
-                        ['Krylov method for matrix exponential action ' ... 
+                        ['Krylov method for matrix exponential action ' ...
                          'did NOT converge!']);
                 return
             end
 
-        end    
-        
+        end
+
     case 'adaptiveSDIRK'
         [out, eqn, opts, oper] = ...
-            adaptive_SDIRK43(eqn, opts, oper, h, L, t0);        
-        
+            adaptive_SDIRK43(eqn, opts, oper, h, L, t0);
+
     case 'LTV'
-        % Temporarily change the matrix updating function to evaluate at 
+        % Temporarily change the matrix updating function to evaluate at
         % t0 + h - s instead of at s
         opts.splitting.eval_matrix_functions_temp = ...
-            opts.splitting.eval_matrix_functions; 
+            opts.splitting.eval_matrix_functions;
 
         opts.splitting.eval_matrix_functions = @(eqn, opts, oper, s) ...
             opts.splitting.eval_matrix_functions_temp(eqn, opts, oper, ...
                                                       t0 + h - s);
-        
+
         [out, eqn, opts, oper] = adaptive_SDIRK43(eqn, opts, oper, h, L,0);
-        
+
         % Restore the matrix updating function
         opts.splitting.eval_matrix_functions = ...
-            opts.splitting.eval_matrix_functions_temp; 
+            opts.splitting.eval_matrix_functions_temp;
 end

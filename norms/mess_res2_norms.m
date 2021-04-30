@@ -1,13 +1,14 @@
-function [nrm,k,T,V,eqn,fopts,oper] = mess_res2_norms(Z,Rmul,eqn,fopts,oper,resopts,D)
-% Computes the 2 Norm of the residual of Z for the symmetric operator given 
+function [nrm,k,T,V,eqn,fopts,oper] = ...
+    mess_res2_norms(Z,Rmul,eqn,fopts,oper,resopts,D)
+% Computes the 2 Norm of the residual of Z for the symmetric operator given
 %   by y=Rmul(Z, x, eqn, opts,oper);
 % e.g., for the generalized Lyapunov residual Rmul implements
-%   R := FZZ^T*E^T + EZZ^T*F^T + GG^T (1) 
-% 
+%   R := FZZ^T*E^T + EZZ^T*F^T + GG^T (1)
+%
 %
 % That means res2 computes the spectral radius of this operator R by a
-% Lanzcos iteration. The function Rmul should exploite the structure of F 
-% and rectangular structure of Z and G. Thus it can be computed in O(n) 
+% Lanzcos iteration. The function Rmul should exploite the structure of F
+% and rectangular structure of Z and G. Thus it can be computed in O(n)
 % effort and is therefore much cheaper than the computation of the e.g. the
 % Frobenius norm.
 %
@@ -22,17 +23,17 @@ function [nrm,k,T,V,eqn,fopts,oper] = mess_res2_norms(Z,Rmul,eqn,fopts,oper,reso
 %  Remark:
 %    V is only constructed if its required by the output arguments, or if
 %    reorthogonalization is used.
-% 
+%
 %    This implementation does not check for (near-)breakdown!
 %
-%  
-% Input:                 
+%
+% Input:
 %  Z                Low-rank solution factor of operator
 %
-%  eqn              structure with data for operator 
+%  eqn              structure with data for operator
 %
-%  Rmul             function handle to a function implementing the 
-%                   multiplication with the residual operator of interest.                
+%  Rmul             function handle to a function implementing the
+%                   multiplication with the residual operator of interest.
 %
 %  fopts            full options structure (passed on to function handles in
 %                   oper)
@@ -43,14 +44,14 @@ function [nrm,k,T,V,eqn,fopts,oper] = mess_res2_norms(Z,Rmul,eqn,fopts,oper,reso
 %  resopts          options structure with fields
 %  resopts.maxiter  maximal number of Arnoldi steps (usually k<<n)
 %                   (optional - chosen as 10 if omitted)
-%  resopts.tol      relative accuracy of the norm computation       
+%  resopts.tol      relative accuracy of the norm computation
 %                   (optional - chosen as 1e-6 if omitted)
 %  resopts.rv       initial n-vector
 %                   (optional - chosen by random, if omitted)
 %  resopts.orth     reorthogonalization flag
 %                   (optional - switched off, if omitted)
 %  D                solution factor D for LDL^T formulation in case
-%                   fopts.LDL_T = 1 
+%                   fopts.LDL_T = 1
 %
 %
 % Output:
@@ -65,22 +66,13 @@ function [nrm,k,T,V,eqn,fopts,oper] = mess_res2_norms(Z,Rmul,eqn,fopts,oper,reso
 % uses eventually operatorfunctions in Rmul
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% check Rmul
 [~, eqn, fopts, oper] = oper.init(eqn,fopts,oper,'A','E');
@@ -92,11 +84,15 @@ n = size(Z,1); % Get system order.
 switch Rmul
     case 'lyapunov'
         Rmul=@lyapunov;
+    case 'lyapunov_QB'
+        Rmul=@lyapunov_QB;
     case 'riccati'
         Rmul=@riccati;
     otherwise
-        error('MESS:control_data','Rmul has to be ''lyapunov'' or ''riccati''');
+        error('MESS:control_data', ...
+        'Rmul has to be ''lyapunov'' ''lyapunov_QB'' or ''riccati''');
 end
+
 
 if not(isfield(resopts,'res'))
   error('MESS:control_data','residual control structure res missing.');
@@ -115,18 +111,19 @@ end
 
 if not(isfield(res,'tol'))||isempty(res.tol)
     warning('MESS:control_data','res.tol is set to 1e-6 (default)');
-    res.tol= 1e-6; 
+    res.tol= 1e-6;
 end
 
 if not(isfield(res,'rv'))||isempty(res.rv)
-    res.rv = oper.init_res(eqn, fopts, oper, randn(n,1)); 
+    res.rv = oper.init_res(eqn, fopts, oper, randn(n,1));
 else
+
     res.rv =  oper.init_res(eqn, fopts, oper, res.rv);
 end
 
 if not(isfield(res,'orth'))||isempty(res.orth)
     warning('MESS:control_data','res.orth is set to 0 (default)');
-    res.orth=0; 
+    res.orth=0;
 end
 
 if not(isfield(fopts,'LDL_T')), fopts.LDL_T = 0; end
@@ -139,11 +136,13 @@ if eqn.type=='N'
     if not(isfield(eqn,'pB')) || (eqn.haveUV && not(isfield(eqn, 'pU')))
         created_projected_data = 1;
         if eqn.haveUV
-            [W, ~, eqn, fopts, oper] = oper.init_res(eqn, fopts, oper, [eqn.B, eqn.U]);
+            [W, ~, eqn, fopts, oper] = ...
+                oper.init_res(eqn, fopts, oper, [eqn.B, eqn.U]);
             eqn.pB = W(:,1:size(eqn.B,2));
             eqn.pU = W(:,size(eqn.B,2)+1:end);
         else
-            [pBtemp, ~, eqn, fopts, oper] = oper.init_res(eqn, fopts, oper, eqn.B);
+            [pBtemp, ~, eqn, fopts, oper] = ...
+                oper.init_res(eqn, fopts, oper, eqn.B);
             eqn.pB = pBtemp;
         end
     end
@@ -151,11 +150,13 @@ else
     if not(isfield(eqn,'pC')) || (eqn.haveUV && not(isfield(eqn, 'pV')))
         created_projected_data = 1;
         if eqn.haveUV
-            [W, ~, eqn, fopts, oper] = oper.init_res(eqn, fopts, oper, [eqn.C', eqn.V]);
+            [W, ~, eqn, fopts, oper] = ...
+                oper.init_res(eqn, fopts, oper, [eqn.C', eqn.V]);
             eqn.pC = W(:,1:size(eqn.C,1))';
             eqn.pV = W(:,size(eqn.C,1)+1:end);
         else
-            [pCtemp, ~, eqn, fopts, oper] = oper.init_res(eqn, fopts, oper, eqn.C');
+            [pCtemp, ~, eqn, fopts, oper] = ...
+                oper.init_res(eqn, fopts, oper, eqn.C');
             eqn.pC = pCtemp';
         end
     end
@@ -185,21 +186,20 @@ end
 nrm = 0;
 
 for k=2:res.maxiter-1
-    %Lanczos 3-term recursion 
-    
+    %Lanczos 3-term recursion
     % Matrix-vector product R*v2
     w = Rmul(Z,v2,eqn,oper,fopts,D);
 
     T(k,k)=v2'*w;
     r=w-T(k-1,k)*v1-T(k,k)*v2;
-    
+
     %re-orthogonalization by MGS
     if res.orth
         for j=1:k
             r = r - (V(:,j)'*r)*V(:,j);
         end
     end
-    
+
     T(k,k+1)=norm(r);
     v1=v2;
     v2 = r./T(k,k+1);
@@ -217,12 +217,14 @@ end
 if created_projected_data
     if eqn.type == 'N'
         if eqn.haveUV, eqn = rmfield(eqn,'pU'); end
-        eqn = rmfield(eqn,'pB'); 
+        eqn = rmfield(eqn,'pB');
     else
         if eqn.haveUV, eqn = rmfield(eqn,'pV'); end
-        eqn = rmfield(eqn,'pC'); 
+        eqn = rmfield(eqn,'pC');
     end
 end
+
 [eqn, fopts, oper] = oper.init_res_post(eqn,fopts,oper);
 [eqn, fopts, oper] = oper.mul_A_post(eqn,fopts,oper);
 [eqn, fopts, oper] = oper.mul_E_post(eqn,fopts,oper);
+

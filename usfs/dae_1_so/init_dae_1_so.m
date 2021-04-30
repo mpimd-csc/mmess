@@ -1,26 +1,29 @@
 function [result, eqn, opts, oper] = init_dae_1_so(eqn, opts, oper, flag1, flag2)
 % function [result, eqn, opts, oper] = init_dae_1_so(eqn, opts, oper, flag1, flag2)
-% return true or false if Data for A and E resp. flag1 and flag2  are availabe
+% return true or false if data for A and E resp. flag1 and flag2  are availabe
 % and correct in eqn.
 %
-%   result = init_so_1(eqn,flag1);
-%   result = init_so_1(eqn,flag1,flag2);
+%   result = init_dae_1_so(eqn,flag1);
+%   result = init_dae_1_so(eqn,flag1,flag2);
 %
-%   result = init_so_1(eqn,'A')    (==init_so_1(eqn,'A','A'));
-%   result = init_so_1(eqn,'E')    (==init_so_1(eqn,'E','E'));
-%   result = init_so_1(eqn,'A','E')  (==init_so_1(eqn,'E','A'));
+%   result = init_dae_1_so(eqn,'A')    (==init_dae_1_so(eqn,'A','A'));
+%   result = init_dae_1_so(eqn,'E')    (==init_dae_1_so(eqn,'E','E'));
+%   result = init_dae_1_so(eqn,'A','E')  (==init_dae_1_so(eqn,'E','A'));
 %
 %   Input:
 %
 %   eqn             structure with data
 %   opts            structure containing parameter for the algorithm
 %   oper            struct contains function handles for operation with A and E
-%   flag1           'A'/'E' to check if A or E is in eqn
-%   flag2           'A'/'E' to check if A or E is in eqn
+%   flag1           'A' or 'E' to check if A or E is represented
+%                   correctly in eqn
+%   flag2           'A' or 'E' to check if A or E is represented
+%                   correctly in eqn
 %
 %   Output:
 %
-%   result             1 if data corresponding to flag1 (and flag2) are available , 0 data are not available 
+%   result          1 if data corresponding to flag1 (and flag2)
+%                   are available , 0 data are not available
 %   eqn             structure with data
 %   opts            structure containing parameter for the algorithm
 %   oper            struct contains function handles for operation with A and E
@@ -28,30 +31,20 @@ function [result, eqn, opts, oper] = init_dae_1_so(eqn, opts, oper, flag1, flag2
 %   uses no other dae_1_so function
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% start checking
-na = nargin;
-if(na<=3)
+if(nargin<=3)
     error('MESS:control_data','Number of input Arguments are at least 3');
 
-%% result = init_so_1(eqn, flag1);    
-elseif(na==4)
+%% result = init_dae_1_so_1(eqn, flag1);
+elseif(nargin==4)
     switch flag1
         case {'A','a'}
             [eqn,result] = checkA(eqn);
@@ -60,9 +53,9 @@ elseif(na==4)
         otherwise
             error('MESS:control_data','flag1 has to be ''A'' or ''E''');
     end
-    
-%% result = init_so_1(eqn,flag1,flag2);
-elseif(na==5)
+
+%% result = init_dae_1_so_1(eqn,flag1,flag2);
+elseif(nargin==5)
     switch flag1
         case {'A','a'}
             [eqn,result] = checkA(eqn);
@@ -74,7 +67,8 @@ elseif(na==5)
                     [eqn, resultE] = checkE(eqn);
                     result =  result && resultE;
                 otherwise
-                    error('MESS:control_data','flag2 has to be ''A'' or ''E''');
+                    error('MESS:control_data', ...
+                        'flag2 has to be ''A'' or ''E''');
             end
         case {'E','e'}
             [eqn,result] = checkE(eqn);
@@ -86,12 +80,16 @@ elseif(na==5)
                     [eqn,resultE] = checkE(eqn);
                     result = result && resultE;
                 otherwise
-                    error('MESS:control_data','flag2 has to be ''A'' or ''E''');
+                    error('MESS:control_data', ...
+                        'flag2 has to be ''A'' or ''E''');
             end
         otherwise
-            error('MESS:control_data','flag1 has to be ''A'' or ''E''');
-    end 
+            error('MESS:control_data', 'flag1 has to be ''A'' or ''E''');
+    end
 end
+
+if not(isfield(eqn,'haveE')), eqn.haveE=1; end
+
 end
 
 %% checkdata for A
@@ -132,7 +130,7 @@ end
 if(not(issparse(eqn.E_)))
     warning('MESS:control_data','D is not sparse');
 end
-nd = eqn.nd; 
+nd = eqn.nd;
 [n1m, n2m] = size(eqn.M_);
 [n1d, n2d] = size(eqn.E_);
 if n1m ~= n2m
@@ -148,10 +146,12 @@ if n1m ~= n1d
         'M and D must have same size')
 end
 if full(any([any(eqn.M_(1:nd, nd + 1:end)), any(eqn.M_(nd+1:end,:))]))
-    warning('MESS:control_data','M has to be non-zero only in nd x nd block');
+    warning('MESS:control_data', ...
+        'M has to be non-zero only in nd x nd block');
 end
 if full(any([any(eqn.E_(1:nd, nd + 1:end)), any(eqn.E_(nd+1:end,:))]))
-    warning('MESS:control_data','D has to be non-zero only in nd x nd block');
+    warning('MESS:control_data', ...
+        'D has to be non-zero only in nd x nd block');
 end
 result = 1;
 

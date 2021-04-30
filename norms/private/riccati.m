@@ -30,22 +30,13 @@ function y=riccati(Z,x,eqn,oper,opts,D)
 % uses operatorfunctions mul_E, mul_A, mul_ApE (inside BDF methods)
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
-%
+
 
 
 %% Check input
@@ -89,7 +80,7 @@ else
     end
 end
 
-% Compute y1 = A'*z + C'*(C*x)  or y1 =  A*z + B*B'*x  
+% Compute y1 = A'*z + C'*(C*x)  or y1 =  A*z + B*B'*x
 % and     y2 = X*(A*x - B*B'*z) or y2 =  X*(A'*x - C'*C*z)
 if bdf
     if eqn.type == 'T'
@@ -141,8 +132,8 @@ else
     end
 end
 
-% Now y = (C'*C + A'*X*E+E'*X*A - E'*X*B*B'*X*E)*x,  
-%     y = (B*B' + A*X*E'+E*X*A' - E'*X*C'*C*X*E)*x  
+% Now y = (C'*C + A'*X*E+E'*X*A - E'*X*B*B'*X*E)*x,
+%     y = (B*B' + A*X*E'+E*X*A' - E'*X*C'*C*X*E)*x
 %     or the same with E=I
 if eqn.haveE
     if eqn.type == 'T'

@@ -35,22 +35,13 @@ function X = sol_A_state_space_transformed_default(eqn, opts, opA, B, opB)
 % obtain the number of rows of matrix A_ in structure eqn.
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
-%
+
 
 %% Check input parameters.
 assert(ischar(opA) && ischar(opB), ...
@@ -102,7 +93,7 @@ if eqn.haveE
                         ['number of rows of A_ differs with ' ...
                         'number rows of B']);
                     X = eqn.EU * (eqn.A_ \ (eqn.EL * B));
-                    
+
                 case 'T' % Implement solve (EL\A_/EU)*X = B'.
                     assert(rowA == size(B, 2), ...
                         'MESS:error_arguments', ...
@@ -110,7 +101,7 @@ if eqn.haveE
                         'number of columns of B']);
                     X = eqn.EU * (eqn.A_ \ (eqn.EL * B'));
             end
-            
+
         case 'T'
             switch opB
                 case 'N' % Implement solve (EL\A_'/EU)'*X = B.
@@ -119,7 +110,7 @@ if eqn.haveE
                         ['number of columns of A_ differs with ' ...
                         'number of rows of B']);
                     X = eqn.EL' * (eqn.A_' \ (eqn.EU' * B));
-                    
+
                 case 'T' % Implement solve (EL\A_'/EU)'*X = B'.
                     assert(colA == size(B, 2), ...
                         'MESS:error_arguments', ...
@@ -127,7 +118,7 @@ if eqn.haveE
                         'number of columns of B']);
                     X = eqn.EL' * (eqn.A_' \ (eqn.EU' * B'));
             end
-            
+
     end
 else
     switch opA
@@ -139,7 +130,7 @@ else
                         ['number of rows of A_ differs with ' ...
                         'number rows of B']);
                     X = eqn.A_ \ B;
-                    
+
                 case 'T' % Implement solve A_*X = B'.
                     assert(rowA == size(B, 2), ...
                         'MESS:error_arguments', ...
@@ -147,7 +138,7 @@ else
                         'number of columns of B']);
                     X = eqn.A_ \ B';
             end
-            
+
         case 'T'
             switch opB
                 case 'N' % Implement solve A_'*X = B.
@@ -156,7 +147,7 @@ else
                         ['number of columns of A_ differs with ' ...
                         'number of rows of B']);
                     X = eqn.A_' \ B;
-                    
+
                 case 'T' % Implement solve A_'*X = B'.
                     assert(colA == size(B, 2), ...
                         'MESS:error_arguments', ...
@@ -164,6 +155,6 @@ else
                         'number of columns of B']);
                     X = eqn.A_' \ B';
             end
-            
+
     end
 end

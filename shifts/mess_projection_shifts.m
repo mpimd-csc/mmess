@@ -10,26 +10,17 @@ function p = mess_projection_shifts(eqn, opts, oper, V, W, p_old)
 %
 % Whether or not the projection is computed implicitly from the
 % contents of V or by aexplicit projetion, is determined via
-% opts.shifts.implicitVtAV. 
+% opts.shifts.implicitVtAV.
 %
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% Check data
 if not(isfield(opts,'shifts')) || not(isstruct(opts.shifts))
@@ -96,20 +87,20 @@ if L > 0 && any(p_old) && opts.shifts.implicitVtAV
             T(h : h + 1, h : h + 1) = [3 * rpc, -ipc;
                                        ipc * (1 + 4 * beta^2), -rpc];
             if not(isempty(is))
-                T(h : h+  1, is)=[4 * rpc; 
+                T(h : h+  1, is)=[4 * rpc;
                                   4 * rpc * beta] * ones(1, length(is));
             end
             D = blkdiag(D, 2 * sqrt(-rpc) * [1,0; beta, sqrt(1 + beta^2)]);
             h = h + 2;
         end
     end
-    S = kron(D \ (T * D), Ir); 
-    K = kron(K * D, Ir); 
+    S = kron(D \ (T * D), Ir);
+    K = kron(K * D, Ir);
 else  % explicit AV (unless already computed in mess_para)
     S = 0;
     K = 1;
-    if any(p_old) 
-        W = oper.mul_A(eqn, opts, eqn.type, V, 'N'); 
+    if any(p_old)
+        W = oper.mul_A(eqn, opts, eqn.type, V, 'N');
         if isfield(eqn, 'haveUV') && eqn.haveUV
             if eqn.type == 'T'
                 W = W + eqn.V * (eqn.U' * V);

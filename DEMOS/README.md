@@ -1,5 +1,6 @@
 We have collected a number of demonstration examples that can serve as
-the starting point for your own scripts. The directories serve the
+the starting point for your own scripts. They can be found in the
+**DEMOS** directory in your installation folder. Its sub-directories serve the
 following purposes.
 
 **models/**
@@ -17,7 +18,7 @@ following purposes.
   default a scalable finite Volume discretization for a Stokes system
   is used. There is also an option to use the FEM model for a Karman
   vortex shedding in a 2d domain. This, however, requires an
-  additional download of approx. 270MB.
+  additional download of approx. 270MB per Reynolds number.
 
 **TripleChain/**
   Uses the Truhar/Veselic model with three coupled
@@ -28,7 +29,11 @@ following purposes.
 
 **DAE2_SO/ DAE3_SO/**
   Show the use of the *"dae_2_so"* and *"dae_3_so"* usfs for
-  second order index-2 and index-3 systems.
+  second order index-2 and index-3 systems, mechanical systems with
+  algebraic constraints on positions or velocities serve as examples here.
 
 **RI/**
   Demonstrates the solver for Riccati equations with indefinite quadratic terms.
+
+**Bilinear/**
+  Features the bilinear variant of the Rail model and related Matrix equations.

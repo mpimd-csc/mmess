@@ -1,7 +1,7 @@
 function [TL,TR,hsv,eqn,opts,oper] = mess_square_root_method(eqn,opts,oper,ZB,ZC)
 % Square root method for the computation of the balanced and reduced
 % system
-%  
+%
 % Call
 %  [TL,TR,hsv,eqn,opts,oper] = mess_square_root_method(eqn,opts,oper,ZB,ZC);
 %
@@ -11,35 +11,27 @@ function [TL,TR,hsv,eqn,opts,oper] = mess_square_root_method(eqn,opts,oper,ZB,ZC
 %                   set.
 %  ZB, ZC           the (tall and skinny) Gramian factors
 %
-% Outputs: 
+% Outputs:
 %  TL,TR            left and right truncation matrices
 %  hsv              computed Hankel singular values
 %
 % The implementation (especially in the case E!=I) follows the
 % derivation in:
 %	Efficient Numerical Solution of Large Scale Algebraic Matrix
-%	Equations in PDE Control and Model Order Reduction; 
+%	Equations in PDE Control and Model Order Reduction;
 %   Saak, Jens;
-%   Dissertation, TU Chemnitz; 2009. 
-% 
+%   Dissertation, TU Chemnitz; 2009.
+%
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%% Check necessary control data
+
+% Check necessary control data
 [result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
 [eqn, opts, oper] = oper.mul_E_pre(eqn,opts,oper);
 if not(result)
@@ -72,7 +64,7 @@ hsv=diag(S0);
 ks=length(hsv);
 nr=oper.size(eqn,opts)-ks;
 k=ks;
-while (2*sum(hsv(k-1:ks))+nr*hsv(ks)<opts.srm.tol)&&(k>2)
+while (2*sum(hsv(ks:-1:k-1))+nr*hsv(ks)<opts.srm.tol)&&(k>2)
     k=k-1;
 end
 k0=k;

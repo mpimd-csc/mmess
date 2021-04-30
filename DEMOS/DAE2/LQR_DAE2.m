@@ -4,39 +4,31 @@ function LQR_DAE2(problem,lvl,re,istest)
 %
 % Inputs:
 % problem       either 'Stokes' or 'NSE' to choose the Stokes demo or the
-%               linearized Navier-Stokes-Equation. (required)
+%               linearized Navier-Stokes-Equation.
+%               (optional, defaults to 'Stokes')
 %
-% lvl           discretization level 1 through 5 
+% lvl           discretization level 1 through 5
 %               (optional, only used in 'NSE' case, default: 1)
 %
 % re            Reynolds number 300, 400, or 500
 %               (optional, only used in 'NSE' case, default: 500)
 %
-% istest        flag to determine whether this demo runs as a CI test or 
+% istest        flag to determine whether this demo runs as a CI test or
 %               interactive demo
 %               (optional, defaults to 0, i.e. interactive demo)
-% 
+%
 % Note that the 'NSE' option requires additional data available in a
 % separate 270MB archive and at least the 5th discretization level needs a
 % considerable amount of main memory installed in your machine.
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 %% Set operations
 oper = operatormanager('dae_2');
 
@@ -47,40 +39,24 @@ if nargin<3, re=500; end
 if nargin<4, istest=0; end
 
 switch lower(problem)
-  case 'stokes'
-    nin = 5;
-    nout = 5;
-    nx = 10;
-    ny = 10;
-    [eqn.E_,eqn.A_,eqn.B,eqn.C]=stokes_ind2(nin,nout,nx,ny);
-    eqn.haveE=1;
-    st=full(sum(diag(eqn.E_)));
-    eqn.st=st;
-    eqn.B=eqn.B(1:st,:);
-    eqn.C=eqn.C(:,1:st);
-  case 'nse'
-    try
-      load(sprintf('%s/../models/NSE/mat_nse_re_%d',...
-                    fileparts(mfilename('fullpath')),re),'mat');
-    catch
-      error(['The files mat_nse_re_300.mat, mat_nse_re_400.mat and ', ...
-          'mat_nse_re_500.mat are available for dowload in a ', ...
-          'separate archive (270MB each). Please fetch them from the ', ...
-          'MESS download page and unpack them into the ', ...
-          'DEMOS/models/NSE folder.']);
-    end
-    eqn.A_=mat.mat_v.fullA{lvl};
-    eqn.E_=mat.mat_v.E{lvl};
-    eqn.haveE=1;
-    eqn.B=mat.mat_v.B{lvl};
-    if re>200
-      opts.nm.K0=mat.mat_v.Feed_0{lvl}';
-      opts.radi.K0 = opts.nm.K0;
-    end
-    eqn.C=mat.mat_v.C{lvl};
-    eqn.st=mat.mat_mg.nv(lvl);
+    case 'stokes'
+        nin = 5;
+        nout = 5;
+        nx = 10;
+        ny = 10;
+        [eqn.E_,eqn.A_,eqn.B,eqn.C]=stokes_ind2(nin,nout,nx,ny);
+        eqn.haveE=1;
+        st=trace(eqn.E_); % Stokes is FDM discretized, so so this is
+        % the dimension of the velocity space
+        eqn.st=st;
+        eqn.B=eqn.B(1:st,:);
+        eqn.C=eqn.C(:,1:st);
+    case 'nse'
+        [eqn, K0, ~] = mess_get_NSE(re, lvl);
+        opts.nm.K0 = K0;
+        opts.radi.K0 = K0;
     otherwise
-      error('input ''problem'' must be either ''NSE'' or ''Stokes''');
+        error('input ''problem'' must be either ''NSE'' or ''Stokes''');
 end
 %%
 % First we run the Newton-ADI Method
@@ -116,14 +92,14 @@ opts.nm.tau = 0.1;
 opts.nm.accumulateRes = 1;
 
 %% use low-rank Newton-Kleinman-ADI
-tic;
+t_mess_lrnm = tic;
 outnm = mess_lrnm(eqn, opts, oper);
-toc;
-
+t_elapsed1 =toc(t_mess_lrnm);
+fprintf(1,'mess_lrnm took %6.2f seconds \n' , t_elapsed1);
 if not(istest)
     figure(1);
     disp(outnm.res);
-    semilogy(outnm.res);
+    semilogy(outnm.res,'linewidth',3);
     title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
     xlabel('number of newton iterations');
     ylabel('normalized residual norm');
@@ -153,13 +129,13 @@ opts.radi.rel_diff_tol = 0;
 opts.radi.info = 1;
 
 
-tic;
+t_mess_lrradi = tic;
 outradi = mess_lrradi(eqn, opts, oper);
-toc;
-
+t_elapsed2 = toc(t_mess_lrradi);
+fprintf(1,'mess_lrradi took %6.2f seconds \n' ,t_elapsed2);
 if not(istest)
     figure();
-    semilogy(outradi.res);
+    semilogy(outradi.res,'linewidth',3);
     title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -173,8 +149,8 @@ else
     figure();
     ls_nm=[outnm.adi.niter];
     ls_radi=1:outradi.niter;
-    
-    semilogy(cumsum(ls_nm),outnm.res,'k--',ls_radi,outradi.res,'b-');
+
+    semilogy(cumsum(ls_nm),outnm.res,'k--',ls_radi,outradi.res,'b-','linewidth',3);
     title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
     xlabel('number of solves with A+p*M');
     ylabel('normalized residual norm');

@@ -10,10 +10,10 @@ function BT_DAE3_SO(model, tol, max_ord, maxiter, istest)
 %
 %  model    choice of the example system. Possible values
 %           'Stykel_small'   Stykel's mass spring damper system from [1]
-%                            of dimension 600 in second order form (default) 
+%                            of dimension 600 in second order form (default)
 %           'Stykel_large'   Stykel's mass spring damper system from [1]
-%                            of dimension 6000 in second order form 
-%           'Truhar_Veselic' a version of the triple chain mass spring damper 
+%                            of dimension 6000 in second order form
+%           'Truhar_Veselic' a version of the triple chain mass spring damper
 %                            test example from [2] with holonomic constraints
 %                            coupling certain masses. Dimension 451 in second
 %                            order form.
@@ -29,53 +29,46 @@ function BT_DAE3_SO(model, tol, max_ord, maxiter, istest)
 %  maxiter   maximal number of ADI iterations (optional, default: 300)
 %
 %  istest    decides whether the function runs as an interactive demo or a
-%            continuous integration test. 
+%            continuous integration test.
 %            (optional; defaults to 0, i.e. interactive demo)
 %
 % References:
-% [1] V. Mehrmann and T. Stykel. Balanced truncation model reduction for 
-%     large-scale systems in descriptor form. 
+% [1] V. Mehrmann and T. Stykel. Balanced truncation model reduction for
+%     large-scale systems in descriptor form.
 %     In P. Benner, V. Mehrmann, and D. Sorensen, editors, Dimension
-%     Reduction of Large-Scale Systems, volume 45 of Lecture Notes in 
-%     Computational Science and Engineering, pages 83–115. Springer-Verlag, 
-%     Berlin/Heidelberg, 2005.
+%     Reduction of Large-Scale Systems, volume 45 of Lecture Notes in
+%     Computational Science and Engineering, pages 83–115. Springer-Verlag,
+%     Berlin/Heidelberg, 2005. https://doi.org/10.1007/3-540-27909-1_3
 %
-% [2] N. Truhar and K. Veselic, An efficient method for estimating the 
-%     optimal dampers’ viscosity for linear vibrating systems using 
+% [2] N. Truhar and K. Veselic, An efficient method for estimating the
+%     optimal dampers’ viscosity for linear vibrating systems using
 %     Lyapunov equation, SIAM J. Matrix Anal. Appl., 31 (2009), pp. 18–39.
+%     https://doi.org/10.1137/070683052
 %
 % [3] J. Saak, M. Voigt, Model reduction of constrained mechanical systems
 %     in M-M.E.S.S., IFAC-PapersOnLine 9th Vienna International Conference
 %     on Mathematical Modelling MATHMOD 2018, Vienna, Austria, 21–23
 %     February 2018 51 (2) (2018) 661–666.
-%     https://doi.org/10.1016/j.ifacol.2018.03.112.      
+%     https://doi.org/10.1016/j.ifacol.2018.03.112
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% Input checks
 narginchk(0,5);
-if nargin==0
+
+if nargin < 1
     model='Stykel_small';
 end
 
 if nargin < 2
-    tol = 1e-4; 
+    tol = 1e-4;
 end
 
 if nargin < 3
@@ -87,7 +80,7 @@ if nargin < 4
 end
 
 if nargin < 5
-    istest = 0; 
+    istest = 0;
 end
 %% set operation manager for the structured computations of Gramians
 oper = operatormanager('dae_3_so');
@@ -113,23 +106,22 @@ switch lower(model)
         np = size(eqn.G_,1);
         eqn.B = full(sys.B(1:2*nv,:));
         eqn.C = full(sys.C(:,1:2*nv));
-        clear E A B C M D K G;        
+        clear E A B C M D K G;
     case 'tv2'
         n1=151; % make sure it is odd!
         alpha=0.01;
-        beta=alpha;
         v=5e0;
-        
-        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,beta,v);
+
+        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,alpha,v);
         eqn.E_ = -eqn.E_;
         eqn.K_ = -eqn.K_;
-        eqn.G_ = sparse(3,3*n1+1); 
-        n12=ceil(n1/2); % n1 is odd so this is the index of 
+        eqn.G_ = sparse(3,3*n1+1);
+        n12=ceil(n1/2); % n1 is odd so this is the index of
                         % the center of the string
         eqn.G_(1,1)=-1;       eqn.G_(1,n12)=2;       eqn.G_(1,n1)=-1;
-        eqn.G_(2,n1+1)=-1;    eqn.G_(2,n1+n12)=-1;   eqn.G_(2,2*n1)=-1;
+        eqn.G_(2,n1+1)=-1;    eqn.G_(2,n1+n12)=2;   eqn.G_(2,2*n1)=-1;
         eqn.G_(3,2*n1+1)=-1;  eqn.G_(3,2*n1+n12)=2;  eqn.G_(3,3*n1)=-1;
-       
+
         nv = size(eqn.M_,1);
         np = size(eqn.G_,1);
         eqn.B=zeros(6*n1+2,3);
@@ -145,19 +137,18 @@ switch lower(model)
     case 'tv'
         n1=151; % make sure it is odd!
         alpha=0.01;
-        beta=alpha;
         v=5e0;
-        
-        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,beta,v);
+
+        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,alpha,v);
         eqn.E_ = -eqn.E_;
         eqn.K_ = -eqn.K_;
-        eqn.G_ = sparse(3,3*n1+1); 
+        eqn.G_ = sparse(3,3*n1+1);
         n12=ceil(n1/2); % n1 is odd so this is the index of
                         % the center of the string
         eqn.G_(1,1)=1/3;       eqn.G_(1,n12)=1/3;       eqn.G_(1,n1)=1/3;
         eqn.G_(2,n1+1)=1/3;    eqn.G_(2,n1+n12)=1/3;   eqn.G_(2,2*n1)=1/3;
         eqn.G_(3,2*n1+1)=1/3;  eqn.G_(3,2*n1+n12)=1/3;  eqn.G_(3,3*n1)=1/3;
-       
+
         nv = size(eqn.M_,1);
         np = size(eqn.G_,1);
         eqn.B=[zeros(3*n1+1,1);ones(3*n1+1,1)];
@@ -167,13 +158,12 @@ switch lower(model)
    case 'truhar_veselic'
         n1=1500; % make sure it is even!
         alpha=0.01;
-        beta=alpha;
         v=5e0;
-             
-        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,beta,v);
+
+        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,alpha,v);
         eqn.E_ = -eqn.E_;
         eqn.K_ = -eqn.K_;
-        eqn.G_ = sparse(6,3*n1+1); 
+        eqn.G_ = sparse(6,3*n1+1);
         eqn.G_(1,1)=1;   eqn.G_(1,n1/2)=-1;
         eqn.G_(2,n1/2+1)=1;eqn.G_(2,n1)=-1;
         eqn.G_(3,n1+1)=1;eqn.G_(3,n1+n1/2)=-1;
@@ -203,7 +193,7 @@ opts.shifts.num_desired=25;
 %  controllability Gramian
 eqn.type = 'T';
 opts.adi.info = 1;
-tic;
+t_mess_lradi1 =tic;
 opts.shifts.p = mess_para(eqn, opts, oper);
 % use an additional alpha-shift to improve convergence and ROM quality for
 % the triple chain model
@@ -212,13 +202,16 @@ if strcmp(model,'Truhar_Veselic')||strcmp(model,'TV')||strcmp(model,'TV2')
 end
 
 outC = mess_lradi(eqn, opts, oper);
-toc;
+
+t_elapsed1 = toc(t_mess_lradi1);
+fprintf(1,'mess_lradi took %6.2f seconds \n', t_elapsed1);
 
 % observability Gramian
 eqn.type = 'N';
-tic;
+t_mess_lradi2 = tic;
 outB = mess_lradi(eqn, opts, oper);
-toc;
+t_elapsed2 = toc(t_mess_lradi2);
+fprintf(1,'mess_lradi took %6.2f seconds \n' , t_elapsed2);
 
 %% Reduced Order Model computation via square root method (SRM)
 fprintf('\nComputing reduced order model via square root method\n\n');
@@ -226,20 +219,21 @@ opts.srm.tol=tol;
 opts.srm.max_ord=max_ord;
 opts.srm.info=1;
 
-tic;
+t_SRM_ROM = tic;
 [TL, TR] = mess_square_root_method(eqn, opts, oper, outB.Z, outC.Z);
 % compute ROM matrices
 ROM.A = TL' * oper.mul_A(eqn, opts, 'N', TR, 'N');
 ROM.B = TL' * eqn.B;
 ROM.C = eqn.C * TR;
 ROM.E = eye(size(ROM.A));
-toc;
+t_elapsed3 = toc(t_SRM_ROM);
+fprintf(1,'ROM matrices computation took %6.2f seconds \n' , t_elapsed3);
 
 %% Frequency-domain evaluation of the (transfer function of the)
-%  ROM and comparison to the original model. 
+%  ROM and comparison to the original model.
 %
-% We feed the mess_sigma_plot with usfs that do not exploit the DAE structure: 
-tic;
+% We feed the mess_sigma_plot with usfs that do not exploit the DAE structure:
+t_FD_eval = tic;
 opts.sigma.nsample = 200;
 if istest
     opts.sigma.info = 0;
@@ -267,15 +261,17 @@ operu = operatormanager('so_1');
 
 out = mess_sigma_plot(eqnu, opts, operu, ROM); err = out.err;
 
-toc;
+t_elapsed4 = toc(t_FD_eval);
+fprintf(1,'frequency-domain evaluation took %6.2f \n' , t_elapsed4);
+
 %% final accuracy test used in the continuous integration system or
-%  plot of the computed  
+%  plot of the computed
 if istest
     % the errors are not always perfect in this example, but let's see
     % wether they are "good enough"...
-    if (max(err) > 50*tol)
+    if (max(err) > (50*tol))
         error('MESS:TEST:accuracy', ['unexpectedly inaccurate result ' ...
                             'for %s %g %d %d (%g)'], model, tol, ...
-              max_ord, maxiter,max(err));  
+              max_ord, maxiter,max(err));
     end
 end

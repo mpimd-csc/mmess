@@ -1,6 +1,5 @@
-function C=mul_A_default(eqn, opts,opA,B,opB)
-
-% function C=mul_A_default(eqn,opts,opA,B,opB)
+function C=mul_A_default(eqn, opts, opA, B, opB)
+% function C=mul_A_default(eqn, opts, opA, B, opB)
 %
 % This function returns C = A_*B, where matrix A_ given by
 % structure eqn and input matrix B could be transposed.
@@ -26,22 +25,13 @@ function C=mul_A_default(eqn, opts,opA,B,opB)
 % opts) to obtain the number of rows of matrix A_ in structure eqn.
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 
 %% check input parameters
@@ -72,10 +62,10 @@ colA = rowA;
 
 %% perform multiplication
 switch opA
-    
+
   case 'N'
     switch opB
-        
+
         %implement operation A_*B
       case 'N'
         if(colA~=size(B,1))
@@ -83,7 +73,7 @@ switch opA
                                 'differs with number of rows of B']);
         end
         C = eqn.A_*B;
-        
+
         %implement operation A_*B'
       case 'T'
         if(colA~=size(B,2))
@@ -92,10 +82,10 @@ switch opA
         end
         C = eqn.A_*B';
     end
-    
+
   case 'T'
     switch opB
-        
+
         %implement operation A_'*B
       case 'N'
         if(rowA~=size(B,1))
@@ -103,7 +93,7 @@ switch opA
                                 'differs with number rows of B']);
         end
         C = eqn.A_'*B;
-        
+
         %implement operatio A_'*B'
       case 'T'
         if(rowA~=size(B,2))
@@ -112,7 +102,7 @@ switch opA
         end
         C = eqn.A_'*B';
     end
-    
+
 end
 
 end

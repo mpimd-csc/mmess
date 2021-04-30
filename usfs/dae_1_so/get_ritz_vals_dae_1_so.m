@@ -1,32 +1,25 @@
 function [rw, Hp, Hm, Vp, Vm] = get_ritz_vals_dae_1_so(eqn, opts, oper, U, W, p_old)
-%  This function ensures that W is not empty if the shift
-%  method is projection. Otherwise, it checks opts.shifts.b0. It 
-%  should be a vector of the same size as eqn.A but oper.size gives eqn.st.
+% [rw, Hp, Hm, Vp, Vm] = get_ritz_vals_dae_1_so(eqn, opts, oper, U, W, p_old)
+% 
+% Wrapper for the special system structure around mess_get_ritz_vals.
+% Additionally due to the second order structure, the real value
+% opts.shifts.truncate can be set to remove any comuted values that are
+% smaller than opts.shifts.truncate, or larger than 1/opts.shifts.truncate.
 %
-%  MMESS (Björn Baran, March 2018)
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
-%
+
 
 % Input data not completely checked!
-if(not(isfield(eqn,'A_'))) || not(isnumeric(eqn.A_))
-    error('MESS:error_arguments','field eqn.A_ is not defined');
-end
+% if(not(isfield(eqn,'A_'))) || not(isnumeric(eqn.A_))
+%     error('MESS:error_arguments','field eqn.A_ is not defined');
+% end
 [result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
 if not(result)
     error('MESS:control_data', 'system data is not completely defined or corrupted');
@@ -41,8 +34,7 @@ if isfield(opts.shifts, 'method') && ...
         % first shifts are computed with U = eqn.G and W = A * eqn.G
         W = oper.mul_A(eqn, opts, eqn.type, U, 'N');
     end
-    rw = mess_projection_shifts(eqn, opts, oper, U, ...
-        W, p_old);
+    rw = mess_projection_shifts(eqn, opts, oper, U, W, p_old);
 else
     if (not(isfield(opts.shifts, 'b0')) || isempty(opts.shifts.b0))
         opts.shifts.b0 = ones(n,1);
@@ -55,7 +47,9 @@ else
     end
     [rw, Hp, Hm, Vp, Vm] = mess_get_ritz_vals(eqn, opts, oper);
 end
+%
+% remove Ritz values that are too large or too small if desired 
 if isfield(opts.shifts,'truncate') && isnumeric(opts.shifts.truncate)
-    rw = rw(abs(rw)<opts.shifts.truncate);
-    rw = rw(abs(rw)>1/opts.shifts.truncate);
+    rw = rw( abs(rw) < opts.shifts.truncate );
+    rw = rw( abs(rw) > 1/opts.shifts.truncate );
 end

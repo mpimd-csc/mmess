@@ -79,21 +79,11 @@ function [eqn, opts, oper, nShifts] = ...
 %
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
-%
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
 
 % Determine the number of inputs.
@@ -371,9 +361,17 @@ function [eqn, opts, oper, W, Z, Y] = update_ray(eqn, opts, oper, W, Z, Y)
                 + opts.shifts.tmp.UtV * opts.shifts.tmp.UtU';
         end
 
-        opts.shifts.tmp.Hproj = ...
-            full([AA, opts.shifts.tmp.UtB*opts.shifts.tmp.UtB'; ...
-            opts.shifts.tmp.UtR*opts.shifts.tmp.UtR', -AA']);
+        if opts.LDL_T
+            opts.shifts.tmp.Hproj = ...
+                full([AA, ...
+                opts.shifts.tmp.UtB*opts.shifts.tmp.UtB'; ...
+                opts.shifts.tmp.UtR * (diag(eqn.S_diag) * opts.shifts.tmp.UtR'), ...
+                -AA']);
+        else
+            opts.shifts.tmp.Hproj = ...
+                full([AA, opts.shifts.tmp.UtB*opts.shifts.tmp.UtB'; ...
+                opts.shifts.tmp.UtR*opts.shifts.tmp.UtR', -AA']);
+        end
 
         if eqn.haveE
             opts.shifts.tmp.Eproj = ...
@@ -462,9 +460,18 @@ function [eqn, opts, oper, W, Z, Y] = update_ray(eqn, opts, oper, W, Z, Y)
                 + opts.shifts.tmp.UtV * opts.shifts.tmp.UtU';
         end
 
-        opts.shifts.tmp.Hproj = ...
-            [AA opts.shifts.tmp.UtB * opts.shifts.tmp.UtB'; ...
-            opts.shifts.tmp.UtR*opts.shifts.tmp.UtR', -AA'];
+        if opts.LDL_T
+            opts.shifts.tmp.Hproj = ...
+                [AA, ...
+                opts.shifts.tmp.UtB * opts.shifts.tmp.UtB'; ...
+                opts.shifts.tmp.UtR * (diag(eqn.S_diag) * opts.shifts.tmp.UtR'), ...
+                -AA'];
+        else
+            opts.shifts.tmp.Hproj = ...
+                [AA opts.shifts.tmp.UtB * opts.shifts.tmp.UtB'; ...
+                opts.shifts.tmp.UtR*opts.shifts.tmp.UtR', -AA'];
+        end
+        
         % If needed, assemble the  Rayleigh quotient of diag(E,E') matrix.
         if eqn.haveE
             opts.shifts.tmp.Eproj = ...

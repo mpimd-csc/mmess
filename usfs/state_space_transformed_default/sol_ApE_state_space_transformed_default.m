@@ -35,6 +35,15 @@ function X = sol_ApE_state_space_transformed_default ...
 % This function uses another default function size_default(eqn, opts) to
 % obtain the number of rows of matrix A_ in structure eqn.
 
+%
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
+%
+
+
 %% Check input parameters.
 assert(ischar(opA) && ischar(opE) && ischar(opB), ...
     'MESS:error_arguments', ...
@@ -109,7 +118,7 @@ if eqn.haveE % Case of non-identity E matrix.
                             X = eqn.EU * ((eqn.A_ + p*eqn.E_) ...
                                 \ (eqn.EL * B'));
                     end
-                    
+
                 case 'T'
                     switch opB
                         case 'N' % Implement EU'\(A_ + pE_')/EL'*X = B.
@@ -127,7 +136,7 @@ if eqn.haveE % Case of non-identity E matrix.
                             X = eqn.EL' * ((eqn.A_ + p*eqn.E_') ...
                                 \ (eqn.EU' * B));
                     end
-                    
+
             end
         case 'T'
             switch opE
@@ -148,7 +157,7 @@ if eqn.haveE % Case of non-identity E matrix.
                             X = eqn.EU * ((eqn.A_' + p*eqn.E_) ...
                                 \ (eqn.EL * B'));
                     end
-                    
+
                 case 'T'
                     switch opB
                         case 'N' % Implement EU'\(A_' + pE_')/EL'*X = B.
@@ -166,7 +175,7 @@ if eqn.haveE % Case of non-identity E matrix.
                             X = eqn.EL' * ((eqn.A_' + p*eqn.E_') ...
                                 \ (eqn.EU' * B));
                     end
-                    
+
             end
     end
 else % Case of E_ = I_n, was set by init.
@@ -186,7 +195,7 @@ else % Case of E_ = I_n, was set by init.
                         'number of columns of B']);
                     X = (eqn.A_ + p*eqn.E_) \ B';
             end
-            
+
         case 'T'
             switch opB
                 case 'N' % Implement (A_' + pE_)*X = B.
@@ -202,6 +211,6 @@ else % Case of E_ = I_n, was set by init.
                         'with number of columns of B']);
                     X = (eqn.A_' + p*eqn.E_) \ B';
             end
-            
+
     end
 end

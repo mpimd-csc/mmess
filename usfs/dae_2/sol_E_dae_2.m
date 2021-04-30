@@ -18,7 +18,7 @@ function X = sol_E_dae_2(eqn, opts, opE, B, opB) %#ok<INUSL>
 %           opE = 'N' solves E *X = opB(B)
 %           opE = 'T' sovles E'*X = opB(B)
 %
-%   B       p-x-q matrix 
+%   B       p-x-q matrix
 %
 %   opB     character specifies the form of opB(B)
 %           opB = 'N' solves opE(E)*X = B
@@ -31,22 +31,13 @@ function X = sol_E_dae_2(eqn, opts, opE, B, opB) %#ok<INUSL>
 %   uses no other dae_2 function
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% check input Paramters
 if (not(ischar(opE)) || not(ischar(opB)))
@@ -98,35 +89,35 @@ end
 
 %% solve
 switch opE
-    
+
     case 'N'
         switch opB
-            
+
             %implement solve S_*X=B
             case 'N'
-                
+
                 X = eqn.S_ \ B;
-            
+
             %implement solve S_*X=B'
             case 'T'
-                
+
                 X = eqn.S_ \ B';
         end
-        
+
     case 'T'
         switch opB
-            
+
             %implement solve S_'*X=B
             case 'N'
-                
+
                 X = eqn.S_' \ B;
-                
+
             %implement solve S_'*X=B'
             case 'T'
-                
+
                 X = eqn.S_' \ B';
         end
-        
+
 end
 
 end

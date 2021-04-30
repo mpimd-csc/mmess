@@ -1,50 +1,41 @@
 function out = LQR_LTV_smallscale_splitting(method, istest)
 
-% Computes the optimal feedback via low-rank splitting schemes [1, 2] for 
+% Computes the optimal feedback via low-rank splitting schemes [1, 2] for
 % a small-scale LTV system, where the matrices are time-varying in the
 % sense that A(t) = a(t) \hat{A}.
 %
-% Inputs: 
+% Inputs:
 %
-% method      choice of splitting scheme; structure with fields 'order', 
+% method      choice of splitting scheme; structure with fields 'order',
 %             'additive' and 'symmetric'
 %             (optional, defaults to order = 2, additive = false, symmetric
 %             = false)
-%             NOTE: the additive schemes typically need a running parallel 
+%             NOTE: the additive schemes typically need a running parallel
 %             pool in order to be competitive
 %
-% istest      flag to determine whether this demo runs as a CI test or 
+% istest      flag to determine whether this demo runs as a CI test or
 %             interactive demo
 %             (optional, defaults to 0, i.e. interactive demo)
 %
 %
 % References:
 %
-% [1] T. Stillfjord, Low-rank second-order splitting of large-scale 
-%     differential Riccati equations, IEEE Trans. Autom. Control, 60 
-%     (2015), pp. 2791-2796. https://doi.org/10.1109/TAC.2015.2398889.
-% 
+% [1] T. Stillfjord, Low-rank second-order splitting of large-scale
+%     differential Riccati equations, IEEE Trans. Autom. Control, 60
+%     (2015), pp. 2791-2796. https://doi.org/10.1109/TAC.2015.2398889
+%
 % [2] T. Stillfjord, Adaptive high-order splitting schemes for large-scale
 %     differential Riccati equations, Numer. Algorithms,  (2017).
-%     https://doi.org/10.1007/s11075-017-0416-8.
+%     https://doi.org/10.1007/s11075-017-0416-8
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 
 if nargin < 1
@@ -86,8 +77,8 @@ C = 1/Nx2 * ones(1, Nx2);
 alpha = @(t) 1 + 10*sin(2*pi*t); % A
 mu = @(t) 2 + 7.1*sin(2*pi*t);   % M
 dmu = @(t) 7.1*2*pi*cos(2*pi*t); % dM/dt
-beta = @(t) 3 + cos(t);          % B
-gamma = @(t) 1 - min(t, 1);      % C
+Beta = @(t) 3 + cos(t);          % B
+Gamma = @(t) 1 - min(t, 1);      % C
 
 % Alternative, autonomous case:
 % alpha = @(t) 1;        % A
@@ -99,11 +90,11 @@ gamma = @(t) 1 - min(t, 1);      % C
 At = @(t) alpha(t) * A_2D;
 Mt = @(t) mu(t) * M;
 dMt = @(t) dmu(t) * M;
-Bt = @(t) beta(t) * B;
-Ct = @(t) gamma(t) * C;  
+Bt = @(t) Beta(t) * B;
+Ct = @(t) Gamma(t) * C;
 
 eqn.A_time = At;
-eqn.E_time = Mt; 
+eqn.E_time = Mt;
 eqn.dt_E_time = dMt;
 eqn.B_time = Bt;
 eqn.C_time = Ct;
@@ -127,7 +118,7 @@ eqn.LTV = 1; % Specify that this is a time-varying problem
 % Time interval [0, 0.1] and 100 time steps
 t0 = 0;
 tend = 0.1;
-Nt = 100; 
+Nt = 100;
 
 %% General splitting parameters
 opts.splitting.time_steps = linspace(t0, tend, Nt+1);
@@ -150,28 +141,29 @@ opts.exp_action.tol = 1e-8;
 
 
 %% Compute the approximation
-tic;
+t_mess_splitting_dre = tic;
 [out, ~,opts, ~] = mess_splitting_dre(eqn,opts,oper);
-toc;
+t_elapsed = toc(t_mess_splitting_dre);
+fprintf(1,'mess_splitting_dre took %6.2f seconds \n', t_elapsed);
 
 %%
 if not(istest)
     t = opts.splitting.time_steps;
     figure;
-    plot(t, out.ms);
+    plot(t, out.ms,'linewidth',3);
     title('Ranks of approximations over time');
 
     y = zeros(1,length(out.Ks));
     for i=1:length(out.Ks)
         y(i) = out.Ks{i}(1,1);
     end
-    
+
     figure;
-    plot(t, y);
+    plot(t, y,'linewidth',3);
     title('evolution of component (1,1) of the optimal feedback');
 else
-    
+
     if abs(norm(out.Ds{1}) / 6.078945091766749e-05 - 1) >= 1e-10
-       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result');
    end
 end

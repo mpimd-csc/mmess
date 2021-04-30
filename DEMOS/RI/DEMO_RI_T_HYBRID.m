@@ -11,22 +11,13 @@ function DEMO_RI_T_HYBRID(istest)
 %
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 %%
 if nargin<1, istest=0; end
 
@@ -112,12 +103,13 @@ opts.ri.info           = 1;
 opts.norm           = 2;
 
 % %% Call Riccati iteration with Newton solver.
-tic;
+t_RI_call = tic;
 eqn.type = 'T';
 eqn.B1   = 1/gam * B1;
 eqn.C1   = C1;
 [out, eqn, opts, ~] = mess_lrri(eqn, opts, oper);
-toc;
+t_elapsed = toc(t_RI_call);
+fprintf(1,'mess_lrri took %6.2f seconds \n' , t_elapsed);
 
 %% Compute real residuals.
 abserr = norm(eqn.A_' * (out.Z * out.Z') + (out.Z * out.Z') * eqn.A_ ...

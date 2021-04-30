@@ -37,7 +37,7 @@ function [Z, D, S]=mess_galerkin_projection_acceleration(Z, type, ...
 %  xopts.projection.meth    method for solving projected Lyapunov or
 %                           Riccati equation xopts is fopts.adi or fopts.nm
 %                           depending on type possible  values: 'lyapchol',
-%                           'lyap_sgn_fac','lyap','lyapunov','lyap2solve', 
+%                           'lyap_sgn_fac','lyap','lyapunov','lyap2solve',
 %                           'care','care_nwt_fac','mess_dense_nm'
 %                           (optional, default: 'lyap' or 'care' depending
 %                           on type)
@@ -54,22 +54,13 @@ function [Z, D, S]=mess_galerkin_projection_acceleration(Z, type, ...
 % uses oparatorfunctions mul_A, mul_E, mul_ApE
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
-%
+
 
 factorize=1;
 
@@ -98,7 +89,11 @@ if not(isfield(opts.projection,'meth')) || isempty(opts.projection.meth)
         case 'LE'
             opts.projection.meth='lyap';
         case 'CARE'
-            opts.projection.meth='care';
+            if exist('icare', 'file')
+                opts.projection.meth='icare';
+            else
+                opts.projection.meth='care';
+            end
     end
 else
     set_default = 0;
@@ -307,7 +302,7 @@ switch type
                     end
                 end
                 factorize=0;
-                
+
             case 'lyap_sgn_fac'
                 if fopts.LDL_T
                     B = B * U * sqrt(S);
@@ -320,7 +315,7 @@ switch type
                     XC = lyap_sgn_fac(A',B',E');
                 end
                 factorize=0;
-                
+
             case {'lyap','lyapunov'}
                 if fopts.LDL_T
                     B = B*U*S*U'*B';
@@ -337,7 +332,7 @@ switch type
                         X = lyap(A,B*B');
                     end
                 end
-                
+
             case 'lyap2solve'
                 if eqn.haveE
                     EB = E\B;
@@ -397,7 +392,7 @@ switch type
         else
             E = [];
         end
-        
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Choose solver for the small equation
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -410,20 +405,20 @@ switch type
                                         'over using care() following the ' ...
                                         'recommendation by TMW.'])
                 end
-            
+
                 if fopts.LDL_T
                     X=care(A,B,C'*eqn.S*C,eye(size(B,2)),[],E);
                 else
                     X=care(A,B,C'*C,eye(size(B,2)),[],E);
                 end
-         
+
             case {'icare'}
                 if fopts.LDL_T
                     X=icare(A,B,C'*eqn.S*C,eye(size(B,2)),[],E);
                 else
                     X=icare(A,B,C'*C,eye(size(B,2)),[],E);
                 end
-         
+
             case 'care_nwt_fac'
                 if fopts.LDL_T
                     C = sqrt(S) * U' * C;
@@ -440,7 +435,7 @@ switch type
                     S = 1;
                 end
                 factorize=0;
-                
+
             case 'mess_dense_nm'
                     if fopts.LDL_T
                         X=mess_dense_nm(A,B,C,E, [], eqn.S);

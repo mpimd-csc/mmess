@@ -1,29 +1,29 @@
 function [Ar, Br, Cr] = bt_mor_FDM_tol(tol,n0,shifts,istest)
 % bt_mor_FDM_tol computes a reduced order model via the standard Lyapunov
-% balanced truncation (see e.g. [1]) for a finite difference discretized  
+% balanced truncation (see e.g. [1]) for a finite difference discretized
 % convection diffusion model on the unit square described in [2].
 %
-% Usage: 
+% Usage:
 %    [Ar, Br, Cr] = bt_mor_FDM_tol(tol,max_ord,n0,test)
 %
 % Inputs
 %
 % tol         truncation tolerance for the Hankel singular values
 %             (optional; defalts to 1e-6)
-% 
+%
 % n0          n0^2 gives the dimension of the original model, i.e. n0 is
 %             the number of degrees of freedom, i.e. grid points, per
-%             spatial direction 
+%             spatial direction
 %             (optional; defaults to 50)
 %
-% shifts      shift selection used in ADI;  possible choices: 
+% shifts      shift selection used in ADI;  possible choices:
 %               'heur'       :   Penzl heuristic shifts
 %               'projection' :   projection shifts using the last columns
 %                                of the solution factor
 %             (optional, defaults to 'heur')
-% 
-% istest      flag to determine whether this demo runs as a CI test or 
-%             interactive demo 
+%
+% istest      flag to determine whether this demo runs as a CI test or
+%             interactive demo
 %             (optional, defaults to 0, i.e. interactive demo)
 %
 % Outputs
@@ -33,30 +33,21 @@ function [Ar, Br, Cr] = bt_mor_FDM_tol(tol,n0,shifts,istest)
 % References
 % [1] A. C. Antoulas, Approximation of Large-Scale Dynamical Systems, Vol.
 %     6 of Adv. Des. Control, SIAM Publications, Philadelphia, PA, 2005.
-%     https://doi.org/10.1137/1.9780898718713.  
+%     https://doi.org/10.1137/1.9780898718713
 %
-% [2] T. Penzl, Lyapack Users Guide, Tech. Rep. SFB393/00-33, 
-%     Sonderforschungsbereich 393 Numerische Simulation auf massiv 
-%     parallelen Rechnern, TU Chemnitz, 09107 Chemnitz, Germany, 
-%     available from http://www.tu-chemnitz.de/sfb393/sfb00pr.html. (2000).
+% [2] T. Penzl, Lyapack Users Guide, Tech. Rep. SFB393/00-33,
+%     Sonderforschungsbereich 393 Numerische Simulation auf massiv
+%     parallelen Rechnern, TU Chemnitz, 09107 Chemnitz, Germany,
+%     available from http://www.tu-chemnitz.de/sfb393/sfb00pr.html (2000).
 
+%
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
+%
 
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
-%
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
 %%
 narginchk(0,4);
 % BT tolerance and maximum order for the ROM
@@ -86,17 +77,21 @@ eqn.haveE = 0;
 n=oper.size(eqn, opts);
 
 %%
-%Heuristic Parameters via basic Arnoldi or Projection shifts
+% Heuristic Parameters via basic Arnoldi or Projection shifts
 opts.shifts.method = shifts;
+
 switch opts.shifts.method
+
     case 'heur'
         opts.shifts.num_desired=25;
         opts.shifts.num_Ritz=50;
         opts.shifts.num_hRitz=25;
         opts.shifts.b0=ones(n,1);
+
     case 'projection'
         opts.shifts.method = 'projection';
         opts.shifts.num_desired = 10;
+
     otherwise
         warning('MESS:Test:invalid_parameter_fallback',...
             'invalid shift selection, falling back to "heur"');
@@ -106,17 +101,13 @@ switch opts.shifts.method
         opts.shifts.b0=ones(n,1);
         opts.shifts.method = 'heur';
 end
-
-opts.shifts.p=mess_para(eqn,opts,oper);
-
-disp('(Initial) ADI shifts');
-disp(opts.shifts.p);
 %%
-%observability
+% controllability
 eqn.type='N';
-tic;
+t_mess_lradi = tic;
 outB  = mess_lradi(eqn, opts, oper);
-toc;
+t_elapsed1 = toc(t_mess_lradi);
+fprintf(1,'mess_lradi took %6.2f seconds \n' ,t_elapsed1);
 
 if istest
     if min(outB.res)>=opts.adi.res_tol
@@ -124,7 +115,7 @@ if istest
     end
 else
     figure(1);
-    semilogy(outB.res);
+    semilogy(outB.res,'linewidth',3);
     title('AX + XA^T = -BB^T');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -135,11 +126,12 @@ disp('size outB.Z:');
 disp(size(outB.Z));
 
 %%
-%controllability
+% observability
 eqn.type = 'T';
-tic;
+t_mess_lradi = tic;
 outC = mess_lradi(eqn, opts, oper);
-toc;
+t_elapsed2 = toc(t_mess_lradi);
+fprintf(1,'mess_lradi took %6.2f seconds \n' , t_elapsed2);
 
 if istest
     if min(outC.res)>=opts.adi.res_tol
@@ -147,7 +139,7 @@ if istest
     end
 else
     figure(2);
-    semilogy(outC.res);
+    semilogy(outC.res,'linewidth',3);
     title('A^TX + XA = -C^TC');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -159,7 +151,7 @@ disp(size(outC.Z));
 %%
 opts.srm.tol=tol;
 opts.srm.info=1;
-[TL, TR, hsv, eqn, opts, ~] = mess_square_root_method(eqn,opts,oper,...
+[TL, TR, HSV, eqn, opts, ~] = mess_square_root_method(eqn,opts,oper,...
     outB.Z,outC.Z);
 
 Ar = TL'*(eqn.A_*TR);
@@ -187,7 +179,7 @@ if istest
     end
 else
     figure;
-    semilogy(hsv);
+    semilogy(HSV,'linewidth',3);
     title('Computed Hankel singular values');
     xlabel('index');
     ylabel('magnitude');

@@ -1,22 +1,25 @@
 function [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_get_ritz_vals(eqn,opts,oper)
+% [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_get_ritz_vals(eqn,opts,oper)
+% 
+% Computes a number of Ritz and harmonic Ritz values for the operator
+% defined by oper and eqn. The actual numbers are determined by 
+%
+% opts.shifts.num_desired         total number of values
+% opts.shifts.num_Ritz            number of Ritz of values
+% opts.shifts.num_hRitz           number of harmonic Ritz values
+%
+% The initial vector for the Arnoldi processes with "A" or "A^-1" can be
+% set in opts.shifts.b0 when unset a vector of all ones will be used.
+%
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
-%
+
 
 %% check data
 if not(isfield(opts,'shifts')) || not(isstruct(opts.shifts))
@@ -74,20 +77,20 @@ Vm = [];
 %% estimate suboptimal ADI shift parameters
 if opts.shifts.num_Ritz > 0
     [Hp, Vp] = mess_arn(eqn, opts, oper, 'N');
-    rwp = eig(Hp(1:opts.shifts.num_Ritz, 1:opts.shifts.num_Ritz));                 % =: R_+
+    rwp = eig(Hp(1:opts.shifts.num_Ritz, 1:opts.shifts.num_Ritz));      % =: R_+
     rw = [rw; rwp];
 end
 
 if opts.shifts.num_hRitz > 0
     [Hm, Vm] = mess_arn(eqn, opts, oper, 'I');
     rwm = ones(opts.shifts.num_hRitz, 1)./eig(Hm(1:opts.shifts.num_hRitz, ...
-        1:opts.shifts.num_hRitz));     % =: 1 / R_-
-    rw = [rw; rwm];                           % =: R
+        1:opts.shifts.num_hRitz));                                  % =: 1 / R_-
+    rw = [rw; rwm];                                                       % =: R
 end
 if any(real(rw) >= zeros(size(rw)))
     warning('MESS:antistable_ritz',...
-        'Non-stable Ritz values were detected.\n These will be removed from the set in further computations.')
-    
+        ['Non-stable Ritz values were detected.\n',...
+        'These will be removed from the set in further computations.']);
     rw  = rw(real(rw)<0);
 end
 end

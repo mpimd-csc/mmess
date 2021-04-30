@@ -5,13 +5,13 @@ function [ opts, l ] = mess_get_projection_shifts( eqn, opts, oper, ...
 % updates shift vectors if the shift computation method is
 % 'projection', otherwise it simply does nothing. The function is
 % called in mess_lradi whenever the end of the current shift vector
-% is reached. 
+% is reached.
 %
-% Inputs: 
+% Inputs:
 %  eqn, opts, oper  the usual structures containing the equation
 %                   data, the process control parameters and teh
 %                   operation function handles.
-% 
+%
 %  Z, W, D          The matrices for the current residual (W) and
 %                   the tall and skinny factor in the solution
 %                   approximation (Z) and in case of LDL_T D the
@@ -20,7 +20,7 @@ function [ opts, l ] = mess_get_projection_shifts( eqn, opts, oper, ...
 % Output:
 %  opts             altered opts structure, with the new shifts in opts.shifts.p
 %  l                the number of admissible shifts computed,
-%                   i.e. the length of opts.shifts.p 
+%                   i.e. the length of opts.shifts.p
 %
 %  mess_get_projection shifts evaluates opts.shifts.num_desired to
 %  determine how many shifts are to be computed and how many block
@@ -28,26 +28,17 @@ function [ opts, l ] = mess_get_projection_shifts( eqn, opts, oper, ...
 %  compute them.
 %
 %  By default a shift is admissible if it resides in the left half
-%  of the complex plane. 
+%  of the complex plane.
 %
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% Check input
 k = size(eqn.G, 2);
@@ -135,7 +126,7 @@ if isfield(opts.shifts, 'method') && ...
     end
     %% check computed shifts
     % check for banned shifts
-    for j = 1 : size(opts.shifts.banned)
+    for j = 1 : length(opts.shifts.banned)
         critical_shifts = abs(p - opts.shifts.banned(j)) ...
             < opts.shifts.banned_tol * max(abs(p));
         p(critical_shifts) = p(critical_shifts) ...

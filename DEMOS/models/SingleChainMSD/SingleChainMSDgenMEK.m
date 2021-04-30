@@ -1,7 +1,7 @@
 function [M,E,K]=SingleChainMSDgenMEK(n)
 %  [M,E,K]=genMEK(n)
 %
-%  Generate system matrices of a mass-spring-damper-system 
+%  Generate system matrices of a mass-spring-damper-system
 %
 %              M x''(t)  = -E x'(t) -Kx(t)
 %
@@ -19,6 +19,14 @@ function [M,E,K]=SingleChainMSDgenMEK(n)
 %
 %  K   stiffness matrix, i.e., tridiagonal matrix built from the
 %      stiffnesses of the springs.
+
+%
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
+%
 
 M=spdiags(rand(n,1),0,n,n);
 while (any(diag(M)==0))

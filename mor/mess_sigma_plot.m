@@ -5,8 +5,8 @@ function [out, eqn, opts, oper] = mess_sigma_plot(argone, opts, varargin)
 % Calling sequence:
 %
 %   [out, eqn, opts, oper] = mess_sigma_plot(eqn, opts, oper, ROM)
-% or 
-%   [out, eqn, opts, oper] = mess_sigma_plot(tr, opts, ROM)
+% or
+%   [out, eqn, opts, oper] = mess_sigma_plot(g, opts, ROM)
 %
 % INPUTS:
 %   eqn                 struct contains data for equations
@@ -17,16 +17,16 @@ function [out, eqn, opts, oper] = mess_sigma_plot(argone, opts, varargin)
 %   opts                struct contains parameters for the algorithm
 %                       (mandatory with substructure opts.sigma)
 %
-%   oper                struct contains function handles for operation 
+%   oper                struct contains function handles for operation
 %                       with A and E
-% 
+%
 %   ROM                 structure containing reduced order model matrices
-%                       either E, A, B, C, D, 
+%                       either E, A, B, C, D,
 %                       or M, E, K, B, Cv, Cp, D
 %                       where in the first case E and in both cases D are
 %                       optional.
 %                       (optional when eqn is present; mandatory otherwise)
-%  
+%
 % The relevant substructure of opts is opts.sigma with members:
 %
 % fmin, fmax   left and right bounds of the frequency range. They will be
@@ -41,34 +41,37 @@ function [out, eqn, opts, oper] = mess_sigma_plot(argone, opts, varargin)
 % info         verbosity control. (optional, defaults to 2)
 %                1   only progress is reported
 %                2   also generate the actual sigma plots.
-% 
+%
 %  w           vector of frequency samples fitting
 %              (mandatory for input tr, ignored for input eqn)
 %
 % Outputs:
 %
-% out.w         vector of sampling frequencies 
+% out.w         vector of sampling frequencies
 %
-% out.err       vector of sampled maximal singular values of the transfer 
+% out.err       vector of sampled maximal singular values of the transfer
 %               function of the error system (only when ROM was given)
+% out.relerr    vector of sampled maximal singular values of the transfer
+%               function of the error system (only when ROM was given)
+%               relative to the FOM.
+% out.tr1       vector of sampled maximal singular values of the transfer
+%               function of the FOM
+% out.tr2       vector of sampled maximal singular values of the transfer
+%               function of the ROM (only when ROM is given)
+% out.g1        vector of sampled values of the transfer function of the
+%               FOM
+% out.g2        vector of sampled values of the transfer function of the
+%               ROM (only when ROM is given)
+
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% Check and assign inputs
 narginchk(2,4);
@@ -93,12 +96,12 @@ if (nargin > 2)
     if not(isa(varargin{1}, 'struct')) || ...
             (nargin == 4 && not(isa(varargin{2}, 'struct')))
         error(['Either all inputs are structures, or the first input',...
-            'is numeric and the rest are structures']) 
+            'is numeric and the rest are structures'])
     end
     if isa(argone, 'numeric')
         g = argone;
         ROM = varargin{1};
-        eqn = []; 
+        eqn = [];
         oper = [];
     else
         g=[];
@@ -146,7 +149,7 @@ if isempty(g) && not(isfield(opts.sigma,'nsample'))
     opts.sigma.nsample = 100;
 end
 
-if isfield(opts.sigma,'w') 
+if isfield(opts.sigma,'w')
     w = opts.sigma.w;
     opts.sigma.nsample = length(w);
 else
@@ -160,10 +163,10 @@ else
 end
 
 %% preallocation
-out.tr1=zeros(1,opts.sigma.nsample); 
+out.tr1=zeros(1,opts.sigma.nsample);
 if not(isempty(ROM))
-    out.tr2=out.tr1; 
-    out.err=out.tr1; 
+    out.tr2=out.tr1;
+    out.err=out.tr1;
     out.relerr=out.tr1;
 end
 
@@ -196,15 +199,15 @@ if isempty(g)
     [eqn, opts, oper] = oper.sol_ApE_pre(eqn, opts, oper);
 end
 %% make sure we have an E in the first-order ROM
-if not(isempty(ROM)) 
+if not(isempty(ROM))
     if (not(isfield(ROM,'A')) && ...
         (not(isfield(ROM,'K')) || not(isfield(ROM,'M')))) || ...
         not(isfield(ROM,'B')) || ...
         (not(isfield(ROM,'C')) && ...
              not(isfield(ROM, 'Cv')) && not(isfield(ROM, 'Cp')))
-     error('Found incomplete ROM structure!')
-    end    
-    if not(isfield(ROM,'E')) 
+         error('Found incomplete ROM structure!')
+    end
+    if not(isfield(ROM,'E'))
         if not(isfield(ROM,'A'))
             ROM.E = [];
         else
@@ -218,7 +221,7 @@ end
 %% perform the actual sampling
 for k=1:opts.sigma.nsample
   if (opts.sigma.info && not(mod(k,opts.sigma.nsample/10)))
-      fprintf('\r Step %3d / %3d',k,opts.sigma.nsample); 
+      fprintf('\r Step %3d / %3d',k,opts.sigma.nsample);
   end
   if isempty(g) % sample original model only if it was not given
       if isfield(eqn,'D')&& not(isempty(eqn.D))
@@ -269,14 +272,14 @@ if isnumeric(opts.sigma.info) && opts.sigma.info > 1
     if not(isempty(ROM))
         figure;
         subplot(2,1,1);
-        loglog(out.w, out.err);
+        loglog(out.w, out.err,'linewidth', 3);
         title('absolute model reduction error');
         xlabel('\omega');
         ylabel('\sigma_{max}(G(j\omega) - G_r(j\omega))');
         axis tight;
         hold on;
         subplot(2,1,2);
-        loglog(out.w, out.relerr);
+        loglog(out.w, out.relerr,'linewidth', 3);
         title('relative model reduction error');
         xlabel('\omega');
         ylabel(['\sigma_{max}(G(j\omega) - G_r(j\omega)) / \' ...
@@ -284,12 +287,12 @@ if isnumeric(opts.sigma.info) && opts.sigma.info > 1
         axis tight;
         hold off;
     end
-    
+
     figure;
     loglog(out.w, out.tr1);
     if not(isempty(ROM))
         hold on;
-        loglog(out.w, out.tr2, 'r--');
+        loglog(out.w, out.tr2, 'r--','linewidth', 3);
         legend({'original system','reduced system'});
         title('Transfer functions of original and reduced systems');
     else

@@ -3,7 +3,7 @@ function bt_mor_DAE1_tol(istest)
 % index-1 System BIPS98_606 from https://sites.google.com/site/rommes/software
 % following the method suggested in [1]
 %
-% Input: 
+% Input:
 % istest    decides whether the function runs as an interactive demo or a
 %           continuous integration test. (optional; defaults to 0, i.e.
 %           interactive demo)
@@ -11,25 +11,16 @@ function bt_mor_DAE1_tol(istest)
 % References:
 %[1] F. Freitas, J. Rommes, N. Martins, Gramian-based reduction method
 %    applied to large sparse power system descriptor models, IEEE Trans.
-%    Power Syst. 23 (3) (2008) 1258–1270. doi:10.1109/TPWRS.2008.926693. 
+%    Power Syst. 23 (3) (2008) 1258–1270. doi:10.1109/TPWRS.2008.926693
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %%
 if nargin<1, istest=0; end
@@ -38,21 +29,7 @@ if nargin<1, istest=0; end
 oper = operatormanager('dae_1');
 
 %% Read problem data
-fname  = sprintf('%s/../models/BIPS/bips98_606.mat',...
-    fileparts(mfilename('fullpath')));
-Bips = load(fname);
-% from https://sites.google.com/site/rommes/software
-% Note that we here use the alpha shift suggested by Rommes and coauthors
-% [1], but do not perform the shift back.
-p = find(diag(Bips.E));
-np = find(diag(Bips.E) == 0);
-pp = [p;np];
-eqn.A_ = Bips.A(pp, pp)-0.05*Bips.E(pp,pp);
-eqn.E_ = Bips.E(pp, pp);
-eqn.B = Bips.b(pp, :);
-eqn.C = Bips.c( : , pp);
-eqn.st = length(p);
-eqn.haveE = 1;
+eqn = mess_get_BIPS(7);
 %% Turn off  close to singular warnings
 % (this model is really badly conditioned)
 orig_warnstate = warning('OFF','MATLAB:nearlySingularMatrix');
@@ -69,23 +46,19 @@ opts.norm = 'fro';
 opts.shifts.method = 'projection';
 opts.shifts.num_desired= 20;
 
-opts.shifts.p=mess_para(eqn,opts,oper);
-
-disp(opts.shifts.p);
-
 %%
 eqn.type='N';
-tic;
+t_mess_lradi = tic;
 outB = mess_lradi(eqn, opts, oper);
-toc;
-
+t_elapsed1 = toc(t_mess_lradi);
+fprintf(1,'mess_lradi took %6.2f seconds \n', t_elapsed1);
 if istest
     if min(outB.res)>=opts.adi.res_tol
-        error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result');
     end
 else
     figure;
-    semilogy(outB.res);
+    semilogy(outB.res,'linewidth',3);
     title('0= BB^T + AXM^T + MXA^T');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -96,18 +69,18 @@ disp(size(outB.Z));
 
 %%
 eqn.type='T';
-tic;
+t_mess_lradi = tic;
 outC = mess_lradi(eqn, opts, oper);
-toc;
-
+t_elapsed2 = toc(t_mess_lradi);
+fprintf(1,'mess_lradi took %6.2f seconds \n', t_elapsed2);
 
 if istest
     if min(outC.res)>=opts.adi.res_tol
-        error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result');
     end
 else
     figure;
-    semilogy(outC.res);
+    semilogy(outC.res,'linewidth',3);
     title('0= C^TC + A^TXE + E^TXA');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -130,7 +103,7 @@ else
     opts.srm.info=2;
 end
 
-%The actual SRM
+% The actual SRM
 [TL,TR,hsv] = mess_square_root_method(eqn,opts,oper,outB.Z,outC.Z);
 
 % compute ROM matrices
@@ -165,11 +138,11 @@ out = mess_sigma_plot(eqn, opts, oper, ROM); err = out.err;
 
 if istest
     if max(err)>5e-3
-        error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
-    end   
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result');
+    end
 else
     figure;
-    semilogy(hsv);
+    semilogy(hsv,'linewidth',3);
     title('Computed Hankel singular values');
     xlabel('index');
     ylabel('magnitude');

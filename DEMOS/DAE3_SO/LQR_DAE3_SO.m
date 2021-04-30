@@ -10,38 +10,30 @@ function LQR_DAE3_SO(model,istest)
 %
 %  model    choice of the example system. Possible values
 %           'Stykel_small'   Stykel's mass spring damper system from [1]
-%                            of dimension 600 in second order form (default) 
+%                            of dimension 600 in second order form (default)
 %           'Stykel_large'   Stykel's mass spring damper system from [1]
-%                            of dimension 6000 in second order form 
+%                            of dimension 6000 in second order form
 %
 %  istest    decides whether the function runs as an interactive demo or a
-%            continuous integration test. 
+%            continuous integration test.
 %            (optional; defaults to 0, i.e. interactive demo)
 %
 % References:
-% [1] V. Mehrmann and T. Stykel. Balanced truncation model reduction for 
-%     large-scale systems in descriptor form. 
+% [1] V. Mehrmann and T. Stykel. Balanced truncation model reduction for
+%     large-scale systems in descriptor form.
 %     In P. Benner, V. Mehrmann, and D. Sorensen, editors, Dimension
-%     Reduction of Large-Scale Systems, volume 45 of Lecture Notes in 
-%     Computational Science and Engineering, pages 83–115. Springer-Verlag, 
-%     Berlin/Heidelberg, 2005.
+%     Reduction of Large-Scale Systems, volume 45 of Lecture Notes in
+%     Computational Science and Engineering, pages 83–115. Springer-Verlag,
+%     Berlin/Heidelberg, 2005. https://doi.org/10.1007/3-540-27909-1_3
 
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 %%
 narginchk(0,2);
 
@@ -104,17 +96,18 @@ opts.nm.res=struct('maxiter',10,'tol',1e-6,'orth',0);
 %% The actual Newton call
 eqn.type = 'T';
 
-tic;
+t_mess_lrnm = tic;
 outnm = mess_lrnm(eqn, opts, oper);
-toc;
+t_elapsed1 = toc(t_mess_lrnm);
+fprintf(1,'mess_lrnm took %6.2f seconds \n',t_elapsed1);
 
 if istest
     if min(outnm.res)>=opts.nm.res_tol
-        error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result');
     end
 else
     figure(1);
-    semilogy(outnm.res);
+    semilogy(outnm.res,'linewidth',3);
     title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -135,7 +128,7 @@ opts.shifts.b0=ones(2*nv+np,1);
 
 % choose either of the three shift methods, here
 %opts.shifts.method = 'gen-ham-opti';
-opts.shifts.method = 'heur'; 
+opts.shifts.method = 'heur';
 %opts.shifts.method = 'projection';
 
 opts.shifts.naive_update_mode = false; % .. Suggest false (smart update is faster; convergence is the same).
@@ -147,17 +140,18 @@ opts.radi.res_tol = opts.nm.res_tol;
 opts.radi.rel_diff_tol = 0;
 opts.radi.info = 1;
 
-tic;
+t_mess_lrradi = tic;
 outradi = mess_lrradi(eqn, opts, oper);
-toc;
+t_elapsed2 = toc(t_mess_lrradi);
+fprintf(1,'mess_lrradi took %6.2f seconds \n' , t_elapsed2);
 
 if istest
     if min(outradi.res)>=opts.radi.res_tol
-        error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result');
     end
 else
     figure(2);
-    semilogy(outradi.res);
+    semilogy(outradi.res,'linewidth',3);
     title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -172,7 +166,7 @@ if not(istest)
     ls_nm=cumsum([outnm.adi.niter]);
     ls_radi=1:outradi.niter;
 
-    semilogy(ls_nm,outnm.res,'k--',ls_radi,outradi.res,'b-');
+    semilogy(ls_nm,outnm.res,'k--',ls_radi,outradi.res,'b-','linewidth',3);
     title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
     xlabel('number of solves with A+p*M');
     ylabel('normalized residual norm');

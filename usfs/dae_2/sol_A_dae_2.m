@@ -1,7 +1,7 @@
 function X = sol_A_dae_2(eqn, opts, opA, B, opB)%#ok<INUSL>
 %% function sol_A solves solves opA(A_)*X = opB(B)
-% 
-% Depending on the vertical dimension of B this solves either with 
+%
+% Depending on the vertical dimension of B this solves either with
 %     A = [A1 F;
 %           G 0 ]
 % or
@@ -13,13 +13,13 @@ function X = sol_A_dae_2(eqn, opts, opA, B, opB)%#ok<INUSL>
 %  eqn       structure with fields A_ and E_
 %  opts      struct contains parameters for the algorithm
 %  opA       character specifies the form of opA(A_)
-%                  opA = 'N' solves A*X=opB(B) 
+%                  opA = 'N' solves A*X=opB(B)
 %                  opA = 'T' solves A^T*X=opB(B)
 %
 %  B         p-x-q matrix
 %
 %  opB       character specifies the form of opB(B)
-%                  opB = 'N' solves A*X=B 
+%                  opB = 'N' solves A*X=B
 %                  opB = 'T' solves A*X=B^T
 %
 % Output:
@@ -27,22 +27,13 @@ function X = sol_A_dae_2(eqn, opts, opA, B, opB)%#ok<INUSL>
 %
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 
 %% check input Paramters
@@ -100,17 +91,17 @@ end
 %% solve
 if dim ==n
     switch opA
-        
+
         case 'N'
             switch opB
-                
+
                 %implement solve A_*X=B
                 case 'N'
                     if(n ~= size(B, 1))
                         error('MESS:error_arguments','number of rows of A_ differs with rows of B');
                     end
                     X = eqn.A_ \ B;
-                    
+
                     %implement solve A_*X=B'
                 case 'T'
                     if(n ~= size(B, 2))
@@ -118,17 +109,17 @@ if dim ==n
                     end
                     X = eqn.A_ \ B';
             end
-            
+
         case 'T'
             switch opB
-                
+
                 %implement solve A_'*X=B
                 case 'N'
                     if(n ~= size(B, 1))
                         error('MESS:error_arguments','number of cols of A_ differs with rows of B');
                     end
                     X = eqn.A_' \ B;
-                    
+
                     %implement solve A_'*X=B'
                 case 'T'
                     if(n ~= size(B, 2))
@@ -136,7 +127,7 @@ if dim ==n
                     end
                     X = eqn.A_' \ B';
             end
-            
+
     end
 else
      error('MESS:error_arguments','A is singular in these coordinates');

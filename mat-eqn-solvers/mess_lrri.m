@@ -190,22 +190,13 @@ function [out, eqn, opts, oper] = mess_lrri(eqn, opts, oper)
 %   mess_galerkin_projection_acceleration, operatormanager.
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
-%
+
 
 
 %%
@@ -251,13 +242,13 @@ if eqn.type == 'T'
     if not(isfield(eqn, 'B2')) || not(isnumeric(eqn.B2))
         error('MESS:control_data', 'eqn.B2 is not defined or corrupted');
     end
-    
+
     if issparse(eqn.B2), eqn.B2 = full(eqn.B2); end
 else
     if not(isfield(eqn, 'C2')) || not(isnumeric(eqn.C2))
         error('MESS:control_data', 'eqn.C2 is not defined or corrupted');
     end
-    
+
     if issparse(eqn.C2), eqn.C2 = full(eqn.C2); end
 end
 
@@ -275,7 +266,7 @@ else
             && isnumeric(eqn.V) ...
             && size(eqn.U, 1) == size(eqn.V, 1) ...
             && size(eqn.U, 2) == size(eqn.V, 2)
-        
+
         if issparse(eqn.V), eqn.V = full(eqn.V); end
         if issparse(eqn.U), eqn.U = full(eqn.U); end
     else
@@ -348,7 +339,7 @@ if not(isfield(opts.ri, 'riccati_solver')) || isempty(opts.ri.riccati_solver)
     warning('MESS:control_data', ...
         ['Missing or corrupted riccati_solver field. ', ...
         'Switching to default opts.ri.riccati_solver = ''radi''.']);
-    
+
     opts.ri.riccati_solver    = 'radi';
     riccati_solver            = @mess_lrradi;
     opts.radi.compute_sol_fac = 1;
@@ -425,7 +416,7 @@ if strcmpi(func2str(riccati_solver), 'radi') ...
          'The shift method will be changed for this step to ', ...
          '''projection'' and for the inner iteration back to its ', ...
          'original state.']);
-    
+
     ham_shifts         = 1;
     opts.shifts.method = 'projection';
 end
@@ -500,15 +491,15 @@ if not(isfield(opts.ri, 'Z0')) || isempty(opts.ri.Z0)
         eqn.C = eqn.C2;
         eqn.B = eqn.B1;
     end
-    
+
     [out_riccati, eqn, opts, oper] = lqg_solver(eqn, opts, oper);
-    
+
     % Store the solution of the LQG problem.
     if opts.ri.store_lqg
         out.Z_LQG = out_riccati.Z;
         out.K_LQG = out_riccati.K;
     end
-    
+
     % Store information about Riccati equation solver.
     tmp = out_riccati;
     if not(opts.ri.store_solfac)
@@ -537,7 +528,7 @@ else
             oper.init_res(eqn, opts, oper, eqn.B1);
         eqn.C = eqn.C2;
     end
-    
+
     % Take the given initial solution.
     out_riccati.Z = opts.ri.Z0;
 end
@@ -561,19 +552,19 @@ if isfield(opts, 'radi')
         radiZ0    = opts.radi.Z0;
         opts.radi = rmfield(opts.radi, 'Z0');
     end
-    
+
     if isfield(opts.radi, 'Y0')
         isradiY0  = 1;
         radiY0    = opts.radi.Y0;
         opts.radi = rmfield(opts.radi, 'Y0');
     end
-    
+
     if isfield(opts.radi, 'K0')
         isradiK0  = 1;
         radiK0    = opts.radi.K0;
         opts.radi = rmfield(opts.radi, 'K0');
     end
-    
+
     if isfield(opts.radi, 'W0')
         isradiW0  = 1;
         radiW0    = opts.radi.W0;
@@ -639,7 +630,7 @@ for j = 1:1:opts.ri.maxiter
     else
         Z(:, end+1:end+size(out_riccati.Z, 2)) = out_riccati.Z;
     end
-    
+
     % Update the constant term and error variables.
     if eqn.type == 'T'
         if eqn.haveE
@@ -656,7 +647,7 @@ for j = 1:1:opts.ri.maxiter
             eqn.B = out_riccati.Z * (eqn.C1 * out_riccati.Z)';
         end
     end
-    
+
     % Set the next rank-k update
     if eqn.type == 'T'
         if eqn.haveE
@@ -675,7 +666,7 @@ for j = 1:1:opts.ri.maxiter
             eqn.U(:, end-m12+1:end) = Z * (Z' * [eqn.C1', eqn.C2']);
         end
     end
-    
+
     % Compute convergence measures.
     if opts.ri.res_tol
         if eqn.type == 'T'
@@ -684,13 +675,13 @@ for j = 1:1:opts.ri.maxiter
             res(j) = norm(eqn.B' * eqn.B, opts.norm) / res0;
         end
     end
-    
+
     if opts.ri.rel_diff_tol
         normY = sum(sum(out_riccati.Z.^2));
         normZ = normZ + normY;
         rc(j) = normY / normZ;
     end
-    
+
     % Print status information.
     if opts.ri.info
         if opts.ri.rel_diff_tol && opts.ri.res_tol
@@ -705,7 +696,7 @@ for j = 1:1:opts.ri.maxiter
             fprintf(1, 'RI step: %4d relative change in Z: %e\n', ...
                 j, rc(j));
         end
-        
+
         if isfield(out_riccati, 'adi')
             fprintf(1, '               number of Newton steps: %4d\n\n', ...
                 out_riccati.niter);
@@ -714,17 +705,17 @@ for j = 1:1:opts.ri.maxiter
                 out_riccati.niter);
         end
     end
-    
+
     % Evaluate stopping criteria.
     if (opts.ri.res_tol && (res(j) < opts.ri.res_tol)) ...
             || (opts.ri.rel_diff_tol && (rc(j) < opts.ri.rel_diff_tol)) ...
-            || (j >= opts.ri.maxiter) 
+            || (j >= opts.ri.maxiter)
         break;
     end
-    
+
     % Solve the next residual equation.
     [out_riccati, eqn, opts, oper] = riccati_solver(eqn, opts, oper);
-    
+
     % Store information about Riccati equation solver.
     tmp = out_riccati;
     if not(opts.ri.store_solfac)
@@ -765,7 +756,12 @@ end
 
 out.res0 = res0;
 
-
+if (out.niter == opts.ri.maxiter)  && ...
+        (opts.ri.res_tol && not(out.res(end) < opts.ri.res_tol))
+    warning('MESS:RI:converence', ...
+        ['Riccati iteration reached maximum iteration number.',...
+         ' Results may be inaccurate.']);
+end
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Clean up

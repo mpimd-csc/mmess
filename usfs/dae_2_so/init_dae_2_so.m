@@ -1,6 +1,6 @@
 function [result, eqn, opts, oper] = init_dae_2_so(eqn, opts, oper, flag1, flag2)
 % function [result, eqn, opts, oper] = init_dae_2_so(eqn, opts, oper, flag1, flag2)
-% return true or false if Data for A_ and E_ resp. flag1 and flag2  are 
+% return true or false if Data for A_ and E_ resp. flag1 and flag2  are
 % availabe and correct in eqn.
 %
 %   result = init_dae_2(eqn,flag1);
@@ -20,35 +20,26 @@ function [result, eqn, opts, oper] = init_dae_2_so(eqn, opts, oper, flag1, flag2
 %
 %   Output:
 %
-%   result             1 if data corresponding to flag1 (and flag2) are available , 0 data are not available 
+%   result             1 if data corresponding to flag1 (and flag2) are available , 0 data are not available
 %   eqn             structure with data
 %   opts            structure containing parameter for the algorithm
 %   oper            struct contains function handles for operation with A and E
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 
 %% check input Paramters
 na = nargin;
 if(na<=3)
     error('MESS:check_data','Number of input Arguments must be at least 3');
-    
+
     %% result = init_dae_2(eqn, flag1);
 elseif(na==4)
     switch flag1
@@ -59,7 +50,7 @@ elseif(na==4)
         otherwise
             error('MESS:check_data','flag1 has to be ''A'' or ''E''');
     end
-    
+
     %% result = init_dae_2(eqn,flag1,flag2);
 elseif(na==5)
     switch flag1
@@ -149,7 +140,7 @@ end
 
 if not(isfield(eqn, 'alpha')) || not(isnumeric(eqn.alpha))
    error('MESS:equation_data',...
-         'No parameter alpha given for shifting infinite eigenvalues of the pencil'); 
+         'No parameter alpha given for shifting infinite eigenvalues of the pencil');
 end
 result=1;
 end

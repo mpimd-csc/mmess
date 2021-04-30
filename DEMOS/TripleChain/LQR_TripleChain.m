@@ -9,9 +9,9 @@ function LQR_TripleChain(n1, usfs, shifts, istest)
 % order system.
 %
 % Usage:      LQR_TripleChain(n1, oper, shifts, istest)
-% 
-% Inputs: 
-% 
+%
+% Inputs:
+%
 % n1          length of a single chain in the model
 %             (optional; defaults to 1000)
 %
@@ -23,7 +23,7 @@ function LQR_TripleChain(n1, usfs, shifts, istest)
 %             possible values: 'heur', 'projection'
 %             (optional; defaults to 'projection'
 %
-% istest      flag to determine whether this demo runs as a CI test or 
+% istest      flag to determine whether this demo runs as a CI test or
 %             interactive demo
 %             (optional, defaults to 0, i.e. interactive demo)
 %
@@ -35,35 +35,27 @@ function LQR_TripleChain(n1, usfs, shifts, istest)
 % [2] N. Truhar, K. Veselić, An efficient method for estimating the optimal
 %     dampers’ viscosity for linear vibrating systems using Lyapunov
 %     equation, SIAM J. Matrix Anal. Appl. 31 (1) (2009) 18–39.
-%     https://doi.org/10.1137/070683052. 
+%     https://doi.org/10.1137/070683052
 %
 % [3] P. Benner, J. Saak, Efficient Balancing based MOR for Second Order
 %     Systems Arising in Control of Machine Tools, in: I. Troch, F.
 %     Breitenecker (Eds.), Proceedings of the MathMod 2009, no. 35 in
 %     ARGESIM-Reports, Vienna Univ. of Technology, ARGE Simulation News,
-%     Vienna, Austria, 2009, pp. 1232–1243, iSBN/ISSN:978-3-901608-35-3. 
+%     Vienna, Austria, 2009, pp. 1232–1243, iSBN/ISSN:978-3-901608-35-3
 %
 % [4] P. Benner, P. Kürschner, J. Saak, An improved numerical method for
 %     balanced truncation for symmetric second order systems, Math. Comput.
 %     Model. Dyn. Syst. 19 (6) (2013) 593–615.
-%     https://doi.org/10.1080/13873954.2013.794363.   
+%     https://doi.org/10.1080/13873954.2013.794363
+
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 %%
 narginchk(0,4);
 if nargin<1, n1=1000; end
@@ -76,22 +68,22 @@ oper = operatormanager(usfs);
 % Problem data
 
 alpha=2;
-beta=5;
+Beta=5;
 v=5;
 
 switch usfs
     case 'so_1'
-        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,beta,v);
+        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,Beta,v);
         s  = size(eqn.K_,1);
         eqn.B = [zeros(s,1); ones(size(eqn.K_,1),1)];
         eqn.C = [ones(1,size(eqn.K_,1)) zeros(1, s)];
     case 'so_2'
-        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,beta,v);
+        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,Beta,v);
         s  = size(eqn.K_,1);
         eqn.B = [ ones(size(eqn.K_,1),1); zeros(s,1)];
         eqn.C = eqn.B';
     case 'default'
-        [M_,E_,K_]=triplechain_MSD(n1,alpha,beta,v);
+        [M_,E_,K_]=triplechain_MSD(n1,alpha,Beta,v);
         s = size(K_,1);
         eqn.A_ = [sparse(s,s),-K_;-K_,-E_];
         eqn.E_ = [-K_,sparse(s,s);sparse(s,s),M_];
@@ -115,7 +107,7 @@ opts.adi.compute_sol_fac = 1;
 
 eqn.type = 'T';
 %%
-%Heuristic shift parameters via basic Arnoldi 
+%Heuristic shift parameters via basic Arnoldi
 n=oper.size(eqn, opts);
 switch shifts
     case 'heur'
@@ -132,10 +124,10 @@ switch shifts
         n=oper.size(eqn, opts);
         opts.shifts.b0=ones(n,1);
 end
-opts.shifts.truncate = 1e6; % remove all shifts larger than 1e6 or smaller 
+opts.shifts.truncate = 1e6; % remove all shifts larger than 1e6 or smaller
                             % than 1e-6 in absolute value in order to avoid
                             % loosing information about M or K in the
-                            % shifted coefficients (p^2*M-pD+K)  
+                            % shifted coefficients (p^2*M-pD+K)
 %%
 % Newton tolerances and maximum iteration number
 opts.nm.maxiter = 25;
@@ -148,18 +140,18 @@ opts.nm.inexact = 'quadratic';
 opts.nm.tau = 0.1;
 opts.norm = 'fro';
 %%
-tic;
+t_mess_lrnm =tic;
 outnm = mess_lrnm(eqn, opts, oper);
-toc;
-
+t_elapsed1 = toc(t_mess_lrnm);
+fprintf(1,'mess_lrnm took %6.2f seconds \n' , t_elapsed1);
 if istest
     if min(outnm.res)>=opts.nm.res_tol
-       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result');
    end
 else
     figure(1);
     disp(outnm.res);
-    semilogy(outnm.res);
+    semilogy(outnm.res,'linewidth',3);
     title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -177,7 +169,7 @@ opts.shifts.method = 'projection';
 
 
 % .. Suggest false (smart update is faster; convergence is the same).
-opts.shifts.naive_update_mode = false; 
+opts.shifts.naive_update_mode = false;
 opts.radi.compute_sol_fac = 1;
 opts.radi.get_ZZt = 1;
 opts.radi.maxiter = opts.adi.maxiter;
@@ -186,17 +178,17 @@ opts.radi.res_tol = opts.nm.res_tol;
 opts.radi.rel_diff_tol = 0;
 opts.radi.info = 1;
 
-tic;
+t_mess_lrradi =tic;
 outradi = mess_lrradi(eqn, opts, oper);
-toc;
-
+t_elapsed2 = toc(t_mess_lrradi);
+fprintf(1,'mess_lrradi took %6.2f seconds \n',t_elapsed2);
 if istest
     if min(outradi.res)>=opts.radi.res_tol
-       error('MESS:TEST:accuracy','unexpectedly inaccurate result'); 
+       error('MESS:TEST:accuracy','unexpectedly inaccurate result');
    end
 else
     figure(2);
-    semilogy(outradi.res);
+    semilogy(outradi.res,'linewidth',3);
     title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -211,13 +203,13 @@ if istest
     if nrm/nrmNM >= 1e-9
         error('MESS:TEST:accuracy',...
             'unexpectedly inaccurate result: ||K_NM - K_RADI||_F / ||K_NM||_F=%g',nrm/nrmNM);
-    end 
+    end
 else
     figure(3);
     ls_nm=[outnm.adi.niter];
     ls_radi=1:outradi.niter;
 
-    semilogy(cumsum(ls_nm),outnm.res,'k--',ls_radi,outradi.res,'b-');
+    semilogy(cumsum(ls_nm),outnm.res,'k--',ls_radi,outradi.res,'b-','linewidth',3);
     title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
     xlabel('number of solves with A+p*M');
     ylabel('normalized residual norm');

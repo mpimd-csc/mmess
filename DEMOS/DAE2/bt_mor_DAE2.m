@@ -4,47 +4,38 @@ function bt_mor_DAE2(problem,lvl,re,istest)
 %
 % Inputs:
 % problem       either 'Stokes' or 'NSE' to choose the Stokes demo or the
-%               linearized Navier-Stokes-Equation. (required)
+%               linearized Navier-Stokes-Equation.
+%               (ooptional, defaults to 'Stokes')
 %
-% lvl           discretization level 1 through 5 
+% lvl           discretization level 1 through 5
 %               (optional, only used in 'NSE' case, default: 1)
 %
 % re            Reynolds number 300, 400, or 500
 %               (optional, only used in 'NSE' case, default: 500)
 %
-% istest        flag to determine whether this demo runs as a CI test or 
+% istest        flag to determine whether this demo runs as a CI test or
 %               interactive demo
 %               (optional, defaults to 0, i.e. interactive demo)
-% 
+%
 % Note that the 'NSE' option requires additional data available in a
 % separate 270MB archive and at least the 5th discretization level needs a
 % considerable amount of main memory installed in your machine.
 %
-% See 
-% P. Benner, J. Saak, M. M. Uddin, Balancing based model reduction for 
+% See:
+% P. Benner, J. Saak, M. M. Uddin, Balancing based model reduction for
 % structured index-2 unstable descriptor systems with application to flow
-% control, Numerical Algebra, Control and Optimization 6 (1) (2016) 1–20. 
-% https://doi.org/10.3934/naco.2016.6.1.
+% control, Numerical Algebra, Control and Optimization 6 (1) (2016) 1–20.
+% https://doi.org/10.3934/naco.2016.6.1
 
-
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
 
-% ADI tolerance and maximum iteration number
+%% ADI tolerance and maximum iteration number
 opts.adi.maxiter = 350;
 opts.adi.res_tol = sqrt(eps);
 opts.adi.rel_diff_tol = 1e-16;
@@ -59,7 +50,9 @@ if nargin<2, lvl=1; end
 if nargin<3, re=500; end
 if nargin<4, istest=0; end
 
-switch lower(problem)
+problem = lower(problem);
+
+switch problem
     case 'stokes'
         nin = 5;
         nout = 5;
@@ -68,37 +61,23 @@ switch lower(problem)
         [eqn.E_,eqn.A_,eqn.Borig,eqn.Corig]=stokes_ind2(nin,nout,nx,ny);
         n=size(eqn.E_,1);
         eqn.haveE=1;
-        st=full(sum(diag(eqn.E_)));
+        st=trace(eqn.E_); % Stokes is FDM discretized, so so this is
+                          % the dimension of the velocity space
         eqn.st=st;
         eqn.B=eqn.Borig(1:st,:);
         eqn.C=eqn.Corig(:,1:st);
     case 'nse'
-        try
-            load(sprintf('%s/../models/NSE/mat_nse_re_%d',...
-                    fileparts(mfilename('fullpath')),re),'mat');
-        catch
-            error(['The files mat_nse_re_300.mat, mat_nse_re_400.mat ', ...
-                'and mat_nse_re_500.mat are available for dowload in ', ...
-                'a separate archive (270MB each). Please fetch them ', ...
-                'from the MESS download page and unpack them into ', ...
-                'the DEMOS/models/NSE folder.']);
-        end
-        eqn.A_=mat.mat_v.fullA{lvl};
-        eqn.E_=mat.mat_v.E{lvl};
-        eqn.B=mat.mat_v.B{lvl};
-        eqn.C=mat.mat_v.C{lvl};
-        eqn.st=mat.mat_mg.nv(lvl);
+        [eqn, K0primal, K0dual] = mess_get_NSE( re, lvl);
         st=eqn.st;
-        eqn.haveE=1;
         n=size(eqn.E_,1);
-    otherwise 
+    otherwise
         error('input ''problem'' must be either ''NSE'' or ''Stokes''');
 end
 %%
 eqn.type='N';
-eqn.G=eqn.B;
-if strcmp(problem,'NSE') && (re>200)
-    eqn.V=-mat.mat_v.Feed_0{lvl};
+% Activate stabilizing (Bernoulli) feedback
+if strcmp(problem,'nse')
+    eqn.V=-K0primal';
     eqn.U = eqn.B;
     eqn.haveUV=1;
 end
@@ -111,15 +90,14 @@ opts.shifts.method='projection';
 
 opts.shifts.b0=ones(size(eqn.A_,1),1);
 
-opts.shifts.p=mess_para(eqn,opts,oper);
-
-tic;
+t_mess_lradi = tic;
 outB = mess_lradi(eqn,opts,oper);
-toc;
+t_elapsed1 = toc(t_mess_lradi);
+fprintf(1,'mess_lradi took %6.2f seconds \n',t_elapsed1);
 
 if not(istest)
     figure();
-    semilogy(outB.res);
+    semilogy(outB.res,'linewidth',3);
     title('AXM^T + MXA^T = -BB^T');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -130,15 +108,9 @@ disp(size(outB.Z));
 
 %%
 eqn.type = 'T';
-eqn.G=eqn.C';
-if strcmp(problem,'NSE') && (re>200)
-    if (re == 500) 
-        % the dataset stores the feedback of the adjoint system transposed
-        % for Reynolds 500
-        eqn.U=-mat.mat_v.Feed_1{lvl}';
-    else
-        eqn.U=-mat.mat_v.Feed_1{lvl};
-    end
+% Activate stabilizing (Bernoulli) feedback (for the dual system)
+if strcmp(problem,'nse')
+    eqn.U=-K0dual';
     eqn.V = eqn.C';
     eqn.haveUV=1;
 end
@@ -151,15 +123,14 @@ opts.shifts.method='projection';
 
 opts.shifts.b0=ones(size(eqn.A_,1),1);
 
-opts.shifts.p=mess_para(eqn,opts,oper);
-
-tic;
+t_mess_lradi = tic;
 outC = mess_lradi(eqn, opts, oper);
-toc;
+t_elapsed2 = toc(t_mess_lradi);
+fprintf(1,'mess_lradi took %6.2f seconds \n',t_elapsed2);
 
 if not(istest)
     figure();
-    semilogy(outC.res);
+    semilogy(outC.res,'linewidth',3);
     title('A^TXM + M^TXA = -C^TC');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
@@ -172,7 +143,7 @@ disp(size(outC.Z));
 % Perform Square Root Method  (SRM)
 
 % BT tolerance and maximum order for the ROM
-tic;
+t_SRM = tic;
 opts.srm.tol=1e-5;
 opts.srm.max_ord=250;
 
@@ -191,9 +162,11 @@ ROM.A = TL'*(eqn.A_(1:st,1:st)*TR);
 ROM.B = TL'*eqn.B(1:st,:);
 ROM.C = eqn.C(:,1:st)*TR;
 
-toc;
+t_elapsed3 = toc(t_SRM);
+fprintf(1,'computation of reduced system matrices took %6.2f seconds \n',t_elapsed3);
+
 %%
-tic;
+t_eval_ROM = tic;
 %% Evaluate the ROM quality
 % while the Gramians are computed exploiting the DAE structure, due to the
 % construction of the function handles we can not do so for the transfer
@@ -221,17 +194,19 @@ opts.sigma.fmax=4;
 
 out = mess_sigma_plot(eqn, opts, oper, ROM); err = out.err;
 
-toc;
-%%  
+t_elapsed4 = toc(t_eval_ROM);
+fprintf(1,'evaluation of rom quality took %6.2f seconds \n' ,t_elapsed4);
+
+%%
 if istest
     if max(err)>=opts.srm.tol, error('MESS:TEST:accuracy','unexpectedly inaccurate result'); end
 else
     figure;
-    semilogy(hsv);
+    semilogy(hsv,'linewidth',3);
     title('Computed Hankel singular values');
     xlabel('index');
     ylabel('magnitude');
-end    
+end
 %%
 fprintf(['\nComputing open loop step response of original and reduced order ' ...
     'systems and time domain MOR errors\n']);

@@ -1,29 +1,19 @@
 function [nodes, weights] = gauss_quadrature_parameters(h, order)
 % Return nodes (x) and weights (w) of the Gauss-Legendre quadrature rule
-% of order 2N+1, i.e. the parameter order must be odd >= 3. 
+% of order 2N+1, i.e. the parameter order must be odd >= 3.
 % The interval is [0, h] rather than [-1, 1]. Uses the Golub-Welsch [1]
 % algorithm.
-% 
-% [1] Gene H. Golub and John H. Welsch, Calculation of Gauss quadrature 
+%
+% [1] Gene H. Golub and John H. Welsch, Calculation of Gauss quadrature
 % rules, Math. Comp. 23 (1969), pp. 221-230. DOI:
-% https://doi.org/10.1090/S0025-5718-69-99647-1 
-%
+% https://doi.org/10.1090/S0025-5718-69-99647-1
 
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
 
 % Golub-Welsch algorithm on the interval [-1, 1]

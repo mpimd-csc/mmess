@@ -12,33 +12,24 @@ function p=mess_wachspress_n(a,b,alpha,num_desired)
 %              eigenvalue of the Systemmatrix A
 %
 % b            is assumed to be the absolute value of the largest
-%              magnitude eigenvalue 
+%              magnitude eigenvalue
 %
 % alpha        is the arctan of the maximum of
-%              abs(imag(lamba))/abs(real(lambda)) 
+%              abs(imag(lamba))/abs(real(lambda))
 %              for all lambda in the spectrum of A
 %
 % num_desired  is the number of desired shift parameters that
-%              should be calculated 
+%              should be calculated
 %
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
-%
+
 if not(isnumeric(a)) || (length(a) ~= 1)
     error('MESS:error_arguments','a has to be a numeric value')
 end
@@ -60,7 +51,7 @@ else
     if (m<1)
         error(['Shift parameters would be complex, function not aplicable, ' ...
             'aborting!']);
-        
+
         %
         % FIX ME: if m<1 parameters become complex! switch back to the
         % heuristics by Thilo or complex parameters suggested by

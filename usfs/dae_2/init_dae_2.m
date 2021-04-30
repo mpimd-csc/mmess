@@ -1,6 +1,6 @@
 function [result, eqn, opts, oper] = init_dae_2(eqn, opts, oper, flag1, flag2)
 % function [result, eqn, opts, oper] = init_dae_2(eqn, opts, oper, flag1, flag2)
-% return true or false if Data for A_ and E_ resp. flag1 and flag2  are 
+% return true or false if Data for A_ and E_ resp. flag1 and flag2  are
 % availabe and correct in eqn.
 %
 %   result = init_dae_2(eqn,flag1);
@@ -22,7 +22,7 @@ function [result, eqn, opts, oper] = init_dae_2(eqn, opts, oper, flag1, flag2)
 %
 %   result             1 if data corresponding to flag1 (and flag2)
 %                      are available ,
-%                   0 data are not available  
+%                   0 data are not available
 %   eqn             structure with data
 %   opts            structure containing parameter for the algorithm
 %   oper            struct contains function handles for operation with A and E
@@ -30,28 +30,19 @@ function [result, eqn, opts, oper] = init_dae_2(eqn, opts, oper, flag1, flag2)
 %   uses no other dae_2 functions
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% check input Paramters
 if(nargin<=3)
     error('MESS:check_data','Number of input Arguments must be at least 3');
 
-%% result = init_dae_2(eqn, opts, oper, flag1);    
+%% result = init_dae_2(eqn, opts, oper, flag1);
 elseif(nargin==4)
     switch flag1
         case {'A','a'}
@@ -61,7 +52,7 @@ elseif(nargin==4)
         otherwise
             error('MESS:check_data','flag1 has to be ''A'' or ''E''');
     end
-    
+
 %% result = init_dae_2(eqn, opts, oper,flag1,flag2);
 elseif(nargin==5)
     switch flag1
@@ -91,7 +82,7 @@ elseif(nargin==5)
             end
         otherwise
             error('MESS:check_data','flag1 has to be ''A'' or ''E''');
-    end 
+    end
 end
 
 end
@@ -117,9 +108,9 @@ if(not(issparse(eqn.A_)))
     warning('MESS:check_data','A has to be sparse for best performance');
 end
 % check if lower right block is empty
-if (any(any(eqn.A_(eqn.st+1:end,eqn.st+1:end)))) 
+if (any(any(eqn.A_(eqn.st+1:end,eqn.st+1:end))))
    error('MESS:equation_data',...
-      'Corrupted field A detected in equation structure.'); 
+      'Corrupted field A detected in equation structure.');
 end
 result = 1;
 end
@@ -140,7 +131,7 @@ if eqn.haveE
     if  (size(eqn.E_,1) ~= size(eqn.E_,2))
         error('MESS:error_arguments', 'field eqn.E_ has to be quadratic');
     end
-    
+
     if not(issparse(eqn.E_))
         warning('MESS:check_data','E has to be sparse for best performance');
     end

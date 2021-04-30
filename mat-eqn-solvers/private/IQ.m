@@ -13,8 +13,8 @@ function [IQLas, IQDas, eqn, opts, oper] ...
 %     exp(s A E^{-1})E^{-1} B B^T E^{-T} exp(s (A E^{-1})^T) ds}.
 %
 % If eqn.LTV is true, the integrand is replaced by the relevant integral.
-% 
-% 
+%
+%
 % Input & Output
 %   eqn             struct contains data for equations
 %
@@ -25,7 +25,7 @@ function [IQLas, IQDas, eqn, opts, oper] ...
 %
 % Input:
 %   t0s     starting times, array
-% 
+%
 %   h       main time step size, scalar > 0
 %
 %   as      list of a factors, array
@@ -40,22 +40,13 @@ function [IQLas, IQDas, eqn, opts, oper] ...
 %
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 type = opts.splitting.quadrature.type;
 order = opts.splitting.quadrature.order;
@@ -114,7 +105,7 @@ for i = 1:length(t0s)
     errest = Inf;
     % This loop breaks after one iteration unless the adaptive strategy is
     % used:
-    while errest > TOL 
+    while errest > TOL
         if adaptive
             [xj, wj] = clenshawcurtis_parameters(0, h, order);
             [~, wj2] = clenshawcurtis_parameters(0, h, order/2);
@@ -122,18 +113,18 @@ for i = 1:length(t0s)
             % (the weights are symmetric)
             xj = flipud(xj);
         end
-        
+
         % For each scaling factor as(k) compute the values Ls(xj)
         for k = 1:length(as)
             if not(eqn.LTV) % Autonomous case
                 Ls = cell(1, length(xj));
                 RHS = oper.sol_E(eqn, opts, eqn.type, LQ, 'N');
-                % For legacy reasons, the sol_E_DAE2 function does not 
-                % return the rows corresponding to only the states, but the 
+                % For legacy reasons, the sol_E_DAE2 function does not
+                % return the rows corresponding to only the states, but the
                 % full solution. We therefore cut it down to size here.
                 % This does nothing in the other cases when RHS already has
                 % the correct size.
-                RHS = RHS(1:size(LQ,1), :); % 
+                RHS = RHS(1:size(LQ,1), :); %
                 [out, ~, opts, ~] ...
                     = mess_exp_action(eqn, opts, oper, as(k)*xj(1), RHS);
                 Ls{1} = out.Z;
@@ -142,14 +133,14 @@ for i = 1:length(t0s)
                     Ltemp = oper.mul_E(eqn, opts, eqn.type, Ls{j-1}, 'N');
                     RHS = oper.sol_E(eqn, opts, eqn.type, Ltemp, 'N');
                     % See above comment about RHS:
-                    RHS = RHS(1:size(LQ,1), :); 
+                    RHS = RHS(1:size(LQ,1), :);
                     [out, ~, opts, ~] ...
                         = mess_exp_action(eqn, opts, oper, dx, RHS);
                     Ls{j} = out.Z;
                 end
             else % Timevarying case
-                % This can be done somewhat faster by using BLAS-3 
-                % blocking, but it requires more memory. See the DREsplit 
+                % This can be done somewhat faster by using BLAS-3
+                % blocking, but it requires more memory. See the DREsplit
                 % package for this option, omitted in the M.E.S.S. version.
                 for j = 1:length(xj)
                     t = t0 + as(k)*xj(j);
@@ -164,9 +155,9 @@ for i = 1:length(t0s)
                     end
                     ELQ = oper.sol_E(eqn, opts, eqn.type, LQ, 'N');
                     % See above comment about RHS:
-                    ELQ = ELQ(1:size(LQ,1), :); 
-                    
-                    
+                    ELQ = ELQ(1:size(LQ,1), :);
+
+
                     [out, ~, opts, ~] ...
                         = mess_exp_action(...
                             eqn, opts, oper, ...
@@ -182,7 +173,7 @@ for i = 1:length(t0s)
             if eqn.LTV % We don't know the size of DQ a priori.
                 DQ = eye(size(LQ, 2));
             end
-            IQDas{i}{k} = kron(diag(wj * as(k)), DQ); 
+            IQDas{i}{k} = kron(diag(wj * as(k)), DQ);
         end
         % Column compress approximations
         for k = 1:length(as)
@@ -190,7 +181,7 @@ for i = 1:length(t0s)
                 mess_column_compression(IQLas{i}{k}, 'N', IQDas{i}{k}, ...
                 opts.splitting.trunc_tol, opts.splitting.trunc_info);
         end
-        
+
         if adaptive
             % Column compress coarser approximation
             for k = 1:length(as)

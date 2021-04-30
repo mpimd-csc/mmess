@@ -1,14 +1,15 @@
 function X = sol_ApE_dae_1_so(eqn, opts, opA, p, opE, C, opC)%#ok<INUSL>
-
-%% function sol_ApE_so_1 solves (opA(A) + p*opE(E))*X = opC(C) resp. performs X=(opA(A)+p*opE(E))\opC(C)
+%% function sol_ApE_so_1 solves (opA(A) + p*opE(E))*X = opC(C) respectively 
+%  performs X=(opA(A)+p*opE(E))\opC(C) for A, E as in (2) in
+%  mess_usfs_dae1_so
 %
+%   X = sol_ApE_dae_1_so(eqn, opts, opA, p, opE, C, opC)
 %
-% M, D, K are assumed to be quadratic.
 % Input:
 %
-%   eqn     structure contains  data for A (E_,K_) and E (M_,K_)
+%   eqn     structure contains  data for A (here E_, K_) and E (here M_, K_)
 %
-%   opts    struct contains parameters for the algorithm
+%   opts    struct contains parameters for all algorithms used
 %
 %   opA     character specifies the form of opA(A)
 %           opA = 'N' for A
@@ -31,24 +32,17 @@ function X = sol_ApE_dae_1_so(eqn, opts, opA, p, opE, C, opC)%#ok<INUSL>
 %   X       matrix fullfills equation (opA(A)+p*opE(E))*X = C
 %
 %   uses no other dae_1_so function
+%
+% See also mess_usfs_dae_1_so
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% check input Paramters
 if (not(ischar(opA)) || not(ischar(opE)) || not(ischar(opC)))
@@ -69,7 +63,7 @@ if(not((opC == 'N' || opC == 'T')))
     error('MESS:error_arguments', 'opC is not ''N'' or ''T''');
 end
 if(not(isnumeric(p)))
-   error('MESS:error_arguments','p is not numeric'); 
+   error('MESS:error_arguments','p is not numeric');
 end
 if (not(isnumeric(C))) || (not(ismatrix(C)))
     error('MESS:error_arguments','C has to ba a matrix');
@@ -88,227 +82,143 @@ elseif (not(isfield(eqn,'E_')) || not(isnumeric(eqn.E_)))
     error('MESS:equation_data',...
         'Empty or Corrupted field D detected in equation structure.')
 end
-if (not(isfield(eqn,'isSym')))
-    isSym = 0;
-else
-    isSym = eqn.isSym;
-end
+
 if not(isfield(eqn, 'nd'))    || not(isnumeric(eqn.nd))
     error('MESS:nd',...
     'Missing or Corrupted nd field detected in equation structure.');
 end
 if not(isfield(eqn,'haveE')), eqn.haveE=0; end
 
-[rowK, colK] = size(eqn.K_);
+n = size(eqn.K_,1);
 nd = eqn.nd;
+one = 1 : nd;
+twoc = (nd + 1) : (2 * nd);
 
 if(opC == 'N')
-    rowC = size(C, 1);
-    colC = size(C, 2);
+    rows = size(C, 1);
+    cols = size(C, 2);
 else
-    rowC = size(C, 2);
-    colC = size(C, 1);
+    rows = size(C, 2);
+    cols = size(C, 1);
 end
 
-if(2 * nd ~= rowC)
+if(2 * nd ~= rows)
     error('MESS:error_arguments','Rows of A differs from rows of C');
 end
 
 
-%% solve (A + p * E) * x = C 
+%% solve (A + p * E) * x = C
 %% perfom solve operations for E ~= Identity
-if isSym
-    if(eqn.haveE == 1)
+switch opA
+
+    case 'N'
         switch opE
-            
+
+            case 'N'
+
+                switch opC
+
+                    case 'N'
+                        X1 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_)) \ ...
+                            [p * C(twoc, :)-C(one, :); zeros(n - nd, cols)];
+                        X1 = X1(one, :);
+                        X2 = eqn.M_(one, one) \ C(twoc, :) - p * X1;
+                        X = [X1; X2];
+
+                    case 'T'
+                        X1 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_)) \ ...
+                            [p * C(:, twoc)'-C(:, one)'; zeros(n - nd, cols)];
+                        X1 = X1(one, :);
+                        X2 = eqn.M_(one, one) \ C(:, twoc)' - p * X1;
+                        X = [X1; X2];
+
+                end
+
+            case 'T'
+                
+                if not(issymmetric(eqn.M_))
+                    error('MESS:notimplemented', ...
+                        ['this combination of opA, opE is only ',...
+                            'available for M11 symmetric.']);
+                    % this would imply eqn.M_'*eqn.M_\eqn.M_' in X1 below
+                else
+                    switch opC
+                        case 'N'
+                            X1 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_')) \ ...
+                                [p * C(twoc, :)-C(one, :); zeros(n - nd, cols)];
+                            X1 = X1(one, :);
+                            X2 = eqn.M_(one, one) \ C(twoc, :) - p * X1;
+                            X = [X1; X2];
+                            
+                        case 'T'
+                            X1 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_')) \ ...
+                                [p * C(:, twoc)'-C(:, one)'; zeros(n - nd, cols)];
+                            X1 = X1(one, :);
+                            X2 = eqn.M_(one, one) \ C(:, twoc)' - p * X1;
+                            X = [X1; X2];
+                    
+                    end
+                    
+                end
+
+        end
+
+    case 'T'
+        switch opE
+
             case 'N'
                 
+                if not(issymmetric(eqn.M_))
+                    error('MESS:notimplemented', ...
+                        ['this combination of opA, opE is only ',...
+                        'available for M11 symmetric.']);
+                    % this would imply eqn.M_*eqn.M_'\eqn.M_ in X1 below
+
+                else
+                    
+                    switch opC
+                        
+                        case 'N'
+                            X1 = (eqn.K_' + p * ( p * eqn.M_ - eqn.E_)) \ ...
+                                [p * C(twoc, :)-C(one, :); zeros(n - nd, cols)];
+                            X1 = X1(one, :);
+                            X2 = eqn.M_(one, one) \ C(twoc, :) - p * X1;
+                            X = [X1; X2];
+                            
+                        case 'T'
+                            X1 = (eqn.K_' + p * ( p * eqn.M_ - eqn.E_)) \ ...
+                                [p * C(:, twoc)'-C(:, one)'; zeros(n - nd, cols)];
+                            X1 = X1(one, :);
+                            X2 = eqn.M_(one, one) \ C(:, twoc)' - p * X1;
+                            X = [X1; X2];
+                            
+                    end
+                
+                end
+                
+            case 'T'
+
                 switch opC
                     
-                    
                     case 'N'
-                        X2 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_)) \ ...
-                            (p * eqn.M_ * [C(1 : nd, :); zeros(rowK - nd, colC)]...
-                            - [C(nd + 1 : end, :); zeros(rowK - nd, colC)]);
-                        X2 = X2(1 : nd, :);
-                        X1 = C(1 : nd, :) - p * X2;
+                        X1 = (eqn.K_' + p * ( p * eqn.M_' - eqn.E_')) \ ...
+                            [p * C(twoc, :)-C(one, :); zeros(n - nd, cols)];
+                        X1 = X1(one, :);
+                        X2 = eqn.M_(one, one)' \ C(twoc, :) - p * X1;
                         X = [X1; X2];
                         
-                        
                     case 'T'
-                        X2 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_)) \ ...
-                            (p * eqn.M_ * [C( : , 1 : nd)'; zeros(rowK - nd, colC)]...
-                            - [C( : , nd + 1 : end)'; zeros(rowK - nd, colC)]);
-                        X2 = X2(1 : nd, :);
-                        X1 = C( : , 1 : nd)' - p * X2;
+                        X1 = (eqn.K_' + p * ( p * eqn.M_' - eqn.E_')) \ ...
+                            [p * C(:, twoc)'-C(:, one)'; zeros(n - nd, cols)];
+                        X1 = X1(one, :);
+                        X2 = eqn.M_(one, one)' \ C(:, twoc)' - p * X1;
                         X = [X1; X2];
                         
                 end
-                
-            case 'T'
-                
-                switch opC
-                    
-                    
-                    case 'N'
-                        X2 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_)) \ ...
-                            (p * [C(1 : nd, :); zeros(rowK - nd, colC)]...
-                            - [C(nd + 1 : end, :); zeros(rowK - nd, colC)]);
-                        X2 = X2(1 : nd, :);
-                        X1 = C(1 : nd, :) - p * eqn.M_(1 : nd, 1 : nd) * X2;
-                        X = [X1; X2];
-                        
-                        
-                    case 'T'
-                        X2 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_)) \ ...
-                            (p * [C( : , 1 : nd)'; zeros(rowK - nd, colC)]...
-                            - [C( : , nd + 1 : end)'; zeros(rowK - nd, colC)]);
-                        X2 = X2(1 : nd, :);
-                        X1 = C( : , 1 : nd)' - p * eqn.M_(1 : nd, 1 : nd) * X2;
-                        X = [X1; X2];
-                        
-                end
-                    
+
         end
-            
-    elseif(eqn.haveE==0)
-        %% perform solve operations for E_ = Identity
         
-        
-        switch opC
-            
-            
-            case 'N'
-                X1 = C(1 : nd, :) / (p + 1);
-                X2 = (eqn.K_ - p * [speye(nd, nd) sparse(nd, colK - nd); ...
-                    sparse(rowK - nd, colK)]) \ [-C(nd + 1 : end, :); zeros(rowK - nd, colC)];
-                X2 = X2(1 : nd, :);
-                X = [X1; X2];
-                
-                    
-            case 'T'
-                X1 = C( : , 1 : nd)' / (p + 1);
-                X2 = (eqn.K_ - p * [speye(nd, nd) sparse(nd, colK - nd); ...
-                    sparse(rowK - nd, colK)]) \ [-C( : , nd + 1 : end)'; zeros(rowK - nd, colC)];
-                X2 = X2(1 : nd, :);
-                X = [X1; X2];
-                
-        end
-    end
-else
-    if(eqn.haveE == 1)
-        switch opA
-            
-            case 'N'
-                switch opE
-                    
-                    case 'N'
-                        
-                        switch opC
-                            
-                            
-                            case 'N'
-                                X2 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_)) \ ...
-                                    (p * eqn.M_ * [C(1 : nd, :); zeros(rowK - nd, colC)]...
-                                    - [C(nd + 1 : end, :); zeros(rowK - nd, colC)]);
-                                X2 = X2(1 : nd, :);
-                                X1 = C(1 : nd, :) - p * X2;
-                                X = [X1; X2];
-                                
-                                
-                            case 'T'
-                                X2 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_)) \ ...
-                                    (p * eqn.M_ * [C( : , 1 : nd)'; zeros(rowK - nd, colC)]...
-                                    - [C( : , nd + 1 : end)'; zeros(rowK - nd, colC)]);
-                                X2 = X2(1 : nd, :);
-                                X1 = C( : , 1 : nd)' - p * X2;
-                                X = [X1; X2];
-                                
-                        end
-                            
-                    case 'T'
-                            
-                        switch opC
-                            
-                            
-                            case 'N'
-                                X2 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_)') \ ...
-                                    (p * [C(1 : nd, :); zeros(rowK - nd, colC)]...
-                                    - [C(nd + 1 : end, :); zeros(rowK - nd, colC)]);
-                                X2 = X2(1 : nd, :);
-                                X1 = C(1 : nd, :) - p * eqn.M_(1 : nd, 1 : nd)' * X2;
-                                X = [X1; X2];
-                                
-                                
-                            case 'T'
-                                X2 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_)') \ ...
-                                    (p * [C( : , 1 : nd)'; zeros(rowK - nd, colC)]...
-                                    - [C( : , nd + 1 : end)'; zeros(rowK - nd, colC)]);
-                                X2 = X2(1 : nd, :);
-                                X1 = C( : , 1 : nd)' - p * eqn.M_(1 : nd, 1 : nd)' * X2;
-                                X = [X1; X2];
-                                
-                        end
-                        
-                end
-                    
-            case 'T'
-                switch opE
-                    
-                    case 'N'
-                            
-                        switch opC
-                            
-                            
-                            case 'N'
-                                X2 = (eqn.K_' + p * ( p * eqn.M_ - eqn.E_)) \ ...
-                                    (p * eqn.M_ * [C(1 : nd, :); zeros(rowK - nd, colC)]...
-                                    - [C(nd + 1 : end, :); zeros(rowK - nd, colC)]);
-                                X2 = X2(1 : nd, :);
-                                X1 = C(1 : nd, :) - p * X2;
-                                X = [X1; X2];
-                                
-                                
-                            case 'T'
-                                X2 = (eqn.K_' + p * ( p * eqn.M_ - eqn.E_)) \ ...
-                                    (p * eqn.M_ * [C( : , 1 : nd)'; zeros(rowK - nd, colC)]...
-                                    - [C( : , nd + 1 : end)'; zeros(rowK - nd, colC)]);
-                                X2 = X2(1 : nd, :);
-                                X1 = C( : , 1 : nd)' - p * X2;
-                                X = [X1; X2];
-                                
-                        end
-                            
-                    case 'T'
-                            
-                        switch opC
-                            
-                                
-                            case 'N'
-                                X2 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_))' \ ...
-                                    (p * [C(1 : nd, :); zeros(rowK - nd, colC)]...
-                                    - [C(nd + 1 : end, :); zeros(rowK - nd, colC)]);
-                                X2 = X2(1 : nd, :);
-                                X1 = C(1 : nd, :) - p * eqn.M_(1 : nd, 1 : nd)' * X2;
-                                X = [X1; X2];
-                                
-                                
-                            case 'T'
-                                X2 = (eqn.K_ + p * ( p * eqn.M_ - eqn.E_))' \ ...
-                                    (p * [C( : , 1 : nd)'; zeros(rowK - nd, colC)]...
-                                    - [C( : , nd + 1 : end)'; zeros(rowK - nd, colC)]);
-                                X2 = X2(1 : nd, :);
-                                X1 = C( : , 1 : nd)' - p *eqn.M_(1 : nd, 1 : nd)' * X2;
-                                X = [X1; X2];
-                                
-                        end
-                            
-                end
-                    
-        end
-   
-    end
 end
-end
+
 
 

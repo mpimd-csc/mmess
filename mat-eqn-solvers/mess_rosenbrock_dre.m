@@ -11,7 +11,7 @@ function [out, eqn, opts, oper] = mess_rosenbrock_dre(eqn, opts, oper)
 %
 %   opts                struct contains parameters for the algorithm
 %
-%   oper                struct contains function handles for operation 
+%   oper                struct contains function handles for operation
 %                       with A and E
 %
 % Output
@@ -23,7 +23,7 @@ function [out, eqn, opts, oper] = mess_rosenbrock_dre(eqn, opts, oper)
 %   eqn.C       dense (m2 x n) matrix C
 %
 %   eqn.L0      dense (n x m4) matrix, initial L
-% 
+%
 %   eqn.D0      dense (m4 x m4) matrix, D in initial LDL^T factorization
 %
 %   eqn.type    possible  values: 'N', 'T'
@@ -64,7 +64,7 @@ function [out, eqn, opts, oper] = mess_rosenbrock_dre(eqn, opts, oper)
 %   opts.rosenbrock.trunc_info  possible values: 0, 1, false, true
 %                               verbose mode for column compression
 %                               (optional, default: 0)
-%                               
+%
 %
 %   opts.rosenbrock.
 %   save_solution               possible  values: 0, 1, false, true
@@ -80,7 +80,7 @@ function [out, eqn, opts, oper] = mess_rosenbrock_dre(eqn, opts, oper)
 % For the following fields see mess_lradi:
 %
 %   opts.adi.accumulateK
-%  
+%
 % Output fields in struct out:
 %
 %   out.Ks  cell array with matrix K for every time step
@@ -89,7 +89,7 @@ function [out, eqn, opts, oper] = mess_rosenbrock_dre(eqn, opts, oper)
 %           (only if opts.rosenbrock.save_solution = 1)
 %
 %   out.Ds  cell array with solution factor D for every time step
-%           (only if opts.rosenbrock.save_solution = 1)                             
+%           (only if opts.rosenbrock.save_solution = 1)
 %
 % If optional input arguments are missing they may be set to default values
 % and a 'MESS:control_data' warning is printed. to turn warnings off use
@@ -101,22 +101,13 @@ function [out, eqn, opts, oper] = mess_rosenbrock_dre(eqn, opts, oper)
 %   See also mess_lradi, mess_para, operatormanager.
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -141,8 +132,8 @@ if not(isfield(opts.rosenbrock, 'trunc_info')), ...
         opts.rosenbrock.trunc_info = 0; end
 if not(isfield(opts.rosenbrock,'gamma')),  ...
         opts.rosenbrock.gamma=1 + 1 / sqrt(2); end
-if not(isfield(opts.rosenbrock,'save_solution'))  
-    opts.rosenbrock.save_solution = 0; 
+if not(isfield(opts.rosenbrock,'save_solution'))
+    opts.rosenbrock.save_solution = 0;
 end
 
 %%
@@ -210,7 +201,7 @@ if not(isfield(eqn, 'L0')) || not(isnumeric(eqn.L0))
         ['Initial condition factor L0 is not defined or corrupted.',...
          ' Setting it to the zero vector.']);
     n = oper.size(eqn);
-    eqn.L0 = zeros(n,1); 
+    eqn.L0 = zeros(n,1);
 end
 if not(isfield(eqn, 'D0')) || not(isnumeric(eqn.D0))
     warning('MESS:control_data', ...
@@ -345,7 +336,7 @@ for j = 2 : length(times)
     eqn.S = blkdiag(Iq, BLD);
     [eqn.G, eqn.S] = mess_column_compression(eqn.G, 'N', eqn.S, ...
         opts.rosenbrock.trunc_tol, opts.rosenbrock.trunc_info);
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % compute new ADI shifts
@@ -353,21 +344,21 @@ for j = 2 : length(times)
     if not(mod(j - 2,opts.shifts.period))
         opts.shifts.p=mess_para(eqn,opts,oper);
     end
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % perform the actual step computations
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if opts.rosenbrock.stage == 1
         adiout = mess_lradi(eqn, opts, oper);
-        
+
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % perform column compression
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         [L, D] = mess_column_compression(adiout.Z, 'N', adiout.D, ...
             opts.rosenbrock.trunc_tol, opts.rosenbrock.trunc_info);
-        
+
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % extract or construct K
@@ -383,14 +374,14 @@ for j = 2 : length(times)
         end
     else % stage = 2
         adiout1 = mess_lradi(eqn, opts, oper);
-        
+
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % perform column compression
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         [T1, D1] = mess_column_compression(adiout1.Z, 'N', adiout1.D, ...
             opts.rosenbrock.trunc_tol, opts.rosenbrock.trunc_info);
-        
+
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % update RHS for second equation
@@ -406,7 +397,7 @@ for j = 2 : length(times)
             (BT1E_tmp' * BT1E_tmp) + ...
             (2 - 1/opts.rosenbrock.gamma) * D1;
         eqn.S = BT1D;
-        
+
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % compute new ADI shifts
@@ -414,13 +405,13 @@ for j = 2 : length(times)
         if not(mod(j - 2,opts.shifts.period))
             opts.shifts.p=mess_para(eqn,opts,oper);
         end
-        
+
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % solve second equation
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         adiout2 = mess_lradi(eqn,opts, oper);
-        
+
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % construct new X = L * D * L^T
@@ -428,7 +419,7 @@ for j = 2 : length(times)
         L = [L, T1, adiout2.Z]; %#ok<AGROW>
         D = blkdiag(D, opts.rosenbrock.tau * (2 - 1 / (2 * opts.rosenbrock.gamma)) * D1, ...
             - opts.rosenbrock.tau / 2. * adiout2.D);
-        
+
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % perform column compression
@@ -440,7 +431,7 @@ for j = 2 : length(times)
         else
             eqn.G = eqn.B;
         end
-        
+
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % construct new K
@@ -456,7 +447,7 @@ for j = 2 : length(times)
             end
         end
     end
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % print status information
@@ -474,7 +465,7 @@ for j = 2 : length(times)
     else
         eqn.U = K;
     end
-    
+
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % finalize usfs

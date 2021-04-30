@@ -1,6 +1,6 @@
 function v = fdm_2d_vector(n0,f_str)
 %
-%  Generates a vector v which contains the values of a function f(x,y) 
+%  Generates a vector v which contains the values of a function f(x,y)
 %  on an equidistant grid in the interior of the unit square. The grid
 %  points are numbered consistently with those used in the function
 %  'fdm_2d_matrix'.
@@ -9,14 +9,14 @@ function v = fdm_2d_vector(n0,f_str)
 %  rather than to solve PDEs.
 %
 %  Calling sequence:
-%   
+%
 %    v = fdm_2d_vector( n0, f_str)
 %
 %  Input:
-%   
+%
 %    n0        number of inner grid points in each dimension;
 %    f_str     string describing the function f in the space variables 'x'
-%              and 'y', e.g., f_str = 'sin(x+2*y)+3'. 
+%              and 'y', e.g., f_str = 'sin(x+2*y)+3'.
 %
 %  Output:
 %
@@ -33,7 +33,7 @@ if na~=2
   error('Wrong number of input parameters.');
 end
 
-h = 1.0/(n0+1);                             
+h = 1.0/(n0+1);
 
 n2 = n0*n0;
 
@@ -48,7 +48,7 @@ for iy = 1:n0
     i = i+1;
     v(i) = eval(f_str);
   end
-end  
+end
 
 
 

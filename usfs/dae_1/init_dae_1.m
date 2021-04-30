@@ -6,52 +6,44 @@ function [result, eqn, opts, oper] = init_dae_1(eqn, opts, oper, flag1, flag2)
 %   result = init(eqn,flag1);
 %   result = init(eqn,flag1,flag2);
 %
-%   result = init(eqn,'A')    (==init(eqn,'A','A'));
-%   result = init(eqn,'E')    (==init(eqn,'E','E'));
+%   result = init(eqn,'A')      (==init(eqn,'A','A'));
+%   result = init(eqn,'E')      (==init(eqn,'E','E'));
 %   result = init(eqn,'A','E')  (==init(eqn,'E','A'));
 %
 %   Input:
 %
 %   eqn             structure with data
 %   opts            structure containing parameter for the algorithm
-%   oper            struct contains function handles for operation with A and E
+%   oper            struct contains usfs for operation with A and E
 %   flag1           'A'/'E' to check if A or E is in eqn
 %   flag2           'A'/'E' to check if A or E is in eqn
 %
 %   Output:
 %
-%   result             1 if data corresponding to flag1 (and flag2) are available , 0 data are not available 
+%   result          1 : data corresponding to flag1 (and flag2) available,
+%                   0 : data incomplete
 %   eqn             structure with data
 %   opts            structure containing parameter for the algorithm
-%   oper            struct contains function handles for operation with A and E
+%   oper            struct contains usfs for operation with A and E
 %
 %   uses no other dae_1 functions
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
-%
+
 
 %% check input Paramters
 na = nargin;
 if not(isfield(eqn, 'LTV')),  eqn.LTV=0; end
 if(na<3)
     error('MESS:control_data','Number of input Arguments are at least 3');
-    
-%% result = init(eqn, flag1);    
+
+%% result = init(eqn, flag1);
 elseif(na==4)
     switch flag1
         case {'A','a'}
@@ -69,7 +61,7 @@ elseif(na==4)
         otherwise
             error('MESS:control_data','flag1 has to be ''A_'' or ''E_''');
     end
-    
+
 %% result = init(eqn,flag1,flag2);
 elseif(nargin==5)
     switch flag1
@@ -95,7 +87,8 @@ elseif(nargin==5)
                     end
                     result = result && resultE;
                 otherwise
-                    error('MESS:control_data','flag2 has to be ''A'' or ''E''');
+                    error('MESS:control_data', ...
+                          'flag2 has to be ''A'' or ''E''');
             end
         case {'E','e'}
             if eqn.LTV
@@ -119,22 +112,27 @@ elseif(nargin==5)
                     end
                     result = result && resultE;
                 otherwise
-                    error('MESS:control_data','flag2 has to be ''A'' or ''E''');
+                    error('MESS:control_data', ...
+                          'flag2 has to be ''A'' or ''E''');
             end
         otherwise
-            error('MESS:control_data','flag1 has to be ''A'' or ''E''');
+            error('MESS:control_data',...
+                  'flag1 has to be ''A'' or ''E''');
     end
 end
 %% Compute reduced B and C
+n = size(eqn.A_,1);
 st = eqn.st;
+one = 1:st;
+two = st + 1 : n;
 if not(eqn.LTV)
     if size(eqn.B, 1) > st
-        eqn.B = eqn.B(1 : st, :) - eqn.A_(1 : st, st + 1 : end) ...
-            * (eqn.A_(st + 1 : end, st + 1 : end) \ eqn.B(st + 1 : end, :));
+        eqn.B = eqn.B(one, :) - eqn.A_(one, two) ...
+            * (eqn.A_(two, two) \ eqn.B(two, :));
     end
     if size(eqn.C, 2) > st
-        eqn.C = eqn.C( : , 1 : st) - (eqn.C( : , st + 1 : end) ...
-            / eqn.A_(st +1 : end, st + 1 : end)) * eqn.A_(st+1 : end, 1 : st);
+        eqn.C = eqn.C( : , one) - (eqn.C( : , two) ...
+            / eqn.A_(two, two)) * eqn.A_(two, one);
     end
 end
 end
@@ -176,9 +174,12 @@ end
 n=size(eqn.A_,1);
 
 if not(eqn.haveE)
-    % E = [ I 0 ]
-    %     [ 0 0 ]
-    eqn.E_=sparse(1:st,1:st,ones(st, 1),n,n,st);
+    if isfield(eqn, 'E_')
+        error('MESS:equation_data', ['Detected eqn.E_ where eqn.haveE ' ...
+            'is 0. You need to set haveE=1 or delete E_.']);
+    else
+        result = 1;
+    end
 else
     if  (size(eqn.E_,1) ~= size(eqn.E_,2))
         error('MESS:error_arguments', 'field eqn.E_ has to be quadratic');
@@ -188,12 +189,14 @@ else
     end
     % check size(A) == size(E)?
     if (n~=size(eqn.E_,1))
-        error('MESS:error_arguments','dimensions of E and A must coincide');
+        error('MESS:error_arguments',...
+            'dimensions of E and A must coincide');
     end
     % E = [ E1 0 ]
     %     [ 0  0 ]
     if full(any([any(eqn.E_(1:st, st + 1:end)), any(eqn.E_(st+1:end,:))]))
-        warning('MESS:control_data','E has to be non-zero only in st x st block');
+        warning('MESS:control_data',...
+            'E has to be non-zero only in st x st block');
     end
     % result: bool; without 'full()' result: 1x1 sparse
     result = 1;
@@ -244,9 +247,12 @@ end
 n=size(A,1);
 
 if not(eqn.haveE)
-    % E = [ I 0 ]
-    %     [ 0 0 ]
-    eqn.E_=sparse(1:st,1:st,ones(st, 1),n,n,st);
+    if isfield(eqn, 'E_time')
+        error('MESS:equatin_data',['Detected eqn.E_time where eqn.haveE '...
+            'is 0. You need to set haveE=1 or delete E_']);
+    else
+        result = 1;
+    end
 else
     if not(isfield(eqn, 'E_time')) || not(isa(eqn.E_time,'function_handle'))
         error('MESS:equation_data',...

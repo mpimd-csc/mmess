@@ -8,25 +8,15 @@ function IRKA_mor_Stokes(istest)
 %               (optional, defaults to 0, i.e. interactive demo)
 %
 
-
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2019
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
 
-% IRKA tolerance and maximum iteration number
+%% IRKA tolerance and maximum iteration number
 opts.irka.maxiter = 150;
 opts.irka.r = 30;
 opts.irka.flipeig = 0;
@@ -35,10 +25,11 @@ opts.irka.h2_tol = 1e-6;
 opts.irka.init = 'logspace';
 
 if nargin < 1, istest = 0; end
+
 if istest
     opts.irka.info = 1;
 else
-    opts.irka.info = 1;
+    opts.irka.info = 2;
 end
 
 oper = operatormanager('dae_2');
@@ -52,18 +43,20 @@ ny = 10;
     stokes_ind2(nin, nout, nx, ny);
 n = size(eqn.E_, 1);
 eqn.haveE = 1;
-st = full(sum(diag(eqn.E_)));
+st=trace(eqn.E_); % Stokes is FDM discretized, so so this is
+                  % the dimension of the velocity space
 eqn.st = st;
 eqn.B = eqn.Borig(1:st, :);
 eqn.C = eqn.Corig(:, 1:st);
 %% Compute reduced system matrices
-tic;
-[ROM.E, ROM.A, ROM.B, ROM.C, S, b, c, V, W] = ...
+t_mess_tangential_irka = tic;
+[ROM.E, ROM.A, ROM.B, ROM.C, ~, ~, ~, ~, W] = ...
     mess_tangential_irka(eqn, opts, oper);
-toc;
+t_elapsed1 = toc(t_mess_tangential_irka);
+fprintf(1,'mess_tangential_irka took %6.2f seconds \n', t_elapsed1);
 
 %%
-tic;
+t_eval_ROM = tic;
 
 %% Evaluate the ROM quality
 % while the Gramians are computed exploiting the DAE structure, due to the
@@ -85,7 +78,9 @@ opts.sigma.fmax = 4;
 
 out = mess_sigma_plot(eqn, opts, oper, ROM);
 
-toc;
+t_elapsed2 = toc(t_eval_ROM);
+fprintf(1,'evaluation of ROM matrices took %6.2f seconds \n' , t_elapsed2);
+
 %%
 maerr = max(abs(out.err));
 mrerr = max(abs(out.relerr));

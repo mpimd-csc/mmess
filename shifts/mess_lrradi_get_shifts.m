@@ -33,22 +33,21 @@ function [eqn, opts, oper, nShifts] = ...
 %
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2018
-%
+
+if not(isfield(opts.shifts, 'banned')) ...
+        || not(isnumeric(opts.shifts.banned))
+    opts.shifts.banned = [];
+elseif not(isfield(opts.shifts, 'banned_tol')) ...
+        || not(isnumeric(opts.shifts.banned_tol)) ...
+        || not(isscalar(opts.shifts.banned_tol))
+    opts.shifts.banned_tol = 1e-4;
+end
 
 %% Check input
 switch opts.shifts.method
@@ -88,6 +87,13 @@ switch opts.shifts.method
                 p = mess_projection_shifts( eqn, opts, oper, Z(:,ind), ...
                     oper.mul_A(eqn, opts, 'N', Z(:,ind), 'N') ...
                     + eqn.U * (eqn.V' * Z(:,ind)), []);
+            end
+            
+            for j = 1 : size(opts.shifts.banned)
+                critical_shifts = abs(p - opts.shifts.banned(j)) ...
+                    < opts.shifts.banned_tol * max(abs(p));
+                p(critical_shifts) = p(critical_shifts) ...
+                    - opts.shifts.banned_tol * max(abs(p)) * 2;
             end
             
             nShifts       = length(p);

@@ -4,13 +4,13 @@
 %   E*d/dt X(t)*E' = -B*B' - E*X(t)*A' - A*X(t)*E' + E*X(t)*C'*C*X(t)*E' (N)
 %   E'*d/dt X(t)*E = -C'*C - E'*X(t)*A - A'*X(t)*E + E'*X(t)*B*B'*X(t)*E (T)
 %   backward in time.
-% 
+%
 % Input & Output
 %   eqn                 struct contains data for equations
 %
 %   opts                struct contains parameters for the algorithm
 %
-%   oper                struct contains function handles for operations 
+%   oper                struct contains function handles for operations
 %                       with A and E
 %
 % Output
@@ -22,7 +22,7 @@
 %   eqn.C       dense (m2 x n) matrix C
 %
 %   eqn.L0      dense (n x m4) matrix, L in initial LDL^T factorization
-% 
+%
 %   eqn.D0      dense (m4 x m4) matrix, D in initial LDL^T factorization
 %
 %   eqn.type    possible values: 'N', 'T'
@@ -33,6 +33,19 @@
 %               if haveE = 0: matrix E is assumed to be the identity
 %               (optional)
 %
+%   eqn.LTV     possible  values: 0, 1, false, true
+%               indicates autonmous (false) or
+%               non-autonomous (true) differential
+%               Riccati equation
+%               (optional, default: 0)
+%
+%   eqn.Rinv    dense (m1 x m1) matrix implementing the term
+%               E'*X(t)*B*Rinv*B'*X(t)*E (T)
+%               (Rinv is not used in computation of out.Ks)
+%
+%   non-autonomous (LTV), NOTE: A(t)*A(s)=A(s)*A(t) is required. This is
+%   not checked in the code and has to be ensured by the user.
+%
 %   Depending on the operator chosen by the operatormanager, additional
 %   fields may be needed. For the "default", e.g., eqn.A_ and eqn.E_ hold
 %   the A and E matrices. For the second order types these are given
@@ -42,13 +55,13 @@
 % Input fields in struct opts:
 %   opts.splitting.time_steps   possible values: (N x 1) array
 %                               array containing the equidistant time steps
-%                               If splitting.adaptive is set, it should 
+%                               If splitting.adaptive is set, it should
 %                               specify the time interval [t0, tend]
 %
 %   opts.splitting.order        possible values: 1, 2, 3, 4, ...
 %                               use splitting scheme of this order
-%                               1 is Lie splitting, 2 is Strang splitting 
-%                               (default), 3- requires splitting.additive 
+%                               1 is Lie splitting, 2 is Strang splitting
+%                               (default), 3- requires splitting.additive
 %                               to be true
 %                               (optional, default 2)
 %
@@ -62,7 +75,7 @@
 %                               use symmetric (1) or unsymmetric (0)
 %                               additive schemes
 %                               (optional, default 0)
-%                               
+%
 %   opts.splitting.trunc_tol    possible values: scalar > 0
 %                               column compression tolerance
 %                               (optional, default eps * size(A, 1))
@@ -71,25 +84,25 @@
 %                               verbose mode for column compression
 %                               (optional, default: 0)
 %
-%   opts.splitting.quadrature.type  
-%                               possible values: 'gauss', 'clenshawcurtis', 
+%   opts.splitting.quadrature.type
+%                               possible values: 'gauss', 'clenshawcurtis',
 %                                                'equidistant', 'adaptive'
-%                               type of quadrature to use for approximation 
+%                               type of quadrature to use for approximation
 %                               of the integral term
 %                               (optional, default 'gauss')
-% 
-%   opts.splitting.quadrature.order    
+%
+%   opts.splitting.quadrature.order
 %                               possible values: positive integer
 %                               order of quadrature  used for approximation
 %                               of the integral term
 %                               (optional, default based on method)
-% 
-%   opts.splitting.quadrature.tol    
+%
+%   opts.splitting.quadrature.tol
 %                               possible values: positive real value
-%                               tolerance to use for adaptive quadrature 
+%                               tolerance to use for adaptive quadrature
 %                               (optional, default 1e-4)
 %
-%   opts.splitting.intermediates    
+%   opts.splitting.intermediates
 %                               possible values: 0, 1, false, true
 %                               store intermediate approximations (1)
 %                               or only return final L, D (0)
@@ -100,34 +113,34 @@
 %                               every time step. 2 prints only the time
 %                               steps.
 %                               (optional, default 2)
-% 
-% 
+%
+%
 %  The structure opts.exp_action contains parameters for how to
 %  compute matrix exponential actions on block matrices; see
 %  private/mess_exp_action.m for specifications
-% 
-% 
-% 
-% 
-% 
+%
+%
+%
+%
+%
 % % Adaptivity, NOTE: not implemented, future functionality
-% 
+%
 %   opts.splitting.adaptive     possible values: 0, 1, false, true, struct
 %                               use adaptive time stepping (1, struct) or
 %                               not (0)
 %                               (optional, default 0)
-% 
+%
 %   opts.splitting.adaptive.controller  possible values: 'PI',0,'deadbeat'
 %                                       the type of adaptive controller; PI
 %                                       (with unoptimized parameters) or
 %                                       deadbeat (0, 'deadbeat')
 %                                       (optional, default 'PI')
-% 
+%
 %   opts.splitting.adaptive.initial_timestep possible values: scalar > 0
 %                                            guess for good initial time
-%                                            step 
+%                                            step
 %                                            (optional)
-% 
+%
 %   opts.splitting.adaptive.epus        possible values: 0, 1, false, true
 %                                       use the error per unit step (1)
 %                                       strategy or error per step (0)
@@ -136,7 +149,7 @@
 %   opts.splitting.adaptive.reuse_IQ    possible values: 0, 1, false, true
 %                                       reuse most data for computing I_Q
 %                                       after the step size changes (1) or
-%                                       not (0). Usually saves a lot of 
+%                                       not (0). Usually saves a lot of
 %                                       computation time, but sometimes
 %                                       leads to many convergence failures
 %                                       (optional, default false)
@@ -152,16 +165,16 @@
 %               factor
 %
 %   out.Ks      cell array with feedback term K for every time step
-%                            
-%   out.ranks   Nt x 1 array with numerical ranks of approximations for 
-%               every time step (saved also if opts.splitting.intermediates 
+%
+%   out.ranks   Nt x 1 array with numerical ranks of approximations for
+%               every time step (saved also if opts.splitting.intermediates
 %               = 0)
 %
 %   out.time    the total computation time (wall clock)
-% 
+%
 %   out.timeIQ  the computation time (wall clock) required for the I_Q
 %               integral approximation
-% 
+%
 %
 % If optional input arguments are missing they may be set to default values
 % and a 'MESS:control_data' warning is printed. to turn warnings off use
@@ -169,22 +182,13 @@
 %
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -215,7 +219,7 @@ if not(isfield(opts.splitting, 'additive')),  opts.splitting.additive = 0; end
 if opts.splitting.order  >  2, opts.splitting.additive = 1; end
 
 if not(isfield(opts.splitting, 'symmetric')) && opts.splitting.additive == 1
-    opts.splitting.symmetric = 0; 
+    opts.splitting.symmetric = 0;
 end
 
 if opts.splitting.additive && opts.splitting.symmetric ...
@@ -232,13 +236,13 @@ end
 if not(isfield(opts.splitting.quadrature, 'type'))
         warning('MESS:control_data',['Unspecified quadrature type. ' ...
                 'Setting opts.splitting.quadrature.type=''gauss''']);
-    opts.splitting.quadrature.type = 'gauss'; 
+    opts.splitting.quadrature.type = 'gauss';
 elseif not(ismember(opts.splitting.quadrature.type, ...
                 {'gauss', 'clenshawcurtis', 'equidistant', 'adaptive'}))
     warning('MESS:control_data',['The specified quadrature type is ' ...
                         'not supported.\n setting ' ...
                         'opts.splitting.quadrature.type=''gauss''']);
-    opts.splitting.quadrature.type = 'gauss'; 
+    opts.splitting.quadrature.type = 'gauss';
 end
 
 if not(isfield(opts.splitting.quadrature, 'order'))
@@ -260,7 +264,7 @@ if not(isfield(opts.splitting.quadrature, 'order'))
             end
         end
     end
-     
+
 end
 
 if strcmp(opts.splitting.quadrature.type, 'clenshawcurtis')
@@ -277,7 +281,7 @@ if strcmp(opts.splitting.quadrature.type, 'adaptive') && ...
 end
 
 if not(isfield(opts.splitting, 'intermediates'))
-    opts.splitting.intermediates = 1; 
+    opts.splitting.intermediates = 1;
 end
 
 
@@ -286,7 +290,7 @@ if not(isfield(opts.splitting,'info')),  opts.splitting.info = 2; end
 if isfield(opts,'LDL_T') && opts.LDL_T==0
     warning('MESS:control_data',['The splitting code only supports ' ...
                         'LDL_T solutions.\n Setting opts.LDL_T=1']);
-end   
+end
 opts.LDL_T = 1;
 
 
@@ -300,33 +304,32 @@ opts.LDL_T = 1;
 
 if not(isfield(opts.splitting, 'adaptive'))  ...
     || not(isstruct(opts.splitting.adaptive))
-    opts.splitting.adaptive = 0; 
+    opts.splitting.adaptive = 0;
 end
 
 if opts.splitting.adaptive ~= 0
-    
+
     error('MESS:missing_feature', ['Time step adaptivity has not yet been'
                                     'implemented.']);
-    
+
     if not(isfield(opts.splitting.adaptive, 'controller')) %#ok<UNRCH>
         opts.splitting.adaptive.controller = 'PI';
     end
-    
+
     if not(isfield(opts.splitting.adaptive, 'initial_timestep'))
-        t0 = opts.t0;
         tend = opts.splitting.time_steps(end);
         % Very crude and probably overly pessimistic guess
         opts.splitting.adaptive.initial_timestep = (tend - t0) / 1000;
     end
-    
+
     if not(isfield(opts.splitting.adaptive, 'epus'))
         opts.splitting.adaptive.epus = 1;
     end
-    
+
     if not(isfield(opts.splitting.adaptive, 'reuse_IQ'))
         opts.splitting.adaptive.reuse_IQ = 0;
     end
-    
+
 end
 
 
@@ -345,7 +348,7 @@ end
 
 if not(isfield(eqn, 'LTV'))
     eqn.LTV = 0;
-end    
+end
 
 if eqn.LTV % Instantiate matrices at first time step
     if isfield(oper, 'eval_matrix_functions')
@@ -367,7 +370,7 @@ if not(result)
 end
 
 % If the user sends in sparse B and C, make them dense
-if not(eqn.LTV) && issparse(eqn.B) 
+if not(eqn.LTV) && issparse(eqn.B)
     eqn.B = full(eqn.B);
     eqn.C = full(eqn.C);
 end
@@ -397,13 +400,13 @@ end
 
 % Extra check of general splitting data, which has to be run after the
 % operator structure has been initialized. It cannot be initialized before
-% the main splitting checks, because in the LTV case the initialization 
+% the main splitting checks, because in the LTV case the initialization
 % needs the first time step, which exists in opts.splitting.time_steps...
 if not(isfield(opts.splitting,'trunc_tol'))
-    opts.splitting.trunc_tol = eps * oper.size(eqn, opts); 
+    opts.splitting.trunc_tol = eps * oper.size(eqn, opts);
 end
 if not(isfield(opts.splitting,'trunc_info'))
-    opts.splitting.trunc_info = 0; 
+    opts.splitting.trunc_info = 0;
 end
 
 
@@ -425,7 +428,7 @@ out = {};
 % Initialize data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% We solve E'*d/dt X(t)*E = C'*C + E'*X(t)*A + A'*X(t)*E 
+% We solve E'*d/dt X(t)*E = C'*C + E'*X(t)*A + A'*X(t)*E
 %                           - E'*X(t)*B*B'*X(t)*E (eqn.type == 'T')
 % forward in time instead and then flip everything.
 t = opts.splitting.time_steps;
@@ -436,7 +439,7 @@ if eqn.LTV
         oper.eval_matrix_functions(eqn, opts, oper, t(end) - s);
 else
     opts.splitting.eval_matrix_functions = @(eqn, opts, oper, s) ...
-        mess_do_nothing(eqn, opts, oper);    
+        mess_do_nothing(eqn, opts, oper);
 end
 
 
@@ -448,7 +451,7 @@ D0 = eqn.D0;
 
 ms = zeros(Nt, 1);
 ms(1) = size(L0, 2);
-    
+
 if opts.splitting.intermediates
     Ls{Nt+1} = [];
     Ls{1} = L0;
@@ -467,14 +470,14 @@ if eqn.type == 'T'
 elseif eqn.type == 'N'
     Ks{1} = (oper.mul_E(eqn, opts, 'T', L0*(D0*(L0'*eqn.C')), 'N'))';
 end
-%     
+%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set up method coefficients
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 s = opts.splitting.order;
 if s == 1 % Lie
-    as = 1; 
+    as = 1;
 end
 if s == 2 % Strang
     as = 1/2;
@@ -515,7 +518,7 @@ end
 if not(eqn.LTV)
     [IQL, IQD] = IQ(eqn, opts, oper, 0, h, as);
 %     % Extra output for time-step adaptivity (not yet implemented):
-%     out.IQLas = IQLas;    
+%     out.IQLas = IQLas;
 %     out.IQDas = IQDas;
 %     out.Las = Las;
 %     out.xj = xj;
@@ -536,7 +539,7 @@ for j = 1: Nt
     else
         Lold = Ls; Dold = Ds;
     end
-    
+
     if s == 1 % Lie
         [Lnew, Dnew] = expG(eqn, opts, oper, h, Lold, Dold, t(j));
         if eqn.LTV
@@ -560,19 +563,19 @@ for j = 1: Nt
             [Lnew, Dnew, eqn, opts, oper] ...
             = expF(eqn, opts, oper, h/2, IQL{1}{1}, IQD{1}{1}, Lnew, Dnew);
         end
-    elseif opts.splitting.additive 
+    elseif opts.splitting.additive
         if opts.splitting.symmetric, nmax = s/2; else, nmax = s; end
-        
+
         tj = t(j);
 
         if opts.splitting.symmetric
             if not(eqn.LTV)
                 IQL1 = IQL{1};
                 IQD1 = IQD{1};
-            
+
                 parfor n = 1:nmax
                     % Local copy of opts for parallelization
-                    opts_par = opts; 
+                    opts_par = opts;
                     L1{n} = Lold; D1{n} = Dold;
                     L2{n} = Lold; D2{n} = Dold;
 
@@ -592,7 +595,7 @@ for j = 1: Nt
             else % Time-varying
                 parfor n = 1:nmax
                     % Local copy of opts for parallelization
-                    opts_par = opts; 
+                    opts_par = opts;
                     L1{n} = Lold; D1{n} = Dold;
                     L2{n} = Lold; D2{n} = Dold;
 
@@ -600,13 +603,13 @@ for j = 1: Nt
                     % temporary variable is used after the parfor-loop.
                     % (Even though it isn't.)
                     [IQLpar, IQDpar] = ...
-                        IQ(eqn, opts_par, oper, t0 + h*(0:n-1)/n, h, 1/n);
+                        IQ(eqn, opts_par, oper, tj + h*(0:n-1)/n, h, 1/n);
 
                     for k = 1:n
                         tt = tj + (k-1) / n * h;
                         [L2{n}, D2{n}, ~, opts_par, ~] ...
                             = expF(eqn, opts_par, oper, ...
-                                   h / n, IQLpar{n}{1}, IQDpar{n}{1}, ...
+                                   h / n, IQLpar{k}{1}, IQDpar{k}{1}, ...
                                    L2{n}, D2{n}, tt);
                         [L2{n}, D2{n}] = expG(eqn, opts, oper, h / n, ...
                                               L2{n}, D2{n}, tt);
@@ -614,7 +617,7 @@ for j = 1: Nt
                                               L1{n}, D1{n}, tt);
                         [L1{n}, D1{n}, ~, opts_par, ~] ...
                             = expF(eqn, opts_par, oper, ...
-                                   h / n, IQLpar{n}{1}, IQDpar{n}{1}, ...
+                                   h / n, IQLpar{k}{1}, IQDpar{k}{1}, ...
                                    L1{n}, D1{n}, tt);
                     end
                 end
@@ -628,7 +631,7 @@ for j = 1: Nt
                 D2{n} = gamma(n)*D2{n};
             end
             Dnew = blkdiag(D1{:}, D2{:});
-            
+
             [Lnew, Dnew] = mess_column_compression(Lnew, 'N', Dnew, ...
                 opts.splitting.trunc_tol, opts.splitting.trunc_info);
 
@@ -636,10 +639,10 @@ for j = 1: Nt
             if not(eqn.LTV)
                 IQL1 = IQL{1};
                 IQD1 = IQD{1};
-            
+
                 parfor n = 1:nmax
                     % Local copy of opts for parallelization
-                    opts_par = opts; 
+                    opts_par = opts;
                     L1{n} = Lold; D1{n} = Dold;
 
                     for k = 1:n
@@ -653,14 +656,14 @@ for j = 1: Nt
             else % Time-varying case
                 parfor n = 1:nmax
                     % Local copy of opts for parallelization
-                    opts_par = opts; 
+                    opts_par = opts;
                     L1{n} = Lold; D1{n} = Dold;
-                    
+
                     % New name, because otherwise Matlab complains that the
                     % temporary variable is used after the parfor-loop.
                     % (Even though it isn't.)
                     [IQLpar, IQDpar] = ...
-                        IQ(eqn, opts_par, oper, t0 + h*(0:n-1)/n, h, 1/n);
+                        IQ(eqn, opts_par, oper, tj + h*(0:n-1)/n, h, 1/n);
 
                     for k = 1:n
                         tt = tj + (k-1) / n * h;
@@ -668,7 +671,7 @@ for j = 1: Nt
                                               L1{n}, D1{n}, tt);
                         [L1{n}, D1{n}, ~, opts_par, ~] ...
                             = expF(eqn, opts_par, oper, ...
-                                   h / n, IQLpar{n}{1}, IQDpar{n}{1}, ...
+                                   h / n, IQLpar{k}{1}, IQDpar{k}{1}, ...
                                    L1{n}, D1{n}, tt);
                     end
                 end
@@ -686,16 +689,16 @@ for j = 1: Nt
                 opts.splitting.trunc_tol, opts.splitting.trunc_info);
         end
     end
-    
+
     if opts.splitting.intermediates
         Ls{j+1} = Lnew; Ds{j+1} = Dnew;
     else
         Ls = Lnew; Ds = Dnew;
     end
     ms(j+1) = size(Dnew, 1);
-    
+
     % Store feedback term K as well. We have
-    %  (T): K = B' LDL' E = (E'*LDL'*B)' and 
+    %  (T): K = B' LDL' E = (E'*LDL'*B)' and
     %  (N): K = C LDL' E = (E'*LDL'*C')'
     % The extra transpose is because we can only multiply with E from the
     % left.
@@ -706,8 +709,8 @@ for j = 1: Nt
         Ks{j+1} = ...
           (oper.mul_E(eqn, opts, 'T', Lnew*(Dnew*(Lnew'*eqn.C')), 'N'))';
     end
-    
-end   
+
+end
 
 % Flip to go backward rather than forward in time
 out.Ls = fliplr(Ls);
@@ -721,5 +724,5 @@ out.Ks = fliplr(Ks);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 [eqn, opts, oper] = oper.mul_E_post(eqn, opts, oper);
 
-   
- end 
+
+ end

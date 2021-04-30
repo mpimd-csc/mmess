@@ -225,22 +225,13 @@ function [out, eqn, opts, oper] = mess_lrnm(eqn, opts, oper)
 %   operatormanager.
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project 
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others
-%               2009-2020
-%
+
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -269,13 +260,13 @@ if not(isfield(opts,'shifts')) || not(isstruct(opts.shifts))
     warning('MESS:control_data',...
             ['shift parameter control structure missing.', ...
              'Switching to default num_desired = 25, num_Ritz = 50, ' ...
-             'num_hRitz = 25.']); 
+             'num_hRitz = 25.']);
     opts.shifts.num_desired = 25;
     opts.shifts.num_Ritz = 50;
     opts.shifts.num_hRitz = 25;
     opts.shifts.method='heur';
     opts.shifts.period=1;
-    
+
 else
     if not(isfield(opts.shifts,'num_desired'))||...
        not(isnumeric(opts.shifts.num_desired))
@@ -290,7 +281,7 @@ else
     if (strcmp(opts.shifts.method,'heur') ...
         || strcmp(opts.shifts.method,'wachspress'))&&...
             (not(isfield(opts.shifts,'num_Ritz')) || ...
-             not(isnumeric(opts.shifts.num_Ritz))) 
+             not(isnumeric(opts.shifts.num_Ritz)))
         warning('MESS:control_data',...
             ['Missing or Corrupted opts.shifts.num_Ritz field.', ...
             'Switching to default: 50']);
@@ -299,7 +290,7 @@ else
     if (strcmp(opts.shifts.method,'heur') ...
             || strcmp(opts.shifts.method,'wachspress'))&&...
             (not(isfield(opts.shifts,'num_hRitz')) || ...
-             not(isnumeric(opts.shifts.num_hRitz))) 
+             not(isnumeric(opts.shifts.num_hRitz)))
         warning('MESS:control_data',...
             ['Missing or Corrupted opts.shifts.num_hRitz field.', ...
             'Switching to default: 25']);
@@ -346,19 +337,19 @@ else
             'Missing or Corrupted maxiter field. Switching to default.');
         opts.nm.maxiter=20;
     end
-    
+
     if not(isfield(opts.nm,'rel_diff_tol'))||not(isnumeric(opts.nm.rel_diff_tol))
         warning('MESS:control_data',...
             'Missing or Corrupted rel_diff_tol field. Switching to default.');
         opts.nm.rel_diff_tol=0;
     end
-    
+
     if not(isfield(opts.nm,'res_tol'))||not(isnumeric(opts.nm.res_tol))
         warning('MESS:control_data',...
             'Missing or Corrupted res_tol field. Switching to default.');
         opts.nm.res_tol=0;
     end
-    
+
     if not(isfield(opts.nm,'accumulateRes'))||not(isnumeric(opts.nm.accumulateRes))
         warning('MESS:control_data', ...
             'Missing or Corrupted accumulateRes field. Switching to default.');
@@ -389,15 +380,15 @@ else
         end
         alpha = 1e-4;
     end
-    if not(isfield(opts.nm,'inexact')),  opts.nm.inexact=0; end
+    if not(isfield(opts.nm,'inexact')),  opts.nm.inexact=false; end
     if opts.nm.inexact
         if not(isfield(opts.nm,'tau')),  opts.nm.tau=1; end
         if not(isfield(opts.adi,'res_tol')),  opts.adi.res_tol=1e-16; end
         opts.nm.accumulateRes = 1;
-        opts.adi.inexact = 1;
+        opts.adi.inexact = true;
         opts.adi.accumulateDeltaK = 1;
     else
-        opts.adi.inexact = 0;
+        opts.adi.inexact = false;
     end
     if not(isfield(opts, 'norm')) || ...
             (not(strcmp(opts.norm, 'fro')) && ...
@@ -406,7 +397,7 @@ else
             'Missing or Corrupted norm field. Switching to default.');
         opts.norm = 'fro';
     end
-    
+
     if not(isfield(opts.nm,'info'))||not(isnumeric(opts.nm.res_tol))
         warning('MESS:control_data',...
             'Missing or Corrupted info field. Switching to default.');
@@ -521,12 +512,12 @@ else
             ['LDL_T formulation is not compatible with ' ...
             'external eqn.haveUV option.']);
     end
-    
+
     if isnumeric(eqn.U) ...
             && isnumeric(eqn.V) ...
             && size(eqn.U, 1) == size(eqn.V, 1) ...
             && size(eqn.U, 2) == size(eqn.V, 2)
-        
+
         if issparse(eqn.V), eqn.V = full(eqn.V); end
         if issparse(eqn.U), eqn.U = full(eqn.U); end
     else
@@ -566,7 +557,7 @@ if isfield(opts.nm,'K0')
     if eqn.type == 'T'
         eqn.V(:, eqn.sizeUV1+1:eqn.sizeUV1+m) = opts.nm.K0';
     else
-        eqn.U(:, eqn.sizeUV1+1:eqn.sizeUV1+p) = opts.nm.K0';
+        eqn.U(:, eqn.sizeUV1+1:eqn.sizeUV1+m) = opts.nm.K0';
     end
 end
 if bdf
@@ -657,13 +648,13 @@ end
 if opts.nm.linesearch
     linesearch = 0;
     W_old = eqn.G;
-    if not(isfield(eqn,'K0'))
+%    if not(isfield(eqn,'K0'))
         DeltaK_old = [];
-    else
-        %         DeltaK_old = -eqn.V( : , s + 1 : end);
-        %         careful with haveUV option!
-        DeltaK_old = [];
-    end
+%     else
+%         %         DeltaK_old = -eqn.V( : , s + 1 : end);
+%         %         careful with haveUV option!
+%         DeltaK_old = [];
+%    end
     if opts.LDL_T
         S_old = eqn.S_diag;
     end
@@ -686,7 +677,7 @@ while j <= opts.nm.maxiter
     if not(mod(j - 1,opts.shifts.period))
         opts.shifts.p = mess_para(eqn,opts,oper);
     end
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % perform the actual step computations
@@ -706,7 +697,7 @@ while j <= opts.nm.maxiter
     end
     % solve the Lyapunov equation
     [adiout, eqn, opts, oper] = mess_lradi(eqn, opts, oper);
-    
+
     % Store only necessary information about ADI iteration.
     tmp = adiout;
     if not(opts.nm.store_solfac)
@@ -720,7 +711,7 @@ while j <= opts.nm.maxiter
         if isfield(tmp, 'res_fact'), tmp = rmfield(tmp, 'res_fact'); end
     end
     out.adi(j) = tmp;
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Restart Newton iteration with exact ADI iteration if necessary
@@ -800,8 +791,8 @@ while j <= opts.nm.maxiter
                 eqn.S_diag = [];
             end
             opts.nm.res0     = res0;
-            opts.nm.inexact  = 0;
-            opts.adi.inexact = 0;
+            opts.nm.inexact  = false;
+            opts.adi.inexact = false;
             if eqn.type == 'T'
                 eqn.G = [eqn.G, eqn.V(:, eqn.sizeUV1+1:end)];
             else
@@ -810,13 +801,13 @@ while j <= opts.nm.maxiter
             if opts.nm.linesearch
                 linesearch = 0;
                 W_old = eqn.G;
-                if not(isfield(eqn,'K0'))
+ %               if not(isfield(eqn,'K0'))
                     DeltaK_old = [];
-                else
-                    %         DeltaK_old = -eqn.V( : , s + 1 : end);
-                    %         careful with haveUV option!
-                    DeltaK_old = [];
-                end
+%                 else
+%                     %         DeltaK_old = -eqn.V( : , s + 1 : end);
+%                     %         careful with haveUV option!
+%                     DeltaK_old = [];
+%                end
                 if opts.LDL_T
                     S_old = eqn.S_diag;
                 end
@@ -825,7 +816,7 @@ while j <= opts.nm.maxiter
             continue
         end
     end
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Perform projection update if desired
@@ -844,7 +835,7 @@ while j <= opts.nm.maxiter
                 'CARE', eqn, oper, opts);
         end
     end
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % update feedback approximation if it has not been accumulated during
@@ -904,7 +895,7 @@ while j <= opts.nm.maxiter
                     adiout.res_fact, adiout.DeltaK, eqn.S_diag, S_old);
             else
                 lambda = exact_line_search(W_old, DeltaK_old, ...
-                    adiout.res_fact, adiout.DeltaK, [], []); 
+                    adiout.res_fact, adiout.DeltaK, [], []);
             end
             if opts.nm.info
                 fprintf(['\n\t\tUsing line search (res: %4d)\n',...
@@ -975,7 +966,7 @@ while j <= opts.nm.maxiter
                     % Newton iteration with line search failed to converge, stop
                     error('MESS:lrnm', ...
                           ['Newton iteration with line search failed ' ...
-                           'to converge.']); 
+                           'to converge.']);
                 end
             end
         end
@@ -994,7 +985,7 @@ while j <= opts.nm.maxiter
         end
         linesearch = 0;
     end
-    
+
     if opts.nm.rel_diff_tol
         if opts.adi.accumulateDeltaK
             if projected
@@ -1040,7 +1031,7 @@ while j <= opts.nm.maxiter
         already_restarted = 1;
         restarted = 0;
     end
-    
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Evaluate stopping criteria
@@ -1122,7 +1113,11 @@ elseif exist('res0', 'var')
     out.res0 = res0;
 end
 
-
+if out.niter == opts.nm.maxiter
+    warning('MESS:NM:convergence',...
+        ['LR-NM reached maximum iteration number.',...
+         'Results may be inaccurate!']);
+end
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Clean up

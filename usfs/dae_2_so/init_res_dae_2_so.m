@@ -1,7 +1,7 @@
 function [ W, res0, eqn, opts, oper ] = init_res_dae_2_so( eqn, opts, oper, RHS)
 %% function init_res initializes the low rank residual W and res0
 % function [ W, res0, eqn, opts, oper ] = init_res_dae_2_so( eqn, opts, oper, RHS)
-% 
+%
 %   Input/Output:
 %
 %   eqn        structure containing data for G or B or C
@@ -17,22 +17,13 @@ function [ W, res0, eqn, opts, oper ] = init_res_dae_2_so( eqn, opts, oper, RHS)
 %   uses no other dae_2 function
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %% check data
 for mat='MEKG'
@@ -61,13 +52,13 @@ RHStemp(1:size(RHS,1),:)=RHS;
 %if eqn.type=='N'
 %    S = [speye(nv,nv),sparse(nv,nv),sparse(nv,np);
 %          sparse(nv,nv),eqn.M_,eqn.G_';
-%          sparse(np,nv),eqn.G_,sparse(np,np)]; 
+%          sparse(np,nv),eqn.G_,sparse(np,np)];
 %     X = full( S \ RHStemp);
 %     W = [X(1:nv,:);eqn.M_*X(nv+1:2*nv,:)];
 % else
 %     S = [speye(nv,nv),sparse(nv,nv),sparse(nv,np);
 %          sparse(nv,nv),eqn.M_',eqn.G_';
-%          sparse(np,nv),eqn.G_,sparse(np,np)]; 
+%          sparse(np,nv),eqn.G_,sparse(np,np)];
 %     %X = full( S \ [RHS; sparse(np,size(RHS, 2))]);
 %     X = full( S \ RHStemp);
 %     W = [X(1:nv,:);eqn.M_'*X(nv+1:2*nv,:)];
@@ -75,7 +66,7 @@ RHStemp(1:size(RHS,1),:)=RHS;
 
 S = [speye(nv,nv),sparse(nv,nv),sparse(nv,np);
      sparse(nv,nv),eqn.M_,eqn.G_';
-     sparse(np,nv),eqn.G_,sparse(np,np)]; 
+     sparse(np,nv),eqn.G_,sparse(np,np)];
 X = full( S \ RHStemp);
 W = [X(1:nv,:);eqn.M_*X(nv+1:2*nv,:)];
 

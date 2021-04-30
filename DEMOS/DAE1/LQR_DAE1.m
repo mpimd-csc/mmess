@@ -4,7 +4,7 @@ function LQR_DAE1(istest)
 % following the ideas introduced in [1] for Lyapunov equations using he
 % Newton-ADI iteration.
 %
-% Input: 
+% Input:
 % istest  decides whether the function runs as an interactive demo or a
 %         continuous integration test. (optional; defaults to 0, i.e.
 %         interactive demo)
@@ -12,27 +12,16 @@ function LQR_DAE1(istest)
 % References:
 %[1] F. Freitas, J. Rommes, N. Martins, Gramian-based reduction method
 %    applied to large sparse power system descriptor models, IEEE Trans.
-%    Power Syst. 23 (3) (2008) 1258–1270. doi:10.1109/TPWRS.2008.926693. 
+%    Power Syst. 23 (3) (2008) 1258–1270. doi:10.1109/TPWRS.2008.926693
 
 %
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
+%
 
-%
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
-%
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
 %%
 if nargin<1, istest=0; end
 
@@ -41,21 +30,9 @@ if nargin<1, istest=0; end
 oper = operatormanager('dae_1');
 
 %% Problem data
-fname  = sprintf('%s/../models/BIPS/bips98_606.mat',...
-    fileparts(mfilename('fullpath')));
-Bips = load(fname);
-% from https://sites.google.com/site/rommes/software
-p = find(diag(Bips.E));
-np = find(diag(Bips.E) == 0);
-pp = [p;np];
-eqn.A_ = Bips.A(pp, pp);
-eqn.E_ = Bips.E(pp, pp);
-eqn.B = Bips.b(pp, :);
-eqn.C = 0.01*Bips.c( : , pp);
-eqn.st = length(p);
-eqn.haveE = 1;
-clear Bips;
-%% Turn off  close to singular warnings
+eqn = mess_get_BIPS(7);
+
+%% Turn off close to singular warnings
 %  (this model is really badly conditioned)
 orig_warnstate = warning('OFF','MATLAB:nearlySingularMatrix');
 
@@ -86,17 +63,18 @@ opts.nm.info = 1;
 opts.nm.linesearch = 1;
 opts.nm.accumulateRes = 1;
 %%
-tic;
+t_mess_lrnm = tic;
 outnm = mess_lrnm(eqn, opts, oper);
-toc;
+t_elapsed1 = toc(t_mess_lrnm);
+fprintf(1,'mess_lrnm took %6.2f seconds \n',t_elapsed1);
 if istest
     if min(outnm.res)>=opts.nm.res_tol
-        error('MESS:TEST:accuracy','unexpectedly inaccurate result in LRNM'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result in LRNM');
     end
 else
-    figure(1);
-    semilogy(outnm.res);
-    title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
+    figure();
+    semilogy(outnm.res,'linewidth',3);
+    title('0= C^TC + A^TXE + E^TXA -E^TXBB^TXE');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
@@ -111,7 +89,7 @@ opts.norm = 2;
 opts.shifts.history = opts.shifts.num_desired*size(eqn.C,1);
 opts.shifts.method  = 'gen-ham-opti';
 
-opts.shifts.naive_update_mode = false; 
+opts.shifts.naive_update_mode = false;
 % .. Suggest false (smart update is faster; convergence is the same).
 
 opts.radi.compute_sol_fac = 1;
@@ -122,18 +100,18 @@ opts.radi.res_tol = opts.nm.res_tol;
 opts.radi.rel_diff_tol = 0;
 opts.radi.info = 1;
 
-tic;
+t_mess_lrradi = tic;
 outradi = mess_lrradi( eqn, opts, oper );
-toc;
-
+t_elapsed2 = toc(t_mess_lrradi);
+fprintf(1,'mess_lrradi took %6.2f seconds \n', t_elapsed2);
 if istest
     if min(outradi.res)>=opts.radi.res_tol
-        error('MESS:TEST:accuracy','unexpectedly inaccurate result in RADI'); 
+        error('MESS:TEST:accuracy','unexpectedly inaccurate result in RADI');
     end
 else
-    figure(2);
-    semilogy(outradi.res);
-    title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
+    figure();
+    semilogy(outradi.res,'linewidth',3);
+    title('0= C^TC + A^TXE + E^TXA - E^TXBB^TXE');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
 end
@@ -142,12 +120,12 @@ disp(size(outradi.Z));
 
 %% compare
 if not(istest)
-    figure(3);
+    figure();
     ls_nm=[outnm.adi.niter];
     ls_radi=1:outradi.niter;
-    
-    semilogy(cumsum(ls_nm),outnm.res,'k--',ls_radi,outradi.res,'b-');
-    title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
+
+    semilogy(cumsum(ls_nm),outnm.res,'k--',ls_radi,outradi.res,'b-','linewidth',3);
+    title('0= C^TC + A^TXE + E^TXA -E^TXBB^TXE');
     xlabel('number of solves with A+p*M');
     ylabel('normalized residual norm');
     legend('LR-NM','RADI');

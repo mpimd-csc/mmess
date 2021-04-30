@@ -1,27 +1,37 @@
-function mypath = mess_path
+function mypath = mess_path(prototypes)
 %% Add all required directories to the MATLAB path
 % Run this script to add all required functions and directories to the
-% MATLAB path in order to rum M.E.S.S. functions and demos
+% MATLAB path in order to run M.E.S.S. functions and demos or
+% generate a list of directories for permanent addition to your
+% MATLAB path.
+%
+% Calls:
+%   messpath
+%   pathlist = mess_path
+%
+% on the development version you may want to run
+%
+%   messpath(true)
+%   pathlist = mess_path(true)
+%
+% to also add the prototypes folder.
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
-mypath = genpath_exclude(pwd,{'.git','html'}); 
+
+if (nargin > 0) && prototypes
+    mypath = genpath_exclude(pwd,{'.git','html'});
+else
+    mypath = genpath_exclude(pwd,{'.git','html','_prototypes','_packages'});
+end
+
 addpath(mypath);
+
 if not(nargout)
     clear mypath;
 end

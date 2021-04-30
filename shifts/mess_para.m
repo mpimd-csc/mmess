@@ -77,11 +77,11 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 %
 %   opts.shifts.info          possible  values: 0, 1, false, true
 %                             turn output of used shifts before the first
-%                             iteration step on (1) or off (0) 
+%                             iteration step on (1) or off (0)
 %                             (optional, default: 0)
 %
-%   opts.shifts.method        possible  values: 
-%                             'heuristic', ('heur','Penzl','penzl') 
+%   opts.shifts.method        possible  values:
+%                             'heuristic', ('heur','Penzl','penzl')
 %                                for Penzl's heuristics.
 %                             'wachspress', ('Wachspress')
 %                                for asymptotically optimal Wachspress
@@ -95,15 +95,15 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 %                             (optional, default: 'heuristic')
 %
 %   opts.shifts.truncate      possible values: scalar >= 1.0
-%                             truncation tolerance to drop exceptionally large 
+%                             truncation tolerance to drop exceptionally large
 %                             and small Ritz values (e.g. used in second order
-%                             cases, where (p^2*M + p*E + K) may otherwise 
+%                             cases, where (p^2*M + p*E + K) may otherwise
 %                             numerically loose the information about either
 %                             M or K in finite precision). Ritz values larger
-%                             than the given value and smaller than its 
+%                             than the given value and smaller than its
 %                             reciprocal are truncated.
 %                             (optional, default: [])
-%                              
+%
 %   opts.shifts.banned        array of shift paramater values that the
 %                             ADI will not use.
 %                             shift parameter computation will remove all
@@ -121,7 +121,7 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 %   opts.shifts.implicitVtAV  possible values: true, false
 %                             decides whether A*V is reconstructed
 %                             implicitly in 'projection' method, unused
-%                             otherwise. 
+%                             otherwise.
 %                             (optional, default: true)
 %
 %  Remarks:
@@ -144,33 +144,24 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 %
 %  [2] P. Kürschner, Efficient low-rank solution of large-scale matrix
 %      equations, Dissertation, Otto-von-Guericke-Universität, Magdeburg,
-%      Germany, shaker Verlag, ISBN 978-3-8440-4385-3 (Apr. 2016).   
+%      Germany, shaker Verlag, ISBN 978-3-8440-4385-3 (Apr. 2016).
 %      URL http://hdl.handle.net/11858/00-001M-0000-0029-CE18-2
 %
-%   uses operatorfunction size 
-%   and indirectly requires 
+%   uses operatorfunction size
+%   and indirectly requires
 %   (heuristic and wachspress shifts)
-%    - size, sol_A, mul_A, sol_E, mul_E in mess_arn 
+%    - size, sol_A, mul_A, sol_E, mul_E in mess_arn
 %   (projection shifts)
 %    - mul_A, mul_E  in mess_projection_shifts (projection shifts
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 
 %  MMESS (Jens Saak, October 2013)
 
@@ -277,9 +268,9 @@ switch opts.shifts.method
                 [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_get_ritz_vals(eqn,opts,oper);
             end
         end
-        
+
         p = mess_mnmx(rw,opts.shifts.num_desired);
-        
+
     case {'wachspress','Wachspress'}
         %%
         if isfield(oper,'get_ritz_vals')
@@ -295,11 +286,11 @@ switch opts.shifts.method
                 [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_get_ritz_vals(eqn,opts,oper);
             end
         end
-        
+
         a=min(abs(real(rw)));
         b=max(abs(real(rw)));
         alpha=atan(max(imag(rw)./real(rw)));
-        
+
         if not(isfield(opts.shifts,'wachspress'))
             opts.shifts.wachspress='T';
         end
@@ -308,7 +299,7 @@ switch opts.shifts.method
                 p = mess_wachspress_n(a,b,alpha,opts.shifts.num_desired);
             case 'T'
                 if isfield(opts,'nm') && isfield(opts.nm,'inexact') && isa(opts.nm.inexact,'char')
-                    tol=opts.adi.inexact;
+                    tol=opts.adi.outer_tol;
                 else
                     tol=opts.adi.res_tol;
                 end
@@ -410,7 +401,7 @@ end
 
 %% check computed shifts
 % check for banned shifts
-for j = 1 : size(opts.shifts.banned)
+for j = 1 : length(opts.shifts.banned)
     critical_shifts = abs(p - opts.shifts.banned(j)) ...
         < opts.shifts.banned_tol * max(abs(p));
     p(critical_shifts) = p(critical_shifts) ...

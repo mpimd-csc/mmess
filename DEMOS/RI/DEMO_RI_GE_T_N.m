@@ -4,29 +4,20 @@ function DEMO_RI_GE_T_N(istest)
 % the control and filter Hinf Riccati equations. Afterwards, the real
 % residual norms are shown and compared to the set tolerance.
 %
-% Input: 
+% Input:
 % istest  decides whether the function runs as an interactive demo or a
 %         continuous integration test. (optional; defaults to 0, i.e.
 %         interactive demo)
 %
 
 %
-% This program is free software; you can redistribute it and/or modify
-% it under the terms of the GNU General Public License as published by
-% the Free Software Foundation; either version 2 of the License, or
-% (at your option) any later version.
+% This file is part of the M-M.E.S.S. project
+% (http://www.mpi-magdeburg.mpg.de/projects/mess).
+% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% All rights reserved.
+% License: BSD 2-Clause License (see COPYING)
 %
-% This program is distributed in the hope that it will be useful,
-% but WITHOUT ANY WARRANTY; without even the implied warranty of
-% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-% GNU General Public License for more details.
-%
-% You should have received a copy of the GNU General Public License
-% along with this program; if not, see <http://www.gnu.org/licenses/>.
-%
-% Copyright (C) Jens Saak, Martin Koehler, Peter Benner and others 
-%               2009-2020
-%
+
 %%
 if nargin<1, istest=0; end
 
@@ -37,12 +28,12 @@ if exist('OCTAVE_VERSION', 'builtin')
     rand('seed', 2.0); %#ok<RAND>
     eqn.E_ = rand(500);
     eqn.E_ = eqn.E_' * eqn.E_;
-    
+
     rand('seed', 3.0); %#ok<RAND>
     eqn.B2 = rand(500, 2);
     rand('seed', 4.0); %#ok<RAND>
     B1 = rand(500, 2);
-    
+
     rand('seed', 5.0); %#ok<RAND>
     eqn.C2 = rand(3, 500);
     rand('seed', 6.0); %#ok<RAND>
@@ -53,12 +44,12 @@ else
     rng(2.0);
     eqn.E_ = rand(500);
     eqn.E_ = eqn.E_' * eqn.E_;
-    
+
     rng(3.0);
     eqn.B2 = rand(500, 2);
     rng(4.0);
     B1 = rand(500, 2);
-    
+
     rng(5.0);
     eqn.C2 = rand(3, 500);
     rng(6.0);
@@ -97,21 +88,21 @@ opts.ri.trunc_tol      = eps;
 opts.norm           = 2;
 
 %% Solve the control equation.
-tic;
+t_solve_eqn = tic;
 eqn.type = 'T';
 eqn.B1   = 1/gam * B1;
 eqn.C1   = C1;
 [outControl, eqn, opts, oper] = mess_lrri(eqn, opts, oper);
-toc;
-
+t_elapsed1 = toc(t_solve_eqn);
+fprintf(1,'solving the control equation took %6.2f seconds \n' ,t_elapsed1);
 %% Solve the filter equation.
-tic;
+t_solve_eqn = tic;
 eqn.type = 'N';
 eqn.B1   = B1;
 eqn.C1   = 1/gam * C1;
 [outFilter, eqn, opts, ~] = mess_lrri(eqn, opts, oper);
-toc;
-
+t_elapsed2 = toc(t_solve_eqn);
+fprintf(1,'solving the filter equation took %6.2f seconds \n' , t_elapsed2);
 %% Compute real residuals.
 absControl = norm(eqn.A_' * (outControl.Z * outControl.Z') * eqn.E_ ...
     + eqn.E_' * (outControl.Z * outControl.Z') * eqn.A_ ...
