@@ -156,6 +156,7 @@ else
     % Let us avoid E if it is actually the identity.
     if norm(eqn.E_-speye(n),'inf')==0
         eqn.haveE=0;
+        eqn = rmfield(eqn, 'E_');
     else
         eqn.haveE=1;
     end
@@ -182,7 +183,9 @@ if nargin < 8
     opts.norm='fro';
 else
     if not(isfield(opts.adi,'maxiter')),  opts.adi.maxiter=100; end
-    if not(isfield(opts.adi,'res_tol')), opts.adi.res_tol=min( 1e-9, opts.srm.tol/100 ); end
+    if not(isfield(opts.adi,'res_tol'))
+        opts.adi.res_tol=min( 1e-9, opts.srm.tol/100 ); 
+    end
     if not(isfield(opts.adi,'rel_diff_tol')), opts.adi.rel_diff_tol=1e-16; end
     if not(isfield(opts,'norm')), opts.norm ='fro'; end
 end
@@ -198,7 +201,9 @@ end
 
 opts.shifts.p = mess_para(eqn, opts, oper);
 
-if opts.shifts.info && not(strcmp(opts.shifts.info, 'projection')), disp(opts.shifts.p); end
+if opts.shifts.info && not(strcmp(opts.shifts.info, 'projection'))
+    disp(opts.shifts.p); 
+end
 %%
 % controllability
 eqn.type='N';
@@ -212,7 +217,11 @@ end
 if info > 1
   figure(1)
   semilogy(outB.res);
-  title('AX + XA^T = -BB^T');
+  if eqn.haveE
+      title('AXE^T + EXA^T = -BB^T');
+  else
+      title('AX + XA^T = -BB^T');
+  end
   xlabel('number of iterations');
   ylabel('normalized residual norm');
   drawnow
@@ -236,7 +245,11 @@ end
 if info > 1
   figure(2)
   semilogy(outC.res);
-  title('A^TX + XA = -C^TC');
+  if eqn.haveE
+      title('A^TXE + E^TXA = -C^TC');
+  else
+      title('A^TX + XA = -C^TC');
+  end
   xlabel('number of iterations');
   ylabel('normalized residual norm');
   drawnow
