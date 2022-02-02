@@ -23,7 +23,7 @@ function X = sol_A_dae_1_so(eqn, opts, opA, B, opB)%#ok<INUSL>
 %
 % Output
 %
-%   X       matrix fullfills equation opA(A) * X = B
+%   X       matrix fulfills equation opA(A) * X = B
 %
 %   uses no other dae_1_so function
 %
@@ -32,13 +32,13 @@ function X = sol_A_dae_1_so(eqn, opts, opA, B, opB)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 
-%% check input Paramters
+%% check input Parameters
 if (not(ischar(opA)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opA or opB is not a char');
 end

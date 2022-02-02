@@ -4,7 +4,7 @@ function [ lambda ] = exact_line_search( W_old, DeltaK_old, W, DeltaK, S, S_old 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -14,49 +14,64 @@ function [ lambda ] = exact_line_search( W_old, DeltaK_old, W, DeltaK, S, S_old 
 if isempty(DeltaK_old)
     DeltaK_old = 0;
 end
+
 %% Compute scalar values
+delta = sum(sum((DeltaK' * DeltaK).^2, 1), 2);
+
 if isempty(S) && isempty(S_old)
+
     alpha = sum(sum(( (W_old' * W_old) ).^2, 1), 2) ...
-        + sum(sum((DeltaK_old' * DeltaK_old).^2, 1), 2) ...
-        - 2 * sum(sum((DeltaK_old' * W_old).^2, 1), 2);
+            + sum(sum((DeltaK_old' * DeltaK_old).^2, 1), 2) ...
+            - 2.0 * sum(sum((DeltaK_old' * W_old).^2, 1), 2);
+
     beta = sum(sum((W' * W).^2, 1), 2);
-    delta = sum(sum((DeltaK' * DeltaK).^2, 1), 2);
+
     gamma = sum(sum((W_old' * W).^2, 1), 2) ...
-        - sum(sum((DeltaK_old' * W).^2, 1), 2);
+            - sum(sum((DeltaK_old' * W).^2, 1), 2);
+
     epsilon = sum(sum((W_old' * DeltaK).^2, 1), 2) ...
-        - sum(sum((DeltaK_old' * DeltaK).^2, 1), 2);
+              - sum(sum((DeltaK_old' * DeltaK).^2, 1), 2);
+
     zeta = sum(sum((DeltaK' * W).^2, 1), 2);
+
 elseif not(isempty(S)) && not(isempty(S_old))
+
     S = diag(sqrt(S));
+
     S_old = diag(sqrt(S_old));
+
     alpha = sum(sum((S_old * (W_old' * W_old) * S_old).^2, 1), 2) ...
-        + sum(sum((DeltaK_old' * DeltaK_old).^2, 1), 2) ...
-        - 2 * sum(sum((DeltaK_old' * W_old * S_old).^2, 1), 2);
+            + sum(sum((DeltaK_old' * DeltaK_old).^2, 1), 2) ...
+            - 2.0 * sum(sum((DeltaK_old' * W_old * S_old).^2, 1), 2);
+
     beta = sum(sum((S * (W' * W) * S).^2, 1), 2);
-    delta = sum(sum((DeltaK' * DeltaK).^2, 1), 2);
+
     gamma = sum(sum((S_old * W_old' * W * S).^2, 1), 2) ...
-        - sum(sum((DeltaK_old' * W * S).^2, 1), 2);
+            - sum(sum((DeltaK_old' * W * S).^2, 1), 2);
+
     epsilon = sum(sum((S_old * W_old' * DeltaK).^2, 1), 2) ...
-        - sum(sum((DeltaK_old' * DeltaK).^2, 1), 2);
+              - sum(sum((DeltaK_old' * DeltaK).^2, 1), 2);
+
     zeta = sum(sum((DeltaK' * W * S).^2, 1), 2);
+
 else
-    error('MESS:line_search', ...
-        'Incorrect data for S and S_old.');
+    error('MESS:exact_line_search', ...
+          'Incorrect data for S and S_old.');
 end
 
 %% Compute lambda via eigenproblem
-a0 = 2 * (gamma - alpha);
-a1 = 2 * (alpha + beta - 2 * (gamma + epsilon));
-a2 = 6 * (epsilon - zeta);
-a3 = 4 * delta;
-a = [a0 a1 a2 a3];
-a = a / norm(a);
+a = [2.0 * (gamma - alpha), ...
+     2.0 * (alpha + beta - 2.0 * (gamma + epsilon)), ...
+     6.0 * (epsilon - zeta), ...
+     4.0 * delta];
 
-A = [0,     1,      0
-    0,     0,      1
-    -a(1),   -a(2),    -a(3)];
-B = eye(3);
-B(3, 3) = a(4);
+a = a ./ norm(a);
+
+A = [0.0,   1.0,   0.0; ...
+     0.0,   0.0,   1.0; ...
+     -a(1), -a(2), -a(3)];
+
+B = diag([1.0; 1.0; a(4)]);
 
 % Octave does not support eig(A, B, 'qz') use eig(A,B) as fallback in this case.
 try
@@ -72,19 +87,23 @@ lambda = lambda(lambda <= 2);
 if isempty(lambda)
     lambda = 0;
     warning('MESS:exact_line_search', ...
-                    'Could not find a stepsize lambda.');
+            'Could not find a stepsize lambda.');
+
 elseif size(lambda, 1) > 1
-    f = @(t) ((1 - t).^2) * alpha + (t.^2) * beta + (t.^4) * delta ...
-        + (2 * t .* (1 - t)) * gamma - (2 * t.^2 .* (1 - t)) * epsilon ...
-        - (2 * t.^3) * zeta;
+    f = @(t) ((1.0 - t).^2) * alpha ...
+             + (t.^2) * beta ...
+             + (2.0 * t .* (1.0 - t)) * gamma ...
+             + (t.^4) * delta ...
+             - (2.0 * t.^2 .* (1.0 - t)) * epsilon ...
+             - (2.0 * t.^3) * zeta;
     [~, I] = min(f(lambda));
     lambda = lambda(I);
 end
 
 end
-%Here we keep alternative formulations that we tested in case this routine
-%is investigated again in the future.
-%% This is the original code by Heiko Wichelt with fminbnd
+% Here we keep alternative formulations that we tested in case this routine
+% is investigated again in the future.
+%% This is the original code by Heiko Weichelt with fminbnd
 % f = @(t) ((1 - t).^2) * alpha + (t.^2) * beta + (t.^4) * delta ...
 %     + (2 * t .* (1 - t)) * gamma - (2 * t.^2 .* (1 - t)) * epsilon ...
 %     - (2 * t.^3) * zeta;

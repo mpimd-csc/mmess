@@ -10,7 +10,7 @@ function [out, eqn, opts, oper] = mess_lrri(eqn, opts, oper)
 % for solving definite Riccati equations.
 %
 % Matrix A can have the form A = Ã + U*V' if U (eqn.U) and V (eqn.V) are
-% provided U and V are dense (n x m5) matrices and shoud satisfy m5 << n
+% provided U and V are dense (n x m5) matrices and should satisfy m5 << n
 %
 % Input/Output
 %   eqn                 struct contains data for equations
@@ -21,7 +21,7 @@ function [out, eqn, opts, oper] = mess_lrri(eqn, opts, oper)
 %                       with A and E
 %
 % Output
-%   out                 struct containing solutuions and output information
+%   out                 struct containing solutions and output information
 %
 % Input fields in struct eqn:
 %   eqn.A_      sparse (n x n) matrix A
@@ -183,20 +183,19 @@ function [out, eqn, opts, oper] = mess_lrri(eqn, opts, oper)
 %   out.radi        struct with output of all RADI iterations
 %
 %
-%   uses operatorfunctions init and mul_E, mul_E_pre, mul_E_post
+%   uses operator functions init and mul_E, mul_E_pre, mul_E_post
 %   and further indirectly in the inner Riccati solver
 %
 %   See also mess_lrnm, mess_lradi, mess_para,
 %   mess_galerkin_projection_acceleration, operatormanager.
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
-
 
 
 %%
@@ -209,24 +208,25 @@ end
 
 % Initialize function operator.
 [result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A', 'E');
+
 if not(result)
-    error( 'MESS:control_data', ...
-        'system data is not completely defined or corrupted' );
+    error('MESS:control_data', ...
+          'system data is not completely defined or corrupted' );
 end
 
 % Check type of equation.
 if not(isfield(eqn, 'type'))
     eqn.type = 'N';
     warning('MESS:control_data',['Unable to determine type of equation.'...
-        'Falling back to type ''N''']);
+                                 'Falling back to type ''N''']);
 elseif (eqn.type ~= 'N') && (eqn.type ~= 'T')
     error('MESS:equation_type', ...
-        'Equation type must be either ''T'' or ''N''');
+          'Equation type must be either ''T'' or ''N''');
 end
 
 % make sure the corresponding matrices from quadratic term are well
 % defined and the first right hand side is dense so that the resulting
-% factor is densly stored.
+% factor is densely stored.
 if not(isfield(eqn, 'B1')) || not(isnumeric(eqn.B1))
     error('MESS:control_data', 'eqn.B1 is not defined or corrupted');
 end
@@ -262,16 +262,15 @@ if not(isfield(eqn, 'haveUV')) || isempty(eqn.haveUV) || not(eqn.haveUV)
     eqn.U       = [];
     eqn.V       = [];
 else
-    if isnumeric(eqn.U) ...
-            && isnumeric(eqn.V) ...
-            && size(eqn.U, 1) == size(eqn.V, 1) ...
-            && size(eqn.U, 2) == size(eqn.V, 2)
+    if isnumeric(eqn.U) && isnumeric(eqn.V) && ...
+       (size(eqn.U, 1) == size(eqn.V, 1)) && (size(eqn.U, 2) == size(eqn.V, 2))
 
         if issparse(eqn.V), eqn.V = full(eqn.V); end
         if issparse(eqn.U), eqn.U = full(eqn.U); end
     else
         error('MESS:control_data', ...
-            'Inappropriate data of low rank updated operator (eqn.U and eqn.V)');
+              ['Inappropriate data of low rank updated operator', ...
+               ' (eqn.U and eqn.V)']);
     end
 end
 
@@ -280,12 +279,12 @@ if eqn.haveUV
     if not(isfield(eqn, 'sizeUV1')) || isempty(eqn.sizeUV1)
         eqn.sizeUV1 = size(eqn.U, 2);
     else
-        assert(isnumeric(eqn.sizeUV1) ...
-            && (eqn.sizeUV1 <= size(eqn.U, 2)), ...
-            'MESS:control_data', ...
-            'Inappropriate size of low rank updated operator (eqn.U and eqn.V)');
+        assert(isnumeric(eqn.sizeUV1) && (eqn.sizeUV1 <= size(eqn.U, 2)), ...
+               'MESS:control_data',['Inappropriate size of low rank updated' ...
+               ' operator (eqn.U and eqn.V)']);
     end
 end
+
 init_sizeUV1 = eqn.sizeUV1;
 
 
@@ -308,37 +307,37 @@ if not(isfield(opts, 'ri')) || not(isstruct(opts.ri))
 end
 
 if not(isfield(opts.ri, 'maxiter')) || not(isnumeric(opts.ri.maxiter))
-    warning( 'MESS:control_data', ...
-        ['Missing or corrupted maxiter field. ', ...
-        'Switching to default opts.ri.maxiter = 10.']);
+    warning('MESS:control_data', ...
+            ['Missing or corrupted maxiter field. ', ...
+             'Switching to default opts.ri.maxiter = 10.']);
     opts.ri.maxiter = 10;
 end
 
 if not(isfield(opts.ri, 'res_tol')) || not(isnumeric(opts.ri.res_tol))
     warning('MESS:control_data', ...
-        ['Missing or corrupted res_tol field. ', ...
-        'Switching to default opts.ri.res_tol = 0.']);
+            ['Missing or corrupted res_tol field. ', ...
+             'Switching to default opts.ri.res_tol = 0.']);
     opts.ri.res_tol = 0;
 end
 
 if not(isfield(opts.ri, 'rel_diff_tol')) || not(isnumeric(opts.ri.rel_diff_tol))
     warning('MESS:control_data', ...
-        ['Missing or corrupted rel_diff_tol field. ', ...
-        'Switching to default opts.ri.rel_diff_tol = 0.']);
+            ['Missing or corrupted rel_diff_tol field. ', ...
+             'Switching to default opts.ri.rel_diff_tol = 0.']);
     opts.ri.rel_diff_tol = 0;
 end
 
 if not(isfield(opts.ri, 'compres_tol')) || not(isnumeric(opts.ri.compres_tol))
     warning('MESS:control_data', ...
-        ['Missing or corrupted compres_tol field. ', ...
-        'Switching to default opts.ri.compres_tol = 0.']);
+            ['Missing or corrupted compres_tol field. ', ...
+             'Switching to default opts.ri.compres_tol = 0.']);
     opts.ri.compres_tol = 0;
 end
 
 if not(isfield(opts.ri, 'riccati_solver')) || isempty(opts.ri.riccati_solver)
     warning('MESS:control_data', ...
-        ['Missing or corrupted riccati_solver field. ', ...
-        'Switching to default opts.ri.riccati_solver = ''radi''.']);
+            ['Missing or corrupted riccati_solver field. ', ...
+             'Switching to default opts.ri.riccati_solver = ''radi''.']);
 
     opts.ri.riccati_solver    = 'radi';
     riccati_solver            = @mess_lrradi;
@@ -351,7 +350,7 @@ elseif strcmpi(opts.ri.riccati_solver, 'newton')
     opts.adi.compute_sol_fac = 1;
 else
     error('MESS:notimplemented', ...
-        'The requested Riccati solver is not implemented.');
+          'The requested Riccati solver is not implemented.');
 end
 
 if not(isfield(opts.ri, 'lqg_solver')) || isempty(opts.ri.lqg_solver)
@@ -364,15 +363,15 @@ elseif strcmpi(opts.ri.lqg_solver, 'newton')
     opts.adi.compute_sol_fac = 1;
 else
     error('MESS:notimplemented', ...
-        'The requested Riccati solver is not implemented.');
+          'The requested Riccati solver is not implemented.');
 end
 
 if not(isfield(opts.ri, 'info'))
     opts.ri.info = 0;
 else
     if not(isnumeric(opts.ri.info)) && not(islogical(opts.ri.info))
-        error( 'MESS:control_data', ...
-            'opts.ri.info parameter must be logical or numeric.');
+        error('MESS:control_data', ...
+              'opts.ri.info parameter must be logical or numeric.');
     end
 end
 
@@ -380,8 +379,8 @@ if not(isfield(opts.ri, 'store_lqg')) || isempty(opts.ri.store_lqg)
     opts.ri.store_lqg = 0;
 else
     if not(isnumeric(opts.ri.store_lqg)) && not(islogical(opts.ri.store_lqg))
-        error( 'MESS:control_data', ...
-            'opts.ri.store_lqg parameter must be logical or numeric.');
+        error('MESS:control_data', ...
+              'opts.ri.store_lqg parameter must be logical or numeric.');
     end
 end
 
@@ -389,40 +388,40 @@ if not(isfield(opts.ri, 'store_solfac')) || isempty(opts.ri.store_solfac)
     opts.ri.store_solfac = 0;
 else
     if not(isnumeric(opts.ri.store_solfac)) && not(islogical(opts.ri.store_solfac))
-        error( 'MESS:control_data', ...
-            'opts.ri.store_solfac parameter must be logical or numeric.');
+        error('MESS:control_data', ...
+              'opts.ri.store_solfac parameter must be logical or numeric.');
     end
 end
 
 % Check for residual norm.
-if not(isfield(opts, 'norm')) ...
-        || (not(strcmp(opts.norm, 'fro')) && ...
-        (not(isnumeric(opts.norm)) || opts.norm ~= 2))
+if not(isfield(opts, 'norm')) || (not(strcmp(opts.norm, 'fro')) && ...
+   (not(isnumeric(opts.norm)) || opts.norm ~= 2))
+
     warning('MESS:control_data', ...
-        ['Missing or Corrupted opts.norm field.', ...
-        'Switching to default: ''fro''']);
+            ['Missing or Corrupted opts.norm field.', ...
+             'Switching to default: ''fro''']);
     opts.norm = 'fro';
 end
 
 % Check for incompatible shift selection.
 ham_shifts = 0;
-if strcmpi(func2str(riccati_solver), 'radi') ...
-        && strcmpi(func2str(lqg_solver), 'newton') ...
-        && isfield(opts, 'shifts') ...
-        && isfield(opts.shifts, 'method') ...
-        && strcmpi(opts.shifts.method, 'gen-ham-opti')
+if strcmpi(func2str(riccati_solver), 'radi') && ...
+   strcmpi(func2str(lqg_solver), 'newton') && ...
+   isfield(opts, 'shifts') && isfield(opts.shifts, 'method') && ...
+   strcmpi(opts.shifts.method, 'gen-ham-opti')
+
     warning('MESS:control_data', ...
-        ['The chosen shift method is not usable in the LQG step. ', ...
-         'The shift method will be changed for this step to ', ...
-         '''projection'' and for the inner iteration back to its ', ...
-         'original state.']);
+            ['The chosen shift method is not usable in the LQG step. ', ...
+             'The shift method will be changed for this step to ', ...
+             '''projection'' and for the inner iteration back to its ', ...
+             'original state.']);
 
     ham_shifts         = 1;
     opts.shifts.method = 'projection';
 end
 
 if not(isfield(opts.ri,'trunc_tol')),  ...
-    opts.ri.trunc_tol=eps * oper.size(eqn, opts); end
+    opts.ri.trunc_tol = eps * oper.size(eqn, opts); end
 if not(isfield(opts.ri, 'trunc_info')), opts.ri.trunc_info = 0; end
 
 
@@ -432,8 +431,9 @@ if not(isfield(opts.ri, 'trunc_info')), opts.ri.trunc_info = 0; end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if isfield(opts, 'LDL_T') && opts.LDL_T
     error('MESS:notimplemented', ...
-        'The LDL_T factorization type is not supported in this function.');
+          'The LDL_T factorization type is not supported in this function.');
 end
+
 opts.LDL_T = false; % We need this to apply oper.init_res later.
 
 if isfield(opts, 'bdf') && not(isempty(opts.bdf))
@@ -481,13 +481,11 @@ end
 if not(isfield(opts.ri, 'Z0')) || isempty(opts.ri.Z0)
     % Setup MESS equation structure for initial Riccati equation.
     if eqn.type == 'T'
-        [~, res0, eqn, opts, oper] = ...
-            oper.init_res(eqn, opts, oper, eqn.C1');
+        [~, res0, eqn, opts, oper] = oper.init_res(eqn, opts, oper, eqn.C1');
         eqn.B = eqn.B2;
         eqn.C = eqn.C1;
     else
-        [~, res0, eqn, opts, oper] = ...
-            oper.init_res(eqn, opts, oper, eqn.B1);
+        [~, res0, eqn, opts, oper] = oper.init_res(eqn, opts, oper, eqn.B1);
         eqn.C = eqn.C2;
         eqn.B = eqn.B1;
     end
@@ -507,6 +505,7 @@ if not(isfield(opts.ri, 'Z0')) || isempty(opts.ri.Z0)
         if isfield(tmp, 'K'), tmp = rmfield(tmp, 'K'); end
         if isfield(tmp, 'res_fact'), tmp = rmfield(tmp, 'res_fact'); end
     end
+
     switch func2str(lqg_solver)
         case 'mess_lrradi'
             out.radi(1) = tmp;
@@ -514,18 +513,16 @@ if not(isfield(opts.ri, 'Z0')) || isempty(opts.ri.Z0)
             out.nm(1) = tmp;
     end
 
-    if ham_shifts % *** REMOVE IN LATER VERSION: MAKE SHIFTS COMPATIBLE
+    if ham_shifts % TODO *** REMOVE IN LATER VERSION: MAKE SHIFTS COMPATIBLE
         opts.shifts.method = 'gen-ham-opti';
     end
 else
     % Compute zero solution residual for normalization.
     if eqn.type == 'T'
-        [~, res0, eqn, opts, oper] = ...
-            oper.init_res(eqn, opts, oper, eqn.C1');
+        [~, res0, eqn, opts, oper] = oper.init_res(eqn, opts, oper, eqn.C1');
         eqn.B = eqn.B2;
     else
-        [~, res0, eqn, opts, oper] = ...
-            oper.init_res(eqn, opts, oper, eqn.B1);
+        [~, res0, eqn, opts, oper] = oper.init_res(eqn, opts, oper, eqn.B1);
         eqn.C = eqn.C2;
     end
 
@@ -535,6 +532,7 @@ end
 
 % Remove initial feedback for Newton method.
 isnmK0 = 0;
+
 if isfield(opts, 'nm') && isfield(opts.nm, 'K0')
     isnmK0  = 1;
     nmK0    = opts.nm.K0;
@@ -546,6 +544,7 @@ isradiZ0 = 0;
 isradiY0 = 0;
 isradiK0 = 0;
 isradiW0 = 0;
+
 if isfield(opts, 'radi')
     if isfield(opts, 'radi') && isfield(opts.radi, 'Z0')
         isradiZ0  = 1;
@@ -573,28 +572,31 @@ if isfield(opts, 'radi')
 end
 
 % Check if the shift history needs to be reset for RADI.
-if isfield(opts, 'shifts') ...
-        && isfield(opts.shifts, 'method') ...
-        && strcmpi(opts.shifts.method, 'gen-ham-opti') ...
-        && isfield(opts.shifts, 'history') ...
-        && exist('W', 'var')
+if isfield(opts, 'shifts') && isfield(opts.shifts, 'method') && ...
+   isfield(opts.shifts, 'history') && ...
+   strcmpi(opts.shifts.method, 'gen-ham-opti') && exist('W', 'var')
+
     if eqn.type == 'T'
         if mod(opts.shifts.history, size(eqn.B1, 2))
+
             k = ceil(opts.shifts.history / size(W, 2));
             opts.shifts.history = k * size(eqn.B1, 2);
+
             warning('MESS:control_data', ...
-                ['Size of the residual changed after LQG problem. ', ...
-                'The parameter opts.shifts.history is reset to %d.'], ...
-                opts.shifts.history);
+                    ['Size of the residual changed after LQG problem. ', ...
+                     'The parameter opts.shifts.history is reset to %d.'], ...
+                    opts.shifts.history);
         end
     else
         if mod(opts.shifts.history, size(eqn.C1, 1))
+
             k = ceil(opts.shifts.history / size(W, 2));
             opts.shifts.history = k * size(eqn.C1, 1);
+
             warning('MESS:control_data', ...
-                ['Size of the residual changed after LQG problem. ', ...
-                'The parameter opts.shifts.history is reset to %d.'], ...
-                opts.shifts.history);
+                    ['Size of the residual changed after LQG problem. ', ...
+                     'The parameter opts.shifts.history is reset to %d.'], ...
+                    opts.shifts.history);
         end
     end
 end
@@ -613,19 +615,21 @@ else
     eqn.U   = [eqn.U(:, 1:eqn.sizeUV1), zeros(n, m12)];
     eqn.V   = [eqn.V(:, 1:eqn.sizeUV1), eqn.C1', -eqn.C2'];
 end
+
 eqn.haveUV  = 1;
 eqn.sizeUV1 = size(eqn.V, 2);
 
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% ITERSTION PHASE 2: Riccati Iteration (solve the residual equations)
+% ITERATION PHASE 2: Riccati Iteration (solve the residual equations)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-for j = 1:1:opts.ri.maxiter
+for k = 1:opts.ri.maxiter
+
     % Accumulate new solution.
-    if (opts.ri.trunc_tol > 0) && (j > 1)
+    if (opts.ri.trunc_tol > 0) && (k > 1)
         Z = mess_column_compression([Z, out_riccati.Z], 'N', [], ...
-            opts.ri.trunc_tol, opts.ri.trunc_info);
+                                    opts.ri.trunc_tol, opts.ri.trunc_info);
 
     else
         Z(:, end+1:end+size(out_riccati.Z, 2)) = out_riccati.Z;
@@ -635,14 +639,14 @@ for j = 1:1:opts.ri.maxiter
     if eqn.type == 'T'
         if eqn.haveE
             eqn.C = (oper.mul_E( eqn, opts, 'T', out_riccati.Z, 'N' ) ...
-                * (out_riccati.Z' * eqn.B1))';
+                    * (out_riccati.Z' * eqn.B1))';
         else
             eqn.C = (eqn.B1' * out_riccati.Z) * out_riccati.Z';
         end
     else
         if eqn.haveE
             eqn.B = oper.mul_E(eqn, opts, 'N', out_riccati.Z, 'N') ...
-                * (eqn.C1 * out_riccati.Z)';
+                    * (eqn.C1 * out_riccati.Z)';
         else
             eqn.B = out_riccati.Z * (eqn.C1 * out_riccati.Z)';
         end
@@ -651,17 +655,15 @@ for j = 1:1:opts.ri.maxiter
     % Set the next rank-k update
     if eqn.type == 'T'
         if eqn.haveE
-            eqn.V(:, end-m12+1:end) = ...
-                oper.mul_E(eqn, opts, 'T', Z, 'N') ...
-                * (Z' * [eqn.B1, eqn.B2]);
+            eqn.V(:, end-m12+1:end) = oper.mul_E(eqn, opts, 'T', Z, 'N') ...
+                                      * (Z' * [eqn.B1, eqn.B2]);
         else
             eqn.V(:, end-m12+1:end) = Z * (Z' * [eqn.B1, eqn.B2]);
         end
     else
         if eqn.haveE
-            eqn.U(:, end-m12+1:end) = ...
-                oper.mul_E(eqn, opts, 'N', Z, 'N') ...
-                * (Z' * [eqn.C1', eqn.C2']);
+            eqn.U(:, end-m12+1:end) = oper.mul_E(eqn, opts, 'N', Z, 'N') ...
+                                      * (Z' * [eqn.C1', eqn.C2']);
         else
             eqn.U(:, end-m12+1:end) = Z * (Z' * [eqn.C1', eqn.C2']);
         end
@@ -670,46 +672,46 @@ for j = 1:1:opts.ri.maxiter
     % Compute convergence measures.
     if opts.ri.res_tol
         if eqn.type == 'T'
-            res(j) = norm(eqn.C * eqn.C', opts.norm) / res0;
+            res(k) = norm(eqn.C * eqn.C', opts.norm) / res0;
         else
-            res(j) = norm(eqn.B' * eqn.B, opts.norm) / res0;
+            res(k) = norm(eqn.B' * eqn.B, opts.norm) / res0;
         end
     end
 
     if opts.ri.rel_diff_tol
         normY = sum(sum(out_riccati.Z.^2));
         normZ = normZ + normY;
-        rc(j) = normY / normZ;
+        rc(k) = normY / normZ;
     end
 
     % Print status information.
     if opts.ri.info
         if opts.ri.rel_diff_tol && opts.ri.res_tol
-            fprintf(1, ...
-                ['RI step: %4d  normalized residual: %e ' ...
-                'relative change in Z: %e\n'], ...
-                j, res(j), rc(j));
+            fprintf(1, ['RI step: %4d normalized residual: %e ' ...
+                        'relative change in Z: %e\n'], ...
+                    k, res(k), rc(k));
         elseif opts.ri.res_tol
             fprintf(1, 'RI step: %4d normalized residual: %e\n', ...
-                j, res(j));
+                    k, res(k));
         elseif opts.ri.rel_diff_tol
             fprintf(1, 'RI step: %4d relative change in Z: %e\n', ...
-                j, rc(j));
+                    k, rc(k));
         end
 
         if isfield(out_riccati, 'adi')
             fprintf(1, '               number of Newton steps: %4d\n\n', ...
-                out_riccati.niter);
+                    out_riccati.niter);
         elseif isfield(out_riccati, 'niter')
             fprintf(1, '               number of RADI steps: %4d\n\n', ...
-                out_riccati.niter);
+                    out_riccati.niter);
         end
     end
 
     % Evaluate stopping criteria.
-    if (opts.ri.res_tol && (res(j) < opts.ri.res_tol)) ...
-            || (opts.ri.rel_diff_tol && (rc(j) < opts.ri.rel_diff_tol)) ...
-            || (j >= opts.ri.maxiter)
+    if (opts.ri.res_tol && (res(k) < opts.ri.res_tol)) || ...
+       (opts.ri.rel_diff_tol && (rc(k) < opts.ri.rel_diff_tol)) || ...
+       (k >= opts.ri.maxiter)
+
         break;
     end
 
@@ -718,16 +720,18 @@ for j = 1:1:opts.ri.maxiter
 
     % Store information about Riccati equation solver.
     tmp = out_riccati;
+
     if not(opts.ri.store_solfac)
         if isfield(tmp, 'Z'), tmp = rmfield(tmp, 'Z'); end
         if isfield(tmp, 'K'), tmp = rmfield(tmp, 'K'); end
         if isfield(tmp, 'res_fact'), tmp = rmfield(tmp, 'res_fact'); end
     end
+
     switch func2str(riccati_solver)
         case 'mess_lrradi'
-            out.radi(j+1) = tmp;
+            out.radi(k+1) = tmp;
         case 'mess_lrnm'
-            out.nm(j+1) = tmp;
+            out.nm(k+1) = tmp;
     end
 end
 
@@ -738,7 +742,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 out.Z = Z;
 
-out.niter = j;
+out.niter = k;
 
 if eqn.type == 'T'
     out.K = eqn.V(:, end-m12+1:end)';
@@ -747,26 +751,28 @@ else
 end
 
 if opts.ri.res_tol
-    out.res = res(1:j);
+    out.res = res(1:k);
 end
 
 if opts.ri.rel_diff_tol
-    out.rc = rc(1:j);
+    out.rc = rc(1:k);
 end
 
 out.res0 = res0;
 
-if (out.niter == opts.ri.maxiter)  && ...
-        (opts.ri.res_tol && not(out.res(end) < opts.ri.res_tol))
-    warning('MESS:RI:converence', ...
-        ['Riccati iteration reached maximum iteration number.',...
-         ' Results may be inaccurate.']);
+if (out.niter == opts.ri.maxiter) && ...
+   (opts.ri.res_tol && not(out.res(end) < opts.ri.res_tol))
+
+    warning('MESS:RI:convergence', ...
+            ['Riccati iteration reached maximum iteration number.',...
+             ' Results may be inaccurate.']);
 end
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Clean up
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 eqn.sizeUV1 = init_sizeUV1;
+
 if (size(eqn.V, 2) > eqn.sizeUV1) || (size(eqn.U, 2) > eqn.sizeUV1)
     % Cut off the stabilizing feedback.
     eqn.V = eqn.V(:, 1:eqn.sizeUV1);

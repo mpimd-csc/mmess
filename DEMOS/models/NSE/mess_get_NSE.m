@@ -1,13 +1,13 @@
-function [eqn, K0p, K0d] = mess_get_NSE(Re, lvl)
+function [eqn, K0p, K0d] = mess_get_NSE(Re, level)
 %% Load the linearized Navier Stokes example data and download it first,
 % if it has not yet been downloaded.
 %
 % Call:
-%  eqn = mess_get_NSE(Re, lvl)
+%  eqn = mess_get_NSE(Re, level)
 %
 % Inputs:
-%  Re      desired Reynold number (300, 400, 500)
-%  lvl     desired refinement level
+%  Re      desired Reynolds number (300, 400, 500)
+%  level   desired refinement level
 %            1 -> n =   3595 (velocity dim:  3142)
 %            2 -> n =   9391 (velocity dim:  8268)
 %            3 -> n =  22385 (velocity dim: 19770)
@@ -22,7 +22,7 @@ function [eqn, K0p, K0d] = mess_get_NSE(Re, lvl)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -48,7 +48,11 @@ catch
         case 'Y'
             url = 'https://csc.mpi-magdeburg.mpg.de/';
             folder = 'mpcsc/software/mess/mmess/models/NSE/';
-            websave(full_file, [url, folder, base_file]);
+            if exist('websave','file')
+                websave(full_file, [url, folder, base_file]);
+            else
+                urlwrite([url, folder, base_file], full_file); %#ok<URLWR>
+            end
         case 'N'
             error(['The download is required for NSE example. ',...
                 'Consider switching to the simple Stokes model.']);
@@ -58,15 +62,15 @@ catch
     load(full_file,'mat');
 end
 
-eqn.A_ = mat.mat_v.fullA{lvl};
-eqn.E_ = mat.mat_v.E{lvl};
+eqn.A_ = mat.mat_v.fullA{level};
+eqn.E_ = mat.mat_v.E{level};
 eqn.haveE = 1;
-eqn.B = mat.mat_v.B{lvl};
-eqn.C = mat.mat_v.C{lvl};
-eqn.st = mat.mat_mg.nv(lvl);
+eqn.B = mat.mat_v.B{level};
+eqn.C = mat.mat_v.C{level};
+eqn.st = mat.mat_mg.nv(level);
 
-K0p = mat.mat_v.Feed_0{lvl}';
-K0d = mat.mat_v.Feed_1{lvl}';
+K0p = mat.mat_v.Feed_0{level}';
+K0d = mat.mat_v.Feed_1{level}';
 if Re == 500
     K0d = K0d';
 end

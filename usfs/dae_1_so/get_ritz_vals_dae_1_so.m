@@ -3,14 +3,14 @@ function [rw, Hp, Hm, Vp, Vm] = get_ritz_vals_dae_1_so(eqn, opts, oper, U, W, p_
 % 
 % Wrapper for the special system structure around mess_get_ritz_vals.
 % Additionally due to the second order structure, the real value
-% opts.shifts.truncate can be set to remove any comuted values that are
+% opts.shifts.truncate can be set to remove any computed values that are
 % smaller than opts.shifts.truncate, or larger than 1/opts.shifts.truncate.
 %
 
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

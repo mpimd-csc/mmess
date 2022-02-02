@@ -5,7 +5,7 @@
 %  #                                                                    #
 %  ######################################################################
 %
-%  version 2.1
+%  version 2.2
 %
 %  The M-M.E.S.S. toolbox is intended for the solution of symmetric
 %  linear and quadratic, differential and algebraic matrix
@@ -78,7 +78,7 @@
 %
 %  For experts and for use with the non-standard usfs such that system (1)
 %  is only given implicitly, we implemented a low-rank Newton ADI method
-%  that supports inexact Newton iterations and linesearch in
+%  that supports inexact Newton iterations and line search in
 %  mess_lrnm, as well as the RADI iteration in mess_lrradi. While mess_lrnm
 %  can compute the solution in the above formats and supports computing the
 %  feedback K without ever forming Z, mess_lrradi computes the solution as
@@ -91,7 +91,7 @@
 %
 %  For these control and filter equations (arising in H-infinity control)
 %  we provide a low-rank Riccati iteration solver (X = Z Z').
-%  Especially, this coveres the standard continuous-time algebraic Riccati
+%  Especially, this covers the standard continuous-time algebraic Riccati
 %  equation (see 2.)) and the positive algebraic Riccati equations
 %
 %    A X E' + E X A' + E X C1' C1 X E' + B1 B1' = 0,
@@ -113,7 +113,7 @@
 %
 %    X = L D L'.
 %
-%  The differential Riccati solver support both the autonmous case (i.e.
+%  The differential Riccati solver support both the autonomous case (i.e.
 %  (1) is linear time-invariant) as well as the non-autonomous case (i.e.
 %  (1) is a linear time-varying system).
 %
@@ -130,20 +130,20 @@
 %  same form can be computed by
 %
 %  [Er, Ar, Br, Cr, outinfo] =
-%     mess_balanced_truncation(E,A,B,C,max_order,trunc_tol
+%     mess_balanced_truncation(E, A, B, C, max_order, trunc_tol)
 %
 %  or
 %
-%  [Er,Ar,Br,Cr,S,b,c,V,W] = mess_tangential_irka(E,A,B,C,opts)
+%  [Er, Ar, Br, Cr, S, b, c, V, W] = mess_tangential_irka(E, A, B, C, opts)
 %
-%  wherer max_order, trun_ctol are teh maximum desired  reduced order and
-%  the truncation toleracne for the BT error bound, while opts needs to
-%  conatin a substructure irka with members r, maxiter, shift_tol, h2_tol
-%  for the reduced order, them maximum allowed IRKA steps, ther tolerance
+%  where max_order, trunc_tol are the maximum desired  reduced order and
+%  the truncation tolerance for the BT error bound, while opts needs to
+%  contain a substructure irka with members r, maxiter, shift_tol, h2_tol
+%  for the reduced order, them maximum allowed IRKA steps, the tolerance
 %  for the relative change of shifts stopping criterion and the relative
 %  change of the H2 system norm for two subsequent admissible iterates.
 %
-%  Several demonstration functions in the DEMOS subfolders show how BT can
+%  Several demonstration functions in the DEMOS sub-folders show how BT can
 %  be performed for other system structures implemented by the USFS below.
 %
 %  Furthermore, several helper tasks are implemented in
@@ -162,8 +162,8 @@
 %  following describes the sets of function handles shipped with M-M.E.S.S.
 %  and what types of systems they implement.
 %
-%  1.) generealized first order systems (1): "default"
-%    The deafult set of of function handles. These function handles
+%  1.) generalized first order systems (1): "default"
+%    The default set of of function handles. These function handles
 %    directly act on the matrices E, A given in (1) using them to
 %    explicitly represent the actions. That means multiplications directly
 %    use A* and E* (or their transposes if requested) and linear solves are
@@ -180,7 +180,7 @@
 %                                                              .
 %    using their representation in phase space, i.e. x = [ z ; z ], with
 %    different representations of the coefficients E and A in (1).
-%    See the readme files in the corresponding folders for details on the
+%    See the Readme files in the corresponding folders for details on the
 %    phase space representations. Note that these are only used implicitly
 %    to formulate the algorithm in therms of (1) , but all operations are
 %    performed in terms of the original matrices M, E, K, i.e. in n instead
@@ -199,7 +199,7 @@
 %    systems.
 %
 %  4.) Stokes-type index-2 DAEs: "dae_2"
-%    The "dae-2" set of USFS is intended for proper index-2 DAE systems of
+%    The "dae_2" set of USFS is intended for proper index-2 DAE systems of
 %    the structure
 %
 %      Ef = [ E1 0 ]    Af = [ A1 G ]
@@ -214,7 +214,7 @@
 %  5.) index-2 and index-3 constraint mechanical systems: "dae_2_so",
 %      "dae_3_so"
 %    After phase space representation as in 2.) above, second order systems
-%    with constrints purely on the positions (index-3) or velocities
+%    with constraints purely on the positions (index-3) or velocities
 %    (index-2) immediately take the form in 4.), such that again one can
 %    implicitly compute on the hidden manifold, without forming the
 %    projected coefficients, but only projecting certain data and avoiding
@@ -231,7 +231,7 @@
 %    A = F + U V'
 %
 %  for a sparse matrix F and tall and skinny rectangular matrices U, V and
-%  exploit the Shermann-Morrison-Woodburry formula
+%  exploit the Sherman-Morrison-Woodbury formula
 %              -1    -1    -1             -1    -1     -1
 %    (F + U V')   = F   - F   U ( I + V' F   U )   V' F
 %
@@ -269,7 +269,7 @@
 %  hosts all information used to control the algorithms. It selects the
 %  format of the desired solution, the norms for residual norm evaluations
 %  in stopping criteria, tolerances, flags steering variants of the
-%  algorithms and alike. It generally consists of a number of substrutures
+%  algorithms and alike. It generally consists of a number of substructures
 %  per algorithm involved in the program. The members and names of these
 %  structures are given in the help texts of the single M-M.E.S.S.
 %  routines.
@@ -288,27 +288,30 @@
 %
 %  If you want to refer to the software in general please cite:
 %
-%   J. Saak, M. Köhler, P. Benner, M-M.E.S.S. – the matrix equations sparse
+%   J. Saak, M. Koehler, P. Benner, M-M.E.S.S. – the matrix equations sparse
 %   solvers library,
 %   see also: https://www.mpi-magdeburg.mpg.de/projects/mess.
 %   DOI: 10.5281/zenodo.632897.
 %
-%  In cse you want to refer to this specific version please check the
+%  In case you want to refer to this specific version please check the
 %  CITATION.md file in the installation folder.
 %
 %  For the theoretic backing and basic philosophy we recommend citing
 %
-%   P. Benner, M. Köhler, J. Saak, Matrix equations, sparse solvers:
-%   M-M.E.S.S.-2.0.1 – philosophy, features and application for
-%   (parametric) model order reduction, eprint 2003.02088, arXiv, cs.MS
-%   (2020).
-%   URL https://arxiv.org/abs/2003.02088
+%   P. Benner, M. Koehler, J. Saak, Matrix equations, sparse solvers:
+%   M-M.E.S.S.-2.0.1 – philosophy, features and application for (parametric)
+%   model order reduction,
+%   in: P. Benner, T. Breiten, H. Faßbender, M. Hinze, T. Stykel, R. Zimmermann
+%   (Eds.), *Model Reduction of Complex Dynamical Systems*, Vol. 171 of
+%   International Series of Numerical Mathematics, Birkhäuser, Cham, 2021,
+%   pp. 369–392.
+%   DOI: 10.1007/978-3-030-72983-7_18
 %
 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

@@ -21,7 +21,7 @@ function [ RHS, res0, eqn, opts, oper ] = init_res_default( eqn, opts, oper, RHS
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

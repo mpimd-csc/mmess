@@ -1,9 +1,11 @@
-function bt_mor_DAE1_tol(istest)
+function bt_mor_DAE1_tol(k, istest)
 % Computes a reduced order model via Balanced Truncation for the proper
 % index-1 System BIPS98_606 from https://sites.google.com/site/rommes/software
 % following the method suggested in [1]
 %
 % Input:
+% k         select model (allowed values 1,..5, 7, .., 13, default 7)
+%           note that BIPS model 6 is not stable. 
 % istest    decides whether the function runs as an interactive demo or a
 %           continuous integration test. (optional; defaults to 0, i.e.
 %           interactive demo)
@@ -16,20 +18,28 @@ function bt_mor_DAE1_tol(istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 
 %%
-if nargin<1, istest=0; end
+if nargin < 1, k = 7; end
+if nargin < 2, istest = 0; end
 %%
 % set operation manager for the Gramian computations
 oper = operatormanager('dae_1');
 
 %% Read problem data
-eqn = mess_get_BIPS(7);
+if k == 6
+    warning('MESS:illegal_input', ...
+        ['The Juba5723 model is not stable and thus not supported. ',...
+         'Using BIPS bips98_606 instead.']);
+    k = 7;
+end
+eqn = mess_get_BIPS(k);
+
 %% Turn off  close to singular warnings
 % (this model is really badly conditioned)
 orig_warnstate = warning('OFF','MATLAB:nearlySingularMatrix');
@@ -58,8 +68,8 @@ if istest
     end
 else
     figure;
-    semilogy(outB.res,'linewidth',3);
-    title('0= BB^T + AXM^T + MXA^T');
+    semilogy(outB.res,'LineWidth',3);
+    title('0 = BB^T + A X E^T + E X A^T');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
 end
@@ -80,8 +90,8 @@ if istest
     end
 else
     figure;
-    semilogy(outC.res,'linewidth',3);
-    title('0= C^TC + A^TXE + E^TXA');
+    semilogy(outC.res,'LineWidth',3);
+    title('0 = C^T C + A^T X E + E^T X A');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
@@ -142,7 +152,7 @@ if istest
     end
 else
     figure;
-    semilogy(hsv,'linewidth',3);
+    semilogy(hsv,'LineWidth',3);
     title('Computed Hankel singular values');
     xlabel('index');
     ylabel('magnitude');

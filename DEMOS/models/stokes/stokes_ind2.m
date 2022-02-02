@@ -24,7 +24,7 @@ function [ E, A, B, C, nf ] = stokes_ind2(m, q, nx, ny)
 %      E   real n-by-n sparse matrix with
 %           n = (nx-1)*ny+(ny-1)*nx+nx*ny-1
 %      A   real n-by-n sparse matrix
-%      B   real n-by-m matrix, m is the number of inpits
+%      B   real n-by-m matrix, m is the number of inputs
 %      C   real q-by-n sparse matrix, q is the number of outputs
 %     nf   dimension of the deflating subspaces corresponding to
 %            the finite eigenvalues

@@ -1,7 +1,7 @@
 function [Z, D, S]=mess_galerkin_projection_acceleration(Z, type, ...
                                                   eqn, oper, fopts, D)
 %  Galerkin projection onto subspace spanned by low-rank factor Z of ADI
-%  method for solving FXE^T + EXF^T = -GG^T.
+%  method for solving F X E^T + E X F^T = -G G^T.
 %
 % Input:
 %  Z                        Low-rank factor Z
@@ -51,12 +51,12 @@ function [Z, D, S]=mess_galerkin_projection_acceleration(Z, type, ...
 %
 %  S                        Updated solution factor S after prolongation
 %
-% uses oparatorfunctions mul_A, mul_E, mul_ApE
+% uses operator functions mul_A, mul_E, mul_ApE
 
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -468,4 +468,4 @@ if factorize
         XC=diag(sqrt(s(r)))*V(:,r)';
     end
 end
-if exist('XC','var'), Z=Z*XC'; end
+if exist('XC','var'), Z = Z * XC'; end

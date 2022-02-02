@@ -3,7 +3,7 @@ function LQG_FDM_unstable_radi(n0, n_unstable, istest)
 % Riccati equations via the RADI, respectively. The solution of the
 % regulator equation is approximated via a ZZ' factorization, and for the
 % filter equation an LDL' approximation is used.
-% Note: The LDL' case is only used for demonstrational reasons but with no
+% Note: The LDL' case is only used for demonstration, but with no
 % underlying necessity here.
 %
 % Inputs:
@@ -24,7 +24,7 @@ function LQG_FDM_unstable_radi(n0, n_unstable, istest)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -72,7 +72,7 @@ ZC0 = ZB0;
 YC0 = YB0;
 WC0 = B;
 
-% The full A is constructed via additive decomposition (blockdiagonal).
+% The full A is constructed via additive decomposition (block-diagonal).
 eqn.A_     = blkdiag(A0,Au);
 eqn.B      = B;
 eqn.C      = C;
@@ -119,9 +119,9 @@ opts.radi.Z0 = ZB0;
 opts.radi.Y0 = YB0;
 opts.radi.W0 = WB0;
 
-tic;
+time_radi_regulator = tic;
 [outReg, eqn, opts, oper] = mess_lrradi(eqn, opts, oper);
-toc;
+t_elapsed1 = toc(time_radi_regulator);
 
 % Size of solution factor.
 fprintf('\nSize outReg.Z: %d x %d\n', ...
@@ -136,6 +136,8 @@ res2 = abs(eigs(@(x) eqn.A_' * (outReg.Z * ((outReg.Z' * x))) ...
     + eqn.C' * (eqn.C * x) - outReg.K' * (outReg.K * x), ...
     n, 1, 'LM')) / res0;
 
+fprintf('solving the regulator Riccati equation took %6.2f seconds \n', ...
+    t_elapsed1);
 fprintf(['Residual computation -- RADI: %e | ' ...
     'mess_res2_norms: %e | eigs: %e \n'], ...
     outReg.res(end), res1, res2);
@@ -148,7 +150,7 @@ if istest
 else
     figure(1);
     semilogy(outReg.res,'LineWidth', 3);
-    title('0 = C^T*C + A^T*X + X*A - X*B*B^T*X');
+    title('0 = C^T C + A^T X + X A - X B B^T X');
     xlabel('number of iteration steps');
     ylabel('normalized residual norm');
     pause(1);
@@ -174,9 +176,9 @@ eqn.B        = eqn.B * diag(1 ./ sqrt(1:n_unstable));
 opts.radi.W0 = WC0 * diag(1 ./ sqrt(1:n_unstable));
 opts.radi.S0 = diag(1:n_unstable);
 
-tic;
+time_radi_filter = tic;
 [outFil, eqn, opts, oper] = mess_lrradi(eqn, opts, oper);
-toc;
+t_elapsed2 = toc(time_radi_filter);
 
 % Size of solution factor.
 fprintf('\nSize outFil.Z: %d x %d\n', ...
@@ -193,6 +195,8 @@ res4       = abs(eigs(@(x) eqn.A_ * (ZD * ((outFil.Z' * x))) ...
     + eqn.B * (eqn.S * (eqn.B' * x)) - (outFil.K)' * ((outFil.K) * x), ...
     n, 1, 'LM')) / res0;
 
+fprintf('solving the filter Riccati equation took %6.2f seconds \n', ...
+    t_elapsed2);
 fprintf(['Residual computations -- RADI: %e | ' ...
     'mess_res2_norms: %e | eigs: %e \n'], ...
     outFil.res(end), res3, res4);
@@ -205,7 +209,7 @@ if istest
 else
     figure(2);
     semilogy(outFil.res,'LineWidth', 3);
-    title('0 = B*S*B^T + A*Y + Y*A^T - Y*C^T*C*Y');
+    title('0 = B S B^T + A Y + Y A^T - Y C^T C Y');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);

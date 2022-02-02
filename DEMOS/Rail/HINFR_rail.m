@@ -9,7 +9,7 @@ function HINFR_rail(k, istest)
 %
 % k           refinement level of the model to use
 %             (0 - 5, i.e. 109 - 79841 Dofs)
-%             (optinal, defaults to 2, i.e. 1357 Dofs)
+%             (optional, defaults to 2, i.e. 1357 Dofs)
 %
 % istest      flag to determine whether this demo runs as a CI test or
 %             interactive demo
@@ -46,7 +46,7 @@ function HINFR_rail(k, istest)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -113,11 +113,12 @@ if istest
    end
 else
     figure(1);
-    semilogy(out.res,'linewidth',3);
+    semilogy(out.res,'LineWidth',3);
     hold on;
-    for i = 1:length(out.radi), semilogy(out.radi(i).res,'linewidth',3); end
+    for i = 1:length(out.radi), semilogy(out.radi(i).res,'LineWidth',3); end
     hold off;
-    title('0= C_1^TC_1 + A^TXM + M^TXA  + M^TX(\gamma^{-2}B_1B_1^T - B_2B_2^T)XM');
+    title(['0= C_1^T C_1 + A^T X E + E^T X A  + E^T X (\gamma^{-2}B_1 ' ...
+           'B_1^T - B_2 B_2^T) X E']);
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     legend('Riccati Iteration', 'RADI (step 1)', 'RADI (step 2)');

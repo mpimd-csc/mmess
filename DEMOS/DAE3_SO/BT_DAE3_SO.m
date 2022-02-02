@@ -54,7 +54,7 @@ function BT_DAE3_SO(model, tol, max_ord, maxiter, istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -194,11 +194,13 @@ opts.shifts.num_desired=25;
 eqn.type = 'T';
 opts.adi.info = 1;
 t_mess_lradi1 =tic;
-opts.shifts.p = mess_para(eqn, opts, oper);
+[p, ~, eqn, opts, oper] = mess_para(eqn, opts, oper); 
 % use an additional alpha-shift to improve convergence and ROM quality for
 % the triple chain model
 if strcmp(model,'Truhar_Veselic')||strcmp(model,'TV')||strcmp(model,'TV2')
-    opts.shifts.p= opts.shifts.p-0.5;
+    opts.shifts.p = p - 0.5;
+else
+    opts.shifts.p = p;
 end
 
 outC = mess_lradi(eqn, opts, oper);

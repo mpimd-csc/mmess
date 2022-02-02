@@ -31,7 +31,7 @@ function out = LQR_LTV_smallscale_splitting(method, istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -150,7 +150,7 @@ fprintf(1,'mess_splitting_dre took %6.2f seconds \n', t_elapsed);
 if not(istest)
     t = opts.splitting.time_steps;
     figure;
-    plot(t, out.ms,'linewidth',3);
+    plot(t, out.ms,'LineWidth',3);
     title('Ranks of approximations over time');
 
     y = zeros(1,length(out.Ks));
@@ -159,7 +159,7 @@ if not(istest)
     end
 
     figure;
-    plot(t, y,'linewidth',3);
+    plot(t, y,'LineWidth',3);
     title('evolution of component (1,1) of the optimal feedback');
 else
 

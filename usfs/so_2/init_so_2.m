@@ -6,7 +6,7 @@ function [result, eqn, opts, oper] = init_so_2(eqn, opts, oper, flag1, flag2)
 %
 %
 % The function returns true or false if data for A_f and E_f
-% respectivey flag1 and flag2  are availabe and correct in the structure eqn.
+% respectively flag1 and flag2  are available and correct in the structure eqn.
 %
 %   Input:
 %
@@ -31,7 +31,7 @@ function [result, eqn, opts, oper] = init_so_2(eqn, opts, oper, flag1, flag2)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

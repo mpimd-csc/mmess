@@ -1,6 +1,6 @@
 function [out, eqn, opts, oper] = mess_rosenbrock_dre(eqn, opts, oper)
 %% [out, eqn, opts, oper] = mess_rosenbrock_dre(eqn, opts, oper)
-%   LDL^T factored Rosenbrock method solving diffenrential Riccati equation
+%   LDL^T factored Rosenbrock method solving differential Riccati equation
 %   E*d/dt X(t)*E' =-B*B' - E*X(t)*A' - A*X(t)*E' + E*X(t)*C'*C*X(t)*E' (N)
 %   E'*d/dt X(t)*E =-C'*C - E'*X(t)*A - A'*X(t)*E + E'*X(t)*B*B'*X(t)*E (T)
 %   backward in time.
@@ -103,7 +103,7 @@ function [out, eqn, opts, oper] = mess_rosenbrock_dre(eqn, opts, oper)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -117,21 +117,32 @@ function [out, eqn, opts, oper] = mess_rosenbrock_dre(eqn, opts, oper)
 if not(isfield(opts,'rosenbrock')) || not(isstruct(opts.rosenbrock))
     error('MESS:control_data','Rosenbrock control structure opts.rosenbrock missing.');
 end % Single fields are checked below or inside mess_lradi
+
 if not(isfield(opts.rosenbrock,'time_steps'))
     error('MESS:control_data','opts.rosenbrock.time_steps is missing.');
 end
+
 if not(isfield(opts.rosenbrock,'stage')),  opts.rosenbrock.stage=1; end
+
 if (opts.rosenbrock.stage ~= 1) && (opts.rosenbrock.stage ~= 2)
-    error('MESS:control_data',['opts.rosenbrock.stage has to be 1 or 2.',...
-        ' Other stages are not implemented']);
+    error('MESS:control_data',['opts.rosenbrock.stage has to be 1 or 2.', ...
+          ' Other stages are not implemented']);
 end
-if not(isfield(opts.rosenbrock,'info')),  opts.rosenbrock.info=0; end
-if not(isfield(opts.rosenbrock,'trunc_tol')),  ...
-        opts.rosenbrock.trunc_tol = eps * oper.size(eqn, opts); end
-if not(isfield(opts.rosenbrock, 'trunc_info')), ...
-        opts.rosenbrock.trunc_info = 0; end
-if not(isfield(opts.rosenbrock,'gamma')),  ...
-        opts.rosenbrock.gamma=1 + 1 / sqrt(2); end
+
+if not(isfield(opts.rosenbrock,'info')), opts.rosenbrock.info = 0; end
+
+if not(isfield(opts.rosenbrock,'trunc_tol'))
+        opts.rosenbrock.trunc_tol = eps * oper.size(eqn, opts);
+end
+
+if not(isfield(opts.rosenbrock, 'trunc_info'))
+        opts.rosenbrock.trunc_info = 0;
+end
+
+if not(isfield(opts.rosenbrock,'gamma'))
+        opts.rosenbrock.gamma= 1.0 + 1.0 / sqrt(2.0);
+end
+
 if not(isfield(opts.rosenbrock,'save_solution'))
     opts.rosenbrock.save_solution = 0;
 end
@@ -143,17 +154,22 @@ end
 if not(isfield(opts,'adi')) || not(isstruct(opts.adi))
     error('MESS:control_data','ADI control structure opts.adi missing.');
 end
-if not(isfield(opts.adi,'compute_sol_fac'))||not(isnumeric(opts.adi.compute_sol_fac)) || ...
-        (not(opts.adi.compute_sol_fac))
+
+if not(isfield(opts.adi,'compute_sol_fac')) || ...
+   not(isnumeric(opts.adi.compute_sol_fac)) || ...
+   not(opts.adi.compute_sol_fac)
+
     warning('MESS:control_data', ...
-        'Missing or Corrupted compute_sol_fac field. Switching to default.');
+            'Missing or Corrupted compute_sol_fac field. Switching to default.');
     opts.adi.compute_sol_fac = 1;
 end
-if not(isfield(opts.adi,'accumulateK'))||not(isnumeric(opts.adi.accumulateK))
+
+if not(isfield(opts.adi,'accumulateK')) || not(isnumeric(opts.adi.accumulateK))
     warning('MESS:control_data', ...
-        'Missing or Corrupted accumulateK field. Switching to default: 1');
+            'Missing or Corrupted accumulateK field. Switching to default: 1');
     opts.adi.accumulateK = 1;
 end
+
 if not(isfield(opts.shifts,'period'))
     opts.shifts.period=1;
 end
@@ -165,19 +181,24 @@ end
 if not(isfield(opts,'shifts')) || not(isstruct(opts.shifts))
     error('MESS:control_data','shifts control structure opts.shifts missing.');
 end
+
 if not(isfield(opts.shifts,'implicitVtAV'))
     opts.shifts.implicitVtAV = true;
 end
-if (not(isnumeric(opts.shifts.implicitVtAV)) && ...
-        not(islogical(opts.shifts.implicitVtAV)))
+
+if not(isnumeric(opts.shifts.implicitVtAV)) && ...
+   not(islogical(opts.shifts.implicitVtAV))
+
     warning('MESS:implicitVtAV', ...
-        'Missing or Corrupted implicitVtAV field. Switching to default (true).');
+            ['Missing or Corrupted implicitVtAV field.' ... 
+             'Switching to default (true).']);
     opts.shifts.implicitVtAV = true;
 end
-if  not(opts.shifts.implicitVtAV)
+
+if not(opts.shifts.implicitVtAV)
     warning('MESS:implicitVtAV', ...
         ['implicitVtAV must be true for mess_rosenbrock_dre.', ...
-        ' Switching to default (true).']);
+         ' Switching to default (true).']);
     opts.shifts.implicitVtAV = true;
 end
 
@@ -185,41 +206,50 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check system data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if not(isfield(eqn, 'LTV')),  eqn.LTV=0; end
+if not(isfield(eqn, 'LTV')), eqn.LTV = 0; end
+
 if eqn.LTV
     error('MESS:control_data', ['non-autonomous differential Riccati', ...
-        ' equation (eqn.LTV=1) is not supported']);
+          ' equation (eqn.LTV=1) is not supported']);
 end
+
 if not(isfield(eqn, 'C')) || not(isnumeric(eqn.C))
     error('MESS:control_data', 'eqn.C is not defined or corrupted');
 end
+
 if not(isfield(eqn, 'B')) || not(isnumeric(eqn.B))
     error('MESS:control_data', 'eqn.B is not defined or corrupted');
 end
+
 if not(isfield(eqn, 'L0')) || not(isnumeric(eqn.L0))
     warning('MESS:control_data', ...
-        ['Initial condition factor L0 is not defined or corrupted.',...
-         ' Setting it to the zero vector.']);
+            ['Initial condition factor L0 is not defined or corrupted.', ...
+             ' Setting it to the zero vector.']);
     n = oper.size(eqn);
     eqn.L0 = zeros(n,1);
 end
+
 if not(isfield(eqn, 'D0')) || not(isnumeric(eqn.D0))
     warning('MESS:control_data', ...
-            ['Initial condition factor D0 is not defined or corrupted.',...
+            ['Initial condition factor D0 is not defined or corrupted.', ...
              ' Setting it to the identity matrix.']);
     eqn.D0 = eye(size(eqn.L0, 2));
 end
+
 if not(isfield(eqn, 'type'))
     eqn.type = 'N';
-    warning('MESS:MESS:control_data',['Unable to determine type of equation.'...
-        'Falling back to type ''N''']);
+    warning('MESS:MESS:control_data', ...
+            'Unable to determine type of equation. Falling back to type ''N''');
 elseif (eqn.type ~= 'N') && (eqn.type ~= 'T')
     error('MESS:equation_type', 'Equation type must be either ''T'' or ''N''');
 end
+
 [result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
+
 if not(result)
     error('MESS:control_data', 'system data is not completely defined or corrupted');
 end
+
 if eqn.type == 'T'
     q = size(eqn.C, 1);
 else
@@ -238,9 +268,11 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 [eqn, opts, oper] = oper.mul_E_pre(eqn, opts, oper);
 [eqn, opts, oper] = oper.mul_A_pre(eqn, opts, oper);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialize data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % flip time_steps to run backwards in time
 times = opts.rosenbrock.time_steps(end:-1:1);
 
@@ -259,32 +291,35 @@ if opts.rosenbrock.save_solution
     out.Ls = {L}; % L of step 0
     out.Ds = {D}; % D of step 0
 end
+
 if eqn.type == 'T'
     eqn.V = K;
 else
     eqn.U = K;
 end
+
 eqn.haveUV = 1;
-
 out.Ks = {K'}; % K of step 0
-
 
 if eqn.type == 'T'
     eqn.G = eqn.C';
 else
     eqn.G = eqn.B;
 end
+
 G = eqn.G;
 opts.LDL_T = 1;
-
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Start iteration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-for j = 2 : length(times)
-    t = times(j);
-    opts.rosenbrock.tau = times(j - 1) - times(j);
+
+for k = 2 : length(times)
+
+    t = times(k);
+    opts.rosenbrock.tau = times(k - 1) - times(k);
+
     if opts.rosenbrock.stage == 1
         if eqn.type == 'T'
             eqn.U = -eqn.B;
@@ -298,6 +333,7 @@ for j = 2 : length(times)
             eqn.V = (-opts.rosenbrock.tau * opts.rosenbrock.gamma) * eqn.C';
         end
     end
+
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % update E^T * L
@@ -314,8 +350,9 @@ for j = 2 : length(times)
     else
         BLD_tmp = (eqn.C * L) * D;
     end
+
     if opts.rosenbrock.stage == 1
-        BLD = BLD_tmp' * BLD_tmp + 1/opts.rosenbrock.tau * D;
+        BLD = BLD_tmp' * BLD_tmp + 1.0 / opts.rosenbrock.tau * D;
 
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -323,8 +360,8 @@ for j = 2 : length(times)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         eqn.G = [G, EL];
     else % stage 2
-        BLD = [zeros(m ,m), D;
-            D, -(BLD_tmp' * BLD_tmp)];
+        BLD = [zeros(m ,m), D; ...
+               D, -(BLD_tmp' * BLD_tmp)];
 
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -335,14 +372,15 @@ for j = 2 : length(times)
 
     eqn.S = blkdiag(Iq, BLD);
     [eqn.G, eqn.S] = mess_column_compression(eqn.G, 'N', eqn.S, ...
-        opts.rosenbrock.trunc_tol, opts.rosenbrock.trunc_info);
+                                             opts.rosenbrock.trunc_tol, ...
+                                             opts.rosenbrock.trunc_info);
 
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % compute new ADI shifts
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if not(mod(j - 2,opts.shifts.period))
-        opts.shifts.p=mess_para(eqn,opts,oper);
+    if not(mod(k - 2,opts.shifts.period))
+        opts.shifts.p = mess_para(eqn,opts,oper);
     end
 
     %%
@@ -357,7 +395,8 @@ for j = 2 : length(times)
         % perform column compression
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         [L, D] = mess_column_compression(adiout.Z, 'N', adiout.D, ...
-            opts.rosenbrock.trunc_tol, opts.rosenbrock.trunc_info);
+                                         opts.rosenbrock.trunc_tol, ...
+                                         opts.rosenbrock.trunc_info);
 
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -380,7 +419,8 @@ for j = 2 : length(times)
         % perform column compression
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         [T1, D1] = mess_column_compression(adiout1.Z, 'N', adiout1.D, ...
-            opts.rosenbrock.trunc_tol, opts.rosenbrock.trunc_info);
+                                           opts.rosenbrock.trunc_tol, ...
+                                           opts.rosenbrock.trunc_info);
 
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -388,22 +428,24 @@ for j = 2 : length(times)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         ET1 = oper.mul_E(eqn, opts, eqn.type, T1, 'N');
         eqn.G = ET1;
+
         if eqn.type == 'T'
             BT1E_tmp = (eqn.B' * T1) * D1;
         else
             BT1E_tmp = (eqn.C * T1) * D1;
         end
+
         BT1D = opts.rosenbrock.tau * opts.rosenbrock.tau * ...
-            (BT1E_tmp' * BT1E_tmp) + ...
-            (2 - 1/opts.rosenbrock.gamma) * D1;
+               (BT1E_tmp' * BT1E_tmp) + (2.0 - 1.0 / opts.rosenbrock.gamma) * D1;
+
         eqn.S = BT1D;
 
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % compute new ADI shifts
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if not(mod(j - 2,opts.shifts.period))
-            opts.shifts.p=mess_para(eqn,opts,oper);
+        if not(mod(k - 2,opts.shifts.period))
+            opts.shifts.p = mess_para(eqn,opts,oper);
         end
 
         %%
@@ -417,15 +459,17 @@ for j = 2 : length(times)
         % construct new X = L * D * L^T
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         L = [L, T1, adiout2.Z]; %#ok<AGROW>
-        D = blkdiag(D, opts.rosenbrock.tau * (2 - 1 / (2 * opts.rosenbrock.gamma)) * D1, ...
-            - opts.rosenbrock.tau / 2. * adiout2.D);
+        D = blkdiag(D, opts.rosenbrock.tau * ...
+                       (2.0 - 1.0 / (2.0 * opts.rosenbrock.gamma)) * D1, ...
+                    - opts.rosenbrock.tau / 2.0 * adiout2.D);
 
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % perform column compression
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         [L, D] = mess_column_compression(L, 'N', D, ...
-            opts.rosenbrock.trunc_tol, opts.rosenbrock.trunc_info);
+                                         opts.rosenbrock.trunc_tol, ...
+                                         opts.rosenbrock.trunc_info);
         if eqn.type == 'T'
             eqn.G = eqn.C';
         else
@@ -437,8 +481,9 @@ for j = 2 : length(times)
         % construct new K
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if opts.adi.accumulateK
-            K = K + opts.rosenbrock.tau * (2 - 1 / (2 * opts.rosenbrock.gamma)) * adiout1.Knew ...
-                - opts.rosenbrock.tau / 2 * adiout2.Knew;
+            K = K + opts.rosenbrock.tau * ...
+                (2.0 - 1.0 / (2.0 * opts.rosenbrock.gamma)) * adiout1.Knew ...
+                - opts.rosenbrock.tau / 2.0 * adiout2.Knew;
         else
             if eqn.type == 'T'
                 K = oper.mul_E(eqn, opts,eqn.type,L,'N') * (D * (L' * eqn.B));
@@ -455,11 +500,14 @@ for j = 2 : length(times)
     if opts.rosenbrock.info
         fprintf('Rosenbrock step %4d s\n', t);
     end
+
     if opts.rosenbrock.save_solution
         out.Ls = [{L}, out.Ls];
         out.Ds = [{D}, out.Ds];
     end
+
     out.Ks = [{K'}, out.Ks];
+
     if eqn.type == 'T'
         eqn.V = K;
     else
@@ -467,8 +515,11 @@ for j = 2 : length(times)
     end
 
 end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % finalize usfs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 [eqn, opts, oper] = oper.mul_E_post(eqn, opts, oper);
 [eqn, opts, oper] = oper.mul_A_post(eqn, opts, oper);
+

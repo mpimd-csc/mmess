@@ -1,4 +1,4 @@
-function [H,V] = mess_arn(eqn, opts, oper, opA)
+function [H, V] = mess_arn(eqn, opts, oper, opA)
 %
 %  Arnoldi method w.r.t. opA(A)
 %
@@ -35,12 +35,12 @@ function [H,V] = mess_arn(eqn, opts, oper, opA)
 %
 %    This implementation does not check for (near-)breakdown!
 %
-%   uses operatorfunctions size, sol_A, mul_A, sol_E, mul_E
+%   uses operator functions size, sol_A, mul_A, sol_E, mul_E
 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -86,7 +86,7 @@ end
 if isfield(eqn, 'haveUV') && eqn.haveUV
     if not(isfield(eqn,'U')) || isempty(eqn.U) || not(isfield(eqn,'V')) || isempty(eqn.V)...
             || not((size(eqn.U,1))==size(eqn.V,1) && size(eqn.U,2)==size(eqn.V,2))
-        error('MESS:SMW','Inappropriate data of low rank updated opertor (eqn.U and eqn.V)');
+        error('MESS:SMW','Inappropriate data of low rank updated operator (eqn.U and eqn.V)');
     end
 end
 if not(isfield(opts,'rosenbrock')), opts.rosenbrock=[]; end
@@ -104,7 +104,7 @@ else
     bdf = 0;
 end
 
-%% check input Paramters
+%% check input Parameters
 if not(ischar(opA))
     error('MESS:error_arguments', 'opA is not a char');
 end
@@ -261,4 +261,3 @@ end
 V(:, k + 1) = (1.0 / beta) * w;
 
 end
-

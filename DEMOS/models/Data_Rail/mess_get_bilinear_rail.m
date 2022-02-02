@@ -15,12 +15,15 @@ function eqn = mess_get_bilinear_rail(k)
 %
 % Input:
 %   k       number of instance
-%           k = 0 -> n =    109
-%           k = 1 -> n =    371
-%           k = 2 -> n =  1,357
-%           k = 3 -> n =  5,177
-%           k = 4 -> n = 20,209
-%           k = 5 -> n = 79,841
+%           k = 0 -> n =       109
+%           k = 1 -> n =       371
+%           k = 2 -> n =     1,357
+%           k = 3 -> n =     5,177
+%           k = 4 -> n =    20,209
+%           k = 5 -> n =    79,841
+%           k = 6 -> n =   317,377
+%           k = 7 -> n = 1,265,537
+%           k = 8 -> n = 5,054,209
 %
 % Output:
 % eqn       structure for use with the 'default' usfs with members
@@ -55,7 +58,7 @@ function eqn = mess_get_bilinear_rail(k)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -72,29 +75,7 @@ u_ext = 0.02;
 alpha = lambda / (c * rho);
 robin = 1.0 / (c * rho);
 
-%% set path
-switch k
-    case 0
-        example = 'ODE_unit_matrices_109';
-    case 1
-        example = 'ODE_unit_matrices_371';
-    case 2
-        example = 'ODE_unit_matrices_1357';
-    case 3
-        example = 'ODE_unit_matrices_5177';
-    case 4
-        example = 'ODE_unit_matrices_20209';
-    case 5
-        example = 'ODE_unit_matrices_79841';
-    otherwise
-        error('MESS:error_arguments','k has to be 0, 1, 2, 3, 4 or 5\n');
-end
-
-%% check path
-path = fileparts(mfilename('fullpath'));
-
-%% read matrices
-data = load(strcat(path, filesep, example));
+data = mess_load_rail(k);
 
 eqn.E_ = data.M;
 

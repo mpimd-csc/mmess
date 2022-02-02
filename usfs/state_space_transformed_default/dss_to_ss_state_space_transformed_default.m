@@ -27,7 +27,7 @@ function C = dss_to_ss_state_space_transformed_default...
 %                       opB = 'T' solves op(EL)*C = B' or op(EU)*C = B'
 %
 % Output
-%	C               matrix fullfilling the equation
+%	C               matrix fulfilling the equation
 %                   op(EL)*C = op(B) or op(EU)*C = op(B)
 %
 % This function uses another default function size_default(eqn, opts) to
@@ -36,7 +36,7 @@ function C = dss_to_ss_state_space_transformed_default...
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

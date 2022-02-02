@@ -29,7 +29,7 @@ function X = sol_ApE_state_space_transformed_default ...
 %                   opB = 'T' solves EL\(op(A_) + p*op(E_))/EU*X = B'
 %
 % Output
-%	X               matrix fullfilling equation
+%	X               matrix fulfilling equation
 %                   EL\(op(A_) + p*op(E_))*EU\X = opB(B)
 %
 % This function uses another default function size_default(eqn, opts) to
@@ -38,7 +38,7 @@ function X = sol_ApE_state_space_transformed_default ...
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

@@ -42,37 +42,52 @@ function [IQLas, IQDas, eqn, opts, oper] ...
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 
-type = opts.splitting.quadrature.type;
+qtype = opts.splitting.quadrature.type;
 order = opts.splitting.quadrature.order;
 
 % Decide which type of quadrature to use and compute nodes and weights for
 % the interval [0, h]. These are then shifted appropriately later.
 adaptive = false;
-if strcmp(type, 'gauss')
-    [xj, wj] = gauss_quadrature_parameters(h, order);
-elseif strcmp(type, 'clenshawcurtis')
-    if rem(order,2) == 1
-        error('MESS:control_data', ['Quadrature order must be even ' ...
-                            'Clenshaw-Curtis.']);
-    end
-    [xj, wj] = clenshawcurtis_parameters(0, h, order);
-elseif strcmp(type, 'adaptive')
-    % nodes/weights computed in loop further down
-    adaptive = true;
-    order = 4;
-elseif strcmp(type, 'equidistant')
-    % Equidistant nodes - used for the adaptive methods
-    xj = linspace(0, h, order+1)';
-    wj = compute_quadrature_weights(h, xj);
+
+switch qtype
+
+    case 'gauss'
+
+        [xj, wj] = gauss_quadrature_parameters(h, order);
+
+    case 'clenshawcurtis'
+
+        if rem(order,2) == 1
+            error('MESS:control_data', ['Quadrature order must be even ' ...
+                                        'Clenshaw-Curtis.']);
+        end
+        [xj, wj] = clenshawcurtis_parameters(0, h, order);
+
+    case 'adaptive'
+
+        % nodes/weights computed in loop further down
+        adaptive = true;
+        order = 4;
+
+    case 'equidistant'
+
+        % Equidistant nodes - used for the adaptive methods
+        xj = linspace(0, h, order+1)';
+        wj = compute_quadrature_weights(h, xj);
+
+    otherwise
+
+        error('MESS:IQ:Unknown quadrature type provided.');
 end
 
 TOL = 1e-4;
+
 if isfield(opts.splitting.quadrature, 'tol')
     TOL = opts.splitting.quadrature.tol;
 end
@@ -81,15 +96,18 @@ nts = length(t0s);
 nas = length(as);
 IQLas = cell(nts, nas);
 IQDas = cell(nts, nas);
+
 if adaptive
     IQLas2 = cell(nts, nas);
     IQDas2 = cell(nts, nas);
 end
+
 Las = cell(nts,nas); % The Ls used to form each IQL
 
 % In the autonomous case, we have a fixed block to apply the matrix
 % exponential to:
 if not(eqn.LTV)
+
     if eqn.type == 'T'
         LQ = eqn.C';
     elseif eqn.type == 'N'
@@ -100,12 +118,14 @@ if not(eqn.LTV)
 end
 
 
-for i = 1:length(t0s)
-    t0 = t0s(i);
+for k = 1:length(t0s)
+
+    t0 = t0s(k);
     errest = Inf;
-    % This loop breaks after one iteration unless the adaptive strategy is
-    % used:
+
+    % This loop breaks after one iteration unless the adaptive strategy is used:
     while errest > TOL
+
         if adaptive
             [xj, wj] = clenshawcurtis_parameters(0, h, order);
             [~, wj2] = clenshawcurtis_parameters(0, h, order/2);
@@ -115,7 +135,8 @@ for i = 1:length(t0s)
         end
 
         % For each scaling factor as(k) compute the values Ls(xj)
-        for k = 1:length(as)
+        for l = 1:length(as)
+
             if not(eqn.LTV) % Autonomous case
                 Ls = cell(1, length(xj));
                 RHS = oper.sol_E(eqn, opts, eqn.type, LQ, 'N');
@@ -126,24 +147,27 @@ for i = 1:length(t0s)
                 % the correct size.
                 RHS = RHS(1:size(LQ,1), :); %
                 [out, ~, opts, ~] ...
-                    = mess_exp_action(eqn, opts, oper, as(k)*xj(1), RHS);
+                    = mess_exp_action(eqn, opts, oper, as(l)*xj(1), RHS);
                 Ls{1} = out.Z;
-                for j = 2:length(xj)
-                    dx = as(k)*(xj(j) - xj(j-1));
-                    Ltemp = oper.mul_E(eqn, opts, eqn.type, Ls{j-1}, 'N');
+
+                for m = 2:length(xj)
+
+                    dx = as(l)*(xj(m) - xj(m-1));
+                    Ltemp = oper.mul_E(eqn, opts, eqn.type, Ls{m-1}, 'N');
                     RHS = oper.sol_E(eqn, opts, eqn.type, Ltemp, 'N');
                     % See above comment about RHS:
                     RHS = RHS(1:size(LQ,1), :);
                     [out, ~, opts, ~] ...
                         = mess_exp_action(eqn, opts, oper, dx, RHS);
-                    Ls{j} = out.Z;
+                    Ls{m} = out.Z;
                 end
             else % Timevarying case
                 % This can be done somewhat faster by using BLAS-3
                 % blocking, but it requires more memory. See the DREsplit
                 % package for this option, omitted in the M.E.S.S. version.
-                for j = 1:length(xj)
-                    t = t0 + as(k)*xj(j);
+                for m = 1:length(xj)
+
+                    t = t0 + as(l)*xj(m);
                     % RHS is E(t)'\LQ(t), so update the matrices
                     [eqn, opts, oper] = ...
                         opts.splitting.eval_matrix_functions(eqn, opts, ...
@@ -157,51 +181,55 @@ for i = 1:length(t0s)
                     % See above comment about RHS:
                     ELQ = ELQ(1:size(LQ,1), :);
 
-
-                    [out, ~, opts, ~] ...
-                        = mess_exp_action(...
-                            eqn, opts, oper, ...
-                            as(k)*(h-xj(j)), ...
-                            full(ELQ), ...
-                            t);
-                    Ls{j} = out.Z;
+                    [out, ~, opts, ~] = mess_exp_action(eqn, opts, oper, ...
+                                                        as(l)*(h-xj(m)), ...
+                                                        full(ELQ), t);
+                    Ls{m} = out.Z;
                 end
             end
-            Las{i}{k} = Ls;
-            IQLas{i}{k} = cell2mat(Ls);
+
+            Las{k}{l} = Ls;
+            IQLas{k}{l} = cell2mat(Ls);
+
             % Build block diagonal matrix with weight(j)*as(k)*DQ as blocks
             if eqn.LTV % We don't know the size of DQ a priori.
                 DQ = eye(size(LQ, 2));
             end
-            IQDas{i}{k} = kron(diag(wj * as(k)), DQ);
+
+            IQDas{k}{l} = kron(diag(wj * as(l)), DQ);
         end
+
         % Column compress approximations
-        for k = 1:length(as)
-            [IQLas{i}{k}, IQDas{i}{k}] = ...
-                mess_column_compression(IQLas{i}{k}, 'N', IQDas{i}{k}, ...
+        for l = 1:length(as)
+            [IQLas{k}{l}, IQDas{k}{l}] = ...
+                mess_column_compression(IQLas{k}{l}, 'N', IQDas{k}{l}, ...
                 opts.splitting.trunc_tol, opts.splitting.trunc_info);
         end
 
         if adaptive
             % Column compress coarser approximation
-            for k = 1:length(as)
-                [IQLas2{i}{k}, IQDas2{i}{k}] = ...
+            for l = 1:length(as)
+ 
+               [IQLas2{k}{l}, IQDas2{k}{l}] = ...
                     mess_column_compression(...
-                        cell2mat(Las{i}{k}(1:2:end)), 'N', ...
-                        kron(diag(wj2 * as(k)), DQ), ...
+                        cell2mat(Las{k}{l}(1:2:end)), 'N', ...
+                        kron(diag(wj2 * as(l)), DQ), ...
                         opts.splitting.trunc_tol, ...
                         opts.splitting.trunc_info);
             end
+
             errest = 0;
-            for k = 1:length(as)
+
+            for l = 1:length(as)
                 errest = ...
                 max(errest, ...
-                    outerfrobnormdiff_LDLT(IQLas{i}{k}, IQDas{i}{k}, ...
-                                           IQLas2{i}{k}, IQDas2{i}{k}));
+                    outerfrobnormdiff_LDLT(IQLas{k}{l}, IQDas{k}{l}, ...
+                                           IQLas2{k}{l}, IQDas2{k}{l}));
             end
         else
             break
         end
+
         order = order * 2;
     end
 end

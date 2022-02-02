@@ -26,30 +26,35 @@ function [TL,TR,hsv,eqn,opts,oper] = mess_square_root_method(eqn,opts,oper,ZB,ZC
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 % Check necessary control data
-[result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
+[result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A', 'E');
+
 [eqn, opts, oper] = oper.mul_E_pre(eqn,opts,oper);
+
 if not(result)
-    error('MESS:control_data',...
-        'system data is not completely defined or corrupted');
+    error('MESS:control_data', ...
+          'system data is not completely defined or corrupted');
 end
+
 if isfield(opts,'srm')
    if not(isfield(opts.srm,'tol'))
-       error('Missing truncation tolerance opts.srm.tol');
+       error('MESS:Missing truncation tolerance opts.srm.tol');
    end
+
    if not(isfield(opts.srm,'max_ord'))
-        opts.srm.max_ord=oper.size(eqn,opts);
+        opts.srm.max_ord = oper.size(eqn,opts);
    end
+
    if not(isfield(opts.srm,'info'))
        opts.srm.info = 0;
    end
 else
-    error('Missing srm substructure in opts argument.');
+    error('MESS:Missing srm substructure in opts argument.');
 end
 
 %% Compute SVD of Gramian factor product in the correct inner product
@@ -60,34 +65,39 @@ else
 end
 
 %% Determine possible and desired ROM order
-hsv=diag(S0);
-ks=length(hsv);
-nr=oper.size(eqn,opts)-ks;
-k=ks;
-while (2*sum(hsv(ks:-1:k-1))+nr*hsv(ks)<opts.srm.tol)&&(k>2)
-    k=k-1;
-end
-k0=k;
+hsv = diag(S0);
+ks = length(hsv);
+nr = oper.size(eqn,opts) - ks;
+k = ks;
 
-r= min([opts.srm.max_ord k0]);
-if opts.srm.info>0
-    fprintf(1,['reduced system order: %d',...
-        '  (max possible/allowed: %d/%d)\n\n'],r,ks,opts.srm.max_ord);
+while ((2.0*sum(hsv(ks:-1:k-1))+nr*hsv(ks)) < opts.srm.tol) && (k > 2)
+    k = k - 1;
+end
+
+k0 = k;
+
+r = min([opts.srm.max_ord k0]);
+
+if opts.srm.info > 0
+    fprintf(1,['reduced system order: %d', ...
+               '  (max possible/allowed: %d/%d)\n\n'],r,ks,opts.srm.max_ord);
 end
 
 % Compute the truncating projection matrices
 
 S = sparse(1:r, 1:r, 1 ./ sqrt(hsv(1:r)));
 
-TL = (ZC*U0(:,1:r))*S;
-TR = (ZB*V0(:,1:r))*S;
+TL = (ZC*U0(:,1:r)) * S;
+TR = (ZB*V0(:,1:r)) * S;
 
 % augment projection matrices by preselected columns
 if isfield(opts.srm,'V') && ismatrix(opts.srm.V)
     TL = [TL,opts.srm.V];
 end
+
 if isfield(opts.srm,'W') && ismatrix(opts.srm.W)
     TR = [TR, opts.srm.W];
 end
 
 [eqn, opts, oper] = oper.mul_E_post(eqn,opts,oper);
+

@@ -3,11 +3,11 @@ function [nrm,k,T,V,eqn,fopts,oper] = ...
 % Computes the 2 Norm of the residual of Z for the symmetric operator given
 %   by y=Rmul(Z, x, eqn, opts,oper);
 % e.g., for the generalized Lyapunov residual Rmul implements
-%   R := FZZ^T*E^T + EZZ^T*F^T + GG^T (1)
+%   R := F ZZ^T E^T + E ZZ^T F^T + GG^T (1)
 %
 %
 % That means res2 computes the spectral radius of this operator R by a
-% Lanzcos iteration. The function Rmul should exploite the structure of F
+% Lanczos iteration. The function Rmul should exploit the structure of F
 % and rectangular structure of Z and G. Thus it can be computed in O(n)
 % effort and is therefore much cheaper than the computation of the e.g. the
 % Frobenius norm.
@@ -57,18 +57,18 @@ function [nrm,k,T,V,eqn,fopts,oper] = ...
 % Output:
 %  nrm              the residual of the iterate X=Z*Z' or X = Z*D*Z'
 %
-%  k                number of Lanzcos steps taken
+%  k                number of Lanczos steps taken
 %
 %  T                matrix T ((k+1)-x-k matrix, symmetric tridiagonal);
 %
 %  V                matrix V (n-x-(k+1) matrix, orthogonal columns).
 %
-% uses eventually operatorfunctions in Rmul
+% uses eventually operator functions in Rmul
 
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

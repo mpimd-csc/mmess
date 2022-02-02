@@ -32,19 +32,19 @@ function X = sol_ApE_dae_2(eqn, opts, opA, p, opE, B, opB)%#ok<INUSL>
 %
 % Output
 %
-%   X       matrix fullfills equation (opA(A_)+p*opE(E_))*X = B
+%   X       matrix fulfills equation (opA(A_)+p*opE(E_))*X = B
 %
 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 
-%% check input Paramters
+%% check input Parameters
 if (not(ischar(opA)) || not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opA, opE or opB is not a char');
 end
@@ -105,7 +105,7 @@ end
 
 
 
-%% perfom solve operations for E_ ~= Identity
+%% perform solve operations for E_ ~= Identity
 if(eqn.haveE == 1)
   switch opA
 

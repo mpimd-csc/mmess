@@ -9,7 +9,7 @@ function [ opts, l ] = mess_get_projection_shifts( eqn, opts, oper, ...
 %
 % Inputs:
 %  eqn, opts, oper  the usual structures containing the equation
-%                   data, the process control parameters and teh
+%                   data, the process control parameters and the
 %                   operation function handles.
 %
 %  Z, W, D          The matrices for the current residual (W) and
@@ -34,7 +34,7 @@ function [ opts, l ] = mess_get_projection_shifts( eqn, opts, oper, ...
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

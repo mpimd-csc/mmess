@@ -1,13 +1,13 @@
-function bt_mor_DAE2(problem,lvl,re,istest)
+function bt_mor_DAE2(problem, level, re, istest)
 % Computes a standard ROM by implicitly solving the generalized Lyapunov
 % equations for the equivalent projected system on the hidden manifold.
 %
 % Inputs:
 % problem       either 'Stokes' or 'NSE' to choose the Stokes demo or the
 %               linearized Navier-Stokes-Equation.
-%               (ooptional, defaults to 'Stokes')
+%               (optional, defaults to 'Stokes')
 %
-% lvl           discretization level 1 through 5
+% level         discretization level 1 through 5
 %               (optional, only used in 'NSE' case, default: 1)
 %
 % re            Reynolds number 300, 400, or 500
@@ -30,7 +30,7 @@ function bt_mor_DAE2(problem,lvl,re,istest)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -46,7 +46,7 @@ opts.norm = 'fro';
 oper = operatormanager('dae_2');
 %% Problem data
 if nargin<1, problem='stokes'; end
-if nargin<2, lvl=1; end
+if nargin<2, level=1; end
 if nargin<3, re=500; end
 if nargin<4, istest=0; end
 
@@ -67,7 +67,7 @@ switch problem
         eqn.B=eqn.Borig(1:st,:);
         eqn.C=eqn.Corig(:,1:st);
     case 'nse'
-        [eqn, K0primal, K0dual] = mess_get_NSE( re, lvl);
+        [eqn, K0primal, K0dual] = mess_get_NSE( re, level);
         st=eqn.st;
         n=size(eqn.E_,1);
     otherwise
@@ -97,8 +97,8 @@ fprintf(1,'mess_lradi took %6.2f seconds \n',t_elapsed1);
 
 if not(istest)
     figure();
-    semilogy(outB.res,'linewidth',3);
-    title('AXM^T + MXA^T = -BB^T');
+    semilogy(outB.res,'LineWidth',3);
+    title('A X E^T + E X A^T = -BB^T');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
@@ -130,8 +130,8 @@ fprintf(1,'mess_lradi took %6.2f seconds \n',t_elapsed2);
 
 if not(istest)
     figure();
-    semilogy(outC.res,'linewidth',3);
-    title('A^TXM + M^TXA = -C^TC');
+    semilogy(outC.res,'LineWidth',3);
+    title('A^T X E + E^T X A = -C^T C');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
@@ -170,7 +170,7 @@ t_eval_ROM = tic;
 %% Evaluate the ROM quality
 % while the Gramians are computed exploiting the DAE structure, due to the
 % construction of the function handles we can not do so for the transfer
-% function. Therfore we need to extend the matrices B and C and call the
+% function. Therefore we need to extend the matrices B and C and call the
 % 'default' usfs for unstructured computation:
 switch lower(problem)
     case 'stokes'
@@ -202,7 +202,7 @@ if istest
     if max(err)>=opts.srm.tol, error('MESS:TEST:accuracy','unexpectedly inaccurate result'); end
 else
     figure;
-    semilogy(hsv,'linewidth',3);
+    semilogy(hsv,'LineWidth',3);
     title('Computed Hankel singular values');
     xlabel('index');
     ylabel('magnitude');

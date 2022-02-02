@@ -5,7 +5,7 @@ function [romchg] = mess_h2_rom_change(E1,A1,B1,C1,E2,A2,B2,C2,rel)
 %
 % Inputs:
 % E1,A1,B1,C1,E2,A2,B2,C2  The system matrices (E1,E2 invertible)
-% rel                      indicator wether the relative or absolute norm
+% rel                      indicator whether the relative or absolute norm
 %                          is desired.
 %
 % Output:
@@ -15,7 +15,7 @@ function [romchg] = mess_h2_rom_change(E1,A1,B1,C1,E2,A2,B2,C2,rel)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

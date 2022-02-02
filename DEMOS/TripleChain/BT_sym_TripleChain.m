@@ -41,7 +41,7 @@ function BT_sym_TripleChain(variant,istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -113,8 +113,8 @@ if istest
    end
 else
     figure(1);
-    semilogy(outB.res,'linewidth',3);
-    title('0= AXM^T + MXA^T -BB^T');
+    semilogy(outB.res,'LineWidth',3);
+    title('0 = A X ^T + E X A^T - BB^T'); 
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);

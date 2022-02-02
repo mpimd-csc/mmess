@@ -9,14 +9,14 @@ function p = mess_projection_shifts(eqn, opts, oper, V, W, p_old)
 % vector p_old passed in must have this multiple as its length.
 %
 % Whether or not the projection is computed implicitly from the
-% contents of V or by aexplicit projetion, is determined via
+% contents of V or by an explicit projection, is determined via
 % opts.shifts.implicitVtAV.
 %
 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -51,7 +51,7 @@ nV = size(V, 2);
 nW = size(W, 2);
 if L > 0 && any(p_old)
     if nV / nW ~= L
-        error('MESS:control_data', 'V and W have inconsistend no. of columns');
+        error('MESS:control_data', 'V and W have inconsistent no. of columns');
     end
 end
 

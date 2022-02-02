@@ -1,4 +1,4 @@
-function [E,A,B,C,M,D,K,G,Pl,Pr] = msd_ind3(g,mas,k1,k2,d1,d2)
+function [E, A, B, C, M, D, K, G, Pl, Pr] = msd_ind3(g, mas, k1, k2, d1, d2)
 %
 % Damped mass-spring system with a holonomic constraint
 %
@@ -32,16 +32,16 @@ function [E,A,B,C,M,D,K,G,Pl,Pr] = msd_ind3(g,mas,k1,k2,d1,d2)
 %      E   real n-by-n sparse matrix with
 %           n = (nx+1)*ny+nx*(ny+1)+(nx+1)*ny+nx*(ny+1)
 %      A   real n-by-n sparse matrix
-%      B   real n-by-m sparse matrix, m is the number of inpits
+%      B   real n-by-m sparse matrix, m is the number of inputs
 %           ( here B = e_{g+1} )
 %      C   real p-by-n sparse matrix, p is the number of outputs
 %           ( here C = [ e_1, e_2, e_{q-1} ]' )
 %     Pr   the spectral projector onto the right deflating subspace
-%          corresponding to the finite eigenvaluesof s*E-A (sparse)
+%          corresponding to the finite eigenvalues of s*E-A (sparse)
 %     Pl   the spectral projector onto the left deflating subspace
-%          corresponding to the finite eigenvaluesof s*E-A (sparse)
+%          corresponding to the finite eigenvalues of s*E-A (sparse)
 %
-% DESCIPTION:
+% DESCRIPTION:
 %     The i-th mass of weight m_i is connected to the (i+1)-st mass
 %     by a spring and a damper with constants k1_i and d1_i, respectively,
 %     and also to the ground by a spring and a damper with constants

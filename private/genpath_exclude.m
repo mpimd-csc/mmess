@@ -13,7 +13,7 @@
 %                 '^'   and '$'.  If your directory name contains special
 %                 characters to regexp, they must be escaped.  For example,
 %                 use '\.svn' to ignore ".svn" directories.  You may also
-%                 use regular expressions to ignore certian patterns. For
+%                 use regular expressions to ignore certain patterns. For
 %                 example, use '*._ert_rtw' to ignore all directories ending
 %                 with "_ert_rtw".
 %
@@ -34,7 +34,7 @@
 %
 % Revision 1.4  2008/11/25 19:04:29  jhopkin
 % minor cleanup.  Made input more robust so that if user enters a
-% string as 'excudeDir' rather than a cell array of strings this
+% string as 'excludeDirs' rather than a cell array of strings this
 % function will still work.  (did this by moving the '^' and '$' to
 % surround the entire regexp string, rather than wrapping them
 % around each "excludeDir") 

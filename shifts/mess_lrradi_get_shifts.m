@@ -35,7 +35,7 @@ function [eqn, opts, oper, nShifts] = ...
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -57,9 +57,9 @@ switch opts.shifts.method
 
     case 'heur' 
         % Use MESS routines for heuristic penzl shifts.
-        p             = mess_para(eqn, opts, oper);
-        nShifts       = length(p);
-        opts.shifts.p = p;
+        [p, ~, eqn, opts, oper] = mess_para(eqn, opts, oper);
+        nShifts                 = length(p);
+        opts.shifts.p           = p;
     
     case 'projection' 
         % Use MESS routines for projection shifts.

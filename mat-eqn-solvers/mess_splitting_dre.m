@@ -1,6 +1,6 @@
  function [out, eqn, opts, oper] = mess_splitting_dre(eqn, opts, oper)
 %% function [out, eqn, opts, oper] = mess_splitting_dre(eqn, opts, oper)
-%   LDL^T-factored splitting schemes for diffenential Riccati equations
+%   LDL^T-factored splitting schemes for differential Riccati equations
 %   E*d/dt X(t)*E' = -B*B' - E*X(t)*A' - A*X(t)*E' + E*X(t)*C'*C*X(t)*E' (N)
 %   E'*d/dt X(t)*E = -C'*C - E'*X(t)*A - A'*X(t)*E + E'*X(t)*B*B'*X(t)*E (T)
 %   backward in time.
@@ -34,7 +34,7 @@
 %               (optional)
 %
 %   eqn.LTV     possible  values: 0, 1, false, true
-%               indicates autonmous (false) or
+%               indicates autonomous (false) or
 %               non-autonomous (true) differential
 %               Riccati equation
 %               (optional, default: 0)
@@ -146,13 +146,6 @@
 %                                       strategy or error per step (0)
 %                                       (optional, default 1)
 %
-%   opts.splitting.adaptive.reuse_IQ    possible values: 0, 1, false, true
-%                                       reuse most data for computing I_Q
-%                                       after the step size changes (1) or
-%                                       not (0). Usually saves a lot of
-%                                       computation time, but sometimes
-%                                       leads to many convergence failures
-%                                       (optional, default false)
 %
 % Output fields in struct out:
 %
@@ -184,7 +177,7 @@
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -200,59 +193,63 @@ if not(isfield(opts,'splitting')) || not(isstruct(opts.splitting))
                                 'splitting missing.']);
 end % Single fields are checked below or inside subfunctions
 
-if not(isfield(opts.splitting,'time_steps')) ...
-    && (not(isfield(opts.splitting,'adaptive')) || not(opts.splitting.adaptive))
-    error('MESS:control_data', ['opts.splitting.time_steps is missing,' ...
-                    'and adaptive time stepping has not been requested.']);
+if not(isfield(opts.splitting,'time_steps')) && ...
+   (not(isfield(opts.splitting,'adaptive')) || not(opts.splitting.adaptive))
+    error('MESS:control_data', ['opts.splitting.time_steps is missing, and ' ...
+                                'adaptive time stepping has not been requested.']);
 end
+
 opts.t0 = opts.splitting.time_steps(1);
 
-if not(isfield(opts.splitting, 'order')),  opts.splitting.order = 2; end
+if not(isfield(opts.splitting, 'order')), opts.splitting.order = 2; end
 
 if rem(opts.splitting.order, 1) || opts.splitting.order < 1
-    error('MESS:control_data', ['opts.splitting.order has an invalid ', ...
-                                'value.']);
+    error('MESS:control_data', 'opts.splitting.order has an invalid value.');
 end
 
 
-if not(isfield(opts.splitting, 'additive')),  opts.splitting.additive = 0; end
-if opts.splitting.order  >  2, opts.splitting.additive = 1; end
+if not(isfield(opts.splitting, 'additive')), opts.splitting.additive = 0; end
 
-if not(isfield(opts.splitting, 'symmetric')) && opts.splitting.additive == 1
+if opts.splitting.order > 2, opts.splitting.additive = 1; end
+
+if not(isfield(opts.splitting, 'symmetric')) && (opts.splitting.additive == 1)
     opts.splitting.symmetric = 0;
 end
 
-if opts.splitting.additive && opts.splitting.symmetric ...
-                           && rem(opts.splitting.order, 2)
+if opts.splitting.additive && opts.splitting.symmetric && ...
+   rem(opts.splitting.order, 2)
     error('MESS:control_data', ['opts.splitting.order must be a ' ...
-                'multiple of 2 to use a symmetric scheme.']);
+                                'multiple of 2 to use a symmetric scheme.']);
 end
 
 if not(isfield(opts.splitting, 'quadrature'))
     error('MESS:control_data', ['Need to specify ' ...
-          'opts.splitting.quadrature struct.']);
+                                'opts.splitting.quadrature struct.']);
 end
 
 if not(isfield(opts.splitting.quadrature, 'type'))
-        warning('MESS:control_data',['Unspecified quadrature type. ' ...
-                'Setting opts.splitting.quadrature.type=''gauss''']);
+    warning('MESS:control_data',['Unspecified quadrature type. Setting ' ...
+                                 'opts.splitting.quadrature.type=''gauss''']);
     opts.splitting.quadrature.type = 'gauss';
-elseif not(ismember(opts.splitting.quadrature.type, ...
-                {'gauss', 'clenshawcurtis', 'equidistant', 'adaptive'}))
-    warning('MESS:control_data',['The specified quadrature type is ' ...
-                        'not supported.\n setting ' ...
-                        'opts.splitting.quadrature.type=''gauss''']);
+
+elseif not(ismember(opts.splitting.quadrature.type,{'gauss','clenshawcurtis', ...
+                                                    'equidistant','adaptive'}))
+    warning('MESS:control_data',['Unsupported quadrature type. Setting ' ...
+                                 'opts.splitting.quadrature.type=''gauss''']);
     opts.splitting.quadrature.type = 'gauss';
 end
 
 if not(isfield(opts.splitting.quadrature, 'order'))
     s = opts.splitting.order;
+
     if s == 1 % Lie
         opts.splitting.quadrature.order = 3;
     end
+
     if s == 2 % Strang
         opts.splitting.quadrature.order = 5;
     end
+
     if opts.splitting.additive
         if opts.splitting.symmetric
             opts.splitting.quadrature.order = 2*s + 3;
@@ -269,41 +266,37 @@ end
 
 if strcmp(opts.splitting.quadrature.type, 'clenshawcurtis')
     opts.splitting.quadrature.order = opts.splitting.quadrature.order ...
-        + rem(opts.splitting.quadrature.order, 2);
+                                      + rem(opts.splitting.quadrature.order, 2);
 end
 
 if strcmp(opts.splitting.quadrature.type, 'adaptive') && ...
    not(isfield(opts.splitting.quadrature, 'tol'))
         warning('MESS:control_data',['Using adaptive quadrature, but ' ...
-                        'tolerance unspecified. Setting ' ...
-                        'opts.splitting.quadrature.tol=1e-4']);
-	opts.splitting.quadrature.tol=1e-4;
+                                     'tolerance unspecified. Setting ' ...
+                                     'opts.splitting.quadrature.tol=1e-4']);
+	opts.splitting.quadrature.tol = 1e-4;
 end
 
 if not(isfield(opts.splitting, 'intermediates'))
     opts.splitting.intermediates = 1;
 end
 
+if not(isfield(opts.splitting,'info')), opts.splitting.info = 2; end
 
-if not(isfield(opts.splitting,'info')),  opts.splitting.info = 2; end
-
-if isfield(opts,'LDL_T') && opts.LDL_T==0
+if isfield(opts,'LDL_T') && (opts.LDL_T == 0)
     warning('MESS:control_data',['The splitting code only supports ' ...
-                        'LDL_T solutions.\n Setting opts.LDL_T=1']);
+                                 'LDL_T solutions.\n Setting opts.LDL_T=1']);
 end
+
 opts.LDL_T = 1;
-
-
-
-
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check for time step adaptiveness control structure in options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if not(isfield(opts.splitting, 'adaptive'))  ...
-    || not(isstruct(opts.splitting.adaptive))
+if not(isfield(opts.splitting, 'adaptive')) || ...
+   not(isstruct(opts.splitting.adaptive))
     opts.splitting.adaptive = 0;
 end
 
@@ -326,9 +319,6 @@ if opts.splitting.adaptive ~= 0
         opts.splitting.adaptive.epus = 1;
     end
 
-    if not(isfield(opts.splitting.adaptive, 'reuse_IQ'))
-        opts.splitting.adaptive.reuse_IQ = 0;
-    end
 
 end
 
@@ -338,9 +328,9 @@ end
 % Check system data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if not(isfield(eqn,'type'))
-    eqn.type='N';
+    eqn.type = 'N';
     warning('MESS:control_data',['Unable to determine type of equation.'...
-        'Falling back to type ''N''']);
+                                 'Falling back to type ''N''']);
 elseif (eqn.type~='N') && (eqn.type~='T')
     error('MESS:equation_type', ['Equation type must be either ''T'' ', ...
                                  'or ''N''']);
@@ -405,6 +395,7 @@ end
 if not(isfield(opts.splitting,'trunc_tol'))
     opts.splitting.trunc_tol = eps * oper.size(eqn, opts);
 end
+
 if not(isfield(opts.splitting,'trunc_info'))
     opts.splitting.trunc_info = 0;
 end
@@ -418,9 +409,11 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 out = {};
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialize usfs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 [eqn, opts, oper] = oper.mul_E_pre(eqn, opts, oper);
 
 
@@ -436,12 +429,11 @@ t = opts.splitting.time_steps;
 % tend - t rather than t.
 if eqn.LTV
     opts.splitting.eval_matrix_functions = @(eqn, opts, oper, s) ...
-        oper.eval_matrix_functions(eqn, opts, oper, t(end) - s);
+                    oper.eval_matrix_functions(eqn, opts, oper, t(end) - s);
 else
     opts.splitting.eval_matrix_functions = @(eqn, opts, oper, s) ...
-        mess_do_nothing(eqn, opts, oper);
+                                           mess_do_nothing(eqn, opts, oper);
 end
-
 
 Nt = length(t) - 1;
 h = (t(end) - t(1)) / Nt;
@@ -463,8 +455,8 @@ else
 end
 
 Ks{Nt+1} = [];
-[eqn, opts, oper] = ...
-    opts.splitting.eval_matrix_functions(eqn, opts, oper, t(1));
+[eqn, opts, oper] = opts.splitting.eval_matrix_functions(eqn, opts, oper, t(1));
+
 if eqn.type == 'T'
     Ks{1} = (oper.mul_E(eqn, opts, 'T', L0*(D0*(L0'*eqn.B)), 'N'))';
 elseif eqn.type == 'N'
@@ -476,12 +468,15 @@ end
 % Set up method coefficients
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 s = opts.splitting.order;
+
 if s == 1 % Lie
     as = 1;
 end
+
 if s == 2 % Strang
     as = 1/2;
 end
+
 if opts.splitting.additive
     if opts.splitting.symmetric
         switch s/2
@@ -517,11 +512,6 @@ end
 % If autonomous, we may approximate the integral once and for all
 if not(eqn.LTV)
     [IQL, IQD] = IQ(eqn, opts, oper, 0, h, as);
-%     % Extra output for time-step adaptivity (not yet implemented):
-%     out.IQLas = IQLas;
-%     out.IQDas = IQDas;
-%     out.Las = Las;
-%     out.xj = xj;
 end
 
 
@@ -530,159 +520,209 @@ end
 % Start iteration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-for j = 1: Nt
+for k = 1:Nt
     if opts.splitting.info > 0
-        fprintf('Step: %d of %d, time = %d \n', j, Nt, t(j));
+        fprintf('Step: %d of %d, time = %d \n', k, Nt, t(k));
     end
+
     if opts.splitting.intermediates
-        Lold = Ls{j}; Dold = Ds{j};
+        Lold = Ls{k};
+        Dold = Ds{k};
     else
-        Lold = Ls; Dold = Ds;
+        Lold = Ls;
+        Dold = Ds;
     end
 
     if s == 1 % Lie
-        [Lnew, Dnew] = expG(eqn, opts, oper, h, Lold, Dold, t(j));
-        if eqn.LTV
-            [IQL, IQD] = IQ(eqn, opts, oper, t(j), h, as);
-        end
-        [Lnew, Dnew, eqn, opts, oper] ...
-        = expF(eqn, opts, oper, h, IQL{1}{1}, IQD{1}{1}, Lnew, Dnew, t(j));
-    elseif s == 2 && not(opts.splitting.additive) % Strang
-        if eqn.LTV
-            [IQL, IQD] = IQ(eqn, opts, oper, [t(j), t(j) + h/2], h, as);
-        end
-        [Lnew, Dnew, eqn, opts, oper] ...
-            = expF(eqn, opts, oper, ...
-                    h/2, IQL{1}{1}, IQD{1}{1}, Lold, Dold, t(j));
-        [Lnew, Dnew] = expG(eqn, opts, oper, h, Lnew, Dnew, t(j));
-        if eqn.LTV
-            [Lnew, Dnew, eqn, opts, oper] ...
-                = expF(eqn, opts, oper, ...
-                       h/2, IQL{2}{1}, IQD{2}{1}, Lnew, Dnew, t(j) + h/2);
-        else
-            [Lnew, Dnew, eqn, opts, oper] ...
-            = expF(eqn, opts, oper, h/2, IQL{1}{1}, IQD{1}{1}, Lnew, Dnew);
-        end
-    elseif opts.splitting.additive
-        if opts.splitting.symmetric, nmax = s/2; else, nmax = s; end
+        [Lnew, Dnew] = expG(eqn, opts, oper, h, Lold, Dold, t(k));
 
-        tj = t(j);
+        if eqn.LTV
+            [IQL, IQD] = IQ(eqn, opts, oper, t(k), h, as);
+        end
+
+        [Lnew, Dnew, eqn, opts, oper] = expF(eqn, opts, oper, h, ...
+                                             IQL{1}{1}, IQD{1}{1}, ...
+                                             Lnew, Dnew, t(k));
+
+    elseif (s == 2) && not(opts.splitting.additive) % Strang
+        if eqn.LTV
+            [IQL, IQD] = IQ(eqn, opts, oper, [t(k), t(k) + h/2], h, as);
+        end
+
+        [Lnew, Dnew, eqn, opts, oper] = expF(eqn, opts, oper, h/2, ...
+                                             IQL{1}{1}, IQD{1}{1}, ...
+                                             Lold, Dold, t(k));
+
+        [Lnew, Dnew] = expG(eqn, opts, oper, h, Lnew, Dnew, t(k));
+
+        if eqn.LTV
+            [Lnew, Dnew, eqn, opts, oper] = expF(eqn, opts, oper, h/2, ...
+                                                 IQL{2}{1}, IQD{2}{1}, ...
+                                                 Lnew, Dnew, t(k) + h/2);
+        else
+            [Lnew, Dnew, eqn, opts, oper] = expF(eqn, opts, oper, h/2, ...
+                                                 IQL{1}{1}, IQD{1}{1}, ...
+                                                 Lnew, Dnew);
+        end
+
+    elseif opts.splitting.additive
+
+        if opts.splitting.symmetric, lmax = s/2; else, lmax = s; end
+
+        tk = t(k);
 
         if opts.splitting.symmetric
             if not(eqn.LTV)
                 IQL1 = IQL{1};
                 IQD1 = IQD{1};
 
-                parfor n = 1:nmax
+                parfor l = 1:lmax
                     % Local copy of opts for parallelization
                     opts_par = opts;
-                    L1{n} = Lold; D1{n} = Dold;
-                    L2{n} = Lold; D2{n} = Dold;
+                    L1l = Lold;
+                    L2l = Lold;
+                    D1l = Dold;
+                    D2l = Dold;
 
-                    for k = 1:n
-                        [L2{n}, D2{n}, ~, opts_par, ~] ...
-                            = expF(eqn, opts_par, oper, ...
-                                   h / n, IQL1{n}, IQD1{n}, L2{n}, D2{n});
-                        [L2{n}, D2{n}] ...
-                            = expG(eqn, opts, oper, h / n, L2{n}, D2{n});
-                        [L1{n}, D1{n}] ...
-                            = expG(eqn, opts, oper, h / n, L1{n}, D1{n});
-                        [L1{n}, D1{n}, ~, opts_par, ~] ...
-                            = expF(eqn, opts_par, oper, ...
-                                   h / n, IQL1{n}, IQD1{n}, L1{n}, D1{n});
+                    for m = 1:l % No dependence on m, just do the operations l times
+                        [L2l, D2l, ~, opts_par, ~] = expF(eqn, opts_par, ...
+                                                              oper, h / l, ...
+                                                              IQL1{l}, ...
+                                                              IQD1{l}, ...
+                                                              L2l, D2l);
+
+                        [L2l, D2l] = expG(eqn, opts, oper, h / l, ...
+                                              L2l, D2l);
+
+                        [L1l, D1l] = expG(eqn, opts, oper, h / l, ...
+                                              L1l, D1l);
+
+                        [L1l, D1l, ~, opts_par, ~] = expF(eqn, opts_par, ...
+                                                              oper, h / l, ...
+                                                              IQL1{l}, ...
+                                                              IQD1{l}, ...
+                                                              L1l, D1l);
                     end
+                    L1{l} = L1l;
+                    L2{l} = L2l;
+                    D1{l} = D1l;
+                    D2{l} = D2l;
                 end
             else % Time-varying
-                parfor n = 1:nmax
+
+                parfor l = 1:lmax
                     % Local copy of opts for parallelization
                     opts_par = opts;
-                    L1{n} = Lold; D1{n} = Dold;
-                    L2{n} = Lold; D2{n} = Dold;
+                    L1l = Lold;
+                    L2l = Lold;
+                    D1l = Dold;
+                    D2l = Dold;
 
                     % New name, because otherwise Matlab complains that the
                     % temporary variable is used after the parfor-loop.
                     % (Even though it isn't.)
-                    [IQLpar, IQDpar] = ...
-                        IQ(eqn, opts_par, oper, tj + h*(0:n-1)/n, h, 1/n);
+                    [IQLpar, IQDpar] = IQ(eqn, opts_par, oper, ...
+                                          tk + h*(0:l-1)/l, h, 1/l);
 
-                    for k = 1:n
-                        tt = tj + (k-1) / n * h;
-                        [L2{n}, D2{n}, ~, opts_par, ~] ...
-                            = expF(eqn, opts_par, oper, ...
-                                   h / n, IQLpar{k}{1}, IQDpar{k}{1}, ...
-                                   L2{n}, D2{n}, tt);
-                        [L2{n}, D2{n}] = expG(eqn, opts, oper, h / n, ...
-                                              L2{n}, D2{n}, tt);
-                        [L1{n}, D1{n}] = expG(eqn, opts, oper, h / n, ...
-                                              L1{n}, D1{n}, tt);
-                        [L1{n}, D1{n}, ~, opts_par, ~] ...
-                            = expF(eqn, opts_par, oper, ...
-                                   h / n, IQLpar{k}{1}, IQDpar{k}{1}, ...
-                                   L1{n}, D1{n}, tt);
+                    for m = 1:l
+                        tt = tk + (m-1) / l * h;
+
+                        [L2l, D2l, ~, opts_par, ~] = expF(eqn, opts_par, ...
+                                                              oper, h / l, ...
+                                                              IQLpar{m}{1}, ...
+                                                              IQDpar{m}{1}, ...
+                                                              L2l, D2l, tt);
+
+                        [L2l, D2l] = expG(eqn, opts, oper, h / l, ...
+                                              L2l, D2l, tt);
+
+                        [L1l, D1l] = expG(eqn, opts, oper, h / l, ...
+                                              L1l, D1l, tt);
+
+                        [L1l, D1l, ~, opts_par, ~] = expF(eqn, opts_par, ...
+                                                              oper, h / l, ...
+                                                              IQLpar{m}{1}, ...
+                                                              IQDpar{m}{1}, ...
+                                                              L1l, D1l, tt);
                     end
+                    L1{l} = L1l;
+                    L2{l} = L2l;
+                    D1{l} = D1l;
+                    D2{l} = D2l;
                 end
             end
 
             % Stack the results
             Lnew = [cell2mat(L1), cell2mat(L2)];
 
-            for n = 1:nmax
-                D1{n} = gamma(n)*D1{n};
-                D2{n} = gamma(n)*D2{n};
-            end
+            D1 = cellfun(@times, D1, num2cell(gamma), 'UniformOutput', false);
+            D2 = cellfun(@times, D2, num2cell(gamma), 'UniformOutput', false);
+
             Dnew = blkdiag(D1{:}, D2{:});
 
             [Lnew, Dnew] = mess_column_compression(Lnew, 'N', Dnew, ...
-                opts.splitting.trunc_tol, opts.splitting.trunc_info);
+                                                   opts.splitting.trunc_tol, ...
+                                                   opts.splitting.trunc_info);
 
         else % Asymmetric case
             if not(eqn.LTV)
                 IQL1 = IQL{1};
                 IQD1 = IQD{1};
 
-                parfor n = 1:nmax
+                parfor l = 1:lmax
                     % Local copy of opts for parallelization
                     opts_par = opts;
-                    L1{n} = Lold; D1{n} = Dold;
+                    L1l = Lold;
+                    D1l = Dold;
 
-                    for k = 1:n
-                        [L1{n}, D1{n}] ...
-                            = expG(eqn, opts, oper, h / n, L1{n}, D1{n});
-                        [L1{n}, D1{n}, ~, opts_par, ~] ...
-                            = expF(eqn, opts_par, oper, ...
-                                   h / n, IQL1{n}, IQD1{n}, L1{n}, D1{n});
+                    for m = 1:l % No dependence on m, just do the operations l times
+                        [L1l, D1l] = expG(eqn, opts, oper, h / l, ...
+                                              L1l, D1l);
+
+                        [L1l, D1l, ~, opts_par, ~] = expF(eqn, opts_par, ...
+                                                              oper, h / l, ...
+                                                              IQL1{l}, ...
+                                                              IQD1{l}, ...
+                                                              L1l, D1l);
                     end
-                end
+                    L1{l} = L1l;
+                    D1{l} = D1l;
+                 end
             else % Time-varying case
-                parfor n = 1:nmax
+                parfor l = 1:lmax
                     % Local copy of opts for parallelization
                     opts_par = opts;
-                    L1{n} = Lold; D1{n} = Dold;
+                    L1l = Lold;
+                    D1l = Dold;
 
                     % New name, because otherwise Matlab complains that the
                     % temporary variable is used after the parfor-loop.
                     % (Even though it isn't.)
-                    [IQLpar, IQDpar] = ...
-                        IQ(eqn, opts_par, oper, tj + h*(0:n-1)/n, h, 1/n);
+                    [IQLpar, IQDpar] = IQ(eqn, opts_par, oper, ...
+                                          tk + h*(0:l-1)/l, h, 1/l);
 
-                    for k = 1:n
-                        tt = tj + (k-1) / n * h;
-                        [L1{n}, D1{n}] = expG(eqn, opts, oper, h / n, ...
-                                              L1{n}, D1{n}, tt);
-                        [L1{n}, D1{n}, ~, opts_par, ~] ...
-                            = expF(eqn, opts_par, oper, ...
-                                   h / n, IQLpar{k}{1}, IQDpar{k}{1}, ...
-                                   L1{n}, D1{n}, tt);
+                    for m = 1:l
+                        tt = tk + (m-1) / l * h;
+
+                        [L1l, D1l] = expG(eqn, opts, oper, h / l, ...
+                                              L1l, D1l, tt);
+
+                        [L1l, D1l, ~, opts_par, ~] = expF(eqn, opts_par, ...
+                                                              oper, h / l, ...
+                                                              IQLpar{m}{1}, ...
+                                                              IQDpar{m}{1}, ...
+                                                              L1l, D1l, tt);
                     end
-                end
+                    L1{l} = L1l;
+                    D1{l} = D1l;
+                 end
             end
 
             % Stack the results
             Lnew = cell2mat(L1);
 
-            for n = 1:nmax
-                D1{n} = gamma(n)*D1{n};
-            end
+            D1 = cellfun(@times, D1, num2cell(gamma), 'UniformOutput', false);
+
             Dnew = blkdiag(D1{:});
 
             [Lnew, Dnew] = mess_column_compression(Lnew, 'N', Dnew, ...
@@ -691,23 +731,22 @@ for j = 1: Nt
     end
 
     if opts.splitting.intermediates
-        Ls{j+1} = Lnew; Ds{j+1} = Dnew;
+        Ls{k+1} = Lnew;
+        Ds{k+1} = Dnew;
     else
-        Ls = Lnew; Ds = Dnew;
+        Ls = Lnew;
+        Ds = Dnew;
     end
-    ms(j+1) = size(Dnew, 1);
+    ms(k+1) = size(Dnew, 1);
 
     % Store feedback term K as well. We have
     %  (T): K = B' LDL' E = (E'*LDL'*B)' and
     %  (N): K = C LDL' E = (E'*LDL'*C')'
-    % The extra transpose is because we can only multiply with E from the
-    % left.
+    % The extra transpose is because we can only multiply with E from the left.
     if eqn.type == 'T'
-        Ks{j+1} = ...
-          (oper.mul_E(eqn, opts, 'T', Lnew*(Dnew*(Lnew'*eqn.B)), 'N'))';
+        Ks{k+1} = (oper.mul_E(eqn, opts, 'T', Lnew*(Dnew*(Lnew'*eqn.B)), 'N'))';
     elseif eqn.type == 'N'
-        Ks{j+1} = ...
-          (oper.mul_E(eqn, opts, 'T', Lnew*(Dnew*(Lnew'*eqn.C')), 'N'))';
+        Ks{k+1} = (oper.mul_E(eqn, opts, 'T', Lnew*(Dnew*(Lnew'*eqn.C')),'N'))';
     end
 
 end
@@ -718,11 +757,9 @@ out.Ds = fliplr(Ds);
 out.ms = flipud(ms);
 out.Ks = fliplr(Ks);
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % finalize usfs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 [eqn, opts, oper] = oper.mul_E_post(eqn, opts, oper);
 
-
- end
+end

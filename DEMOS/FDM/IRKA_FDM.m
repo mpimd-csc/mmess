@@ -22,14 +22,14 @@ function [Er,Ar,Br,Cr] = IRKA_FDM(n0,r,istest)
 %
 % Outputs
 %
-% Ar, Br, Cr  the reduced orde system matrices.
+% Ar, Br, Cr  the reduced order system matrices.
 %
 % References
 % [1] A. C. Antoulas, Approximation of Large-Scale Dynamical Systems, Vol.
 %     6 of Adv. Des. Control, SIAM Publications, Philadelphia, PA, 2005.
 %     https://doi.org/10.1137/1.9780898718713
 %
-% [2] T. Penzl, Lyapack Users Guide, Tech. Rep. SFB393/00-33,
+% [2] T. Penzl, LyaPack Users Guide, Tech. Rep. SFB393/00-33,
 %     Sonderforschungsbereich 393 Numerische Simulation auf massiv
 %     parallelen Rechnern, TU Chemnitz, 09107 Chemnitz, Germany,
 %     available from http://www.tu-chemnitz.de/sfb393/sfb00pr.html (2000).
@@ -37,7 +37,7 @@ function [Er,Ar,Br,Cr] = IRKA_FDM(n0,r,istest)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

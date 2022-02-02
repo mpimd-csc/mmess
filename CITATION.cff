@@ -1,0 +1,53 @@
+# YAML 1.2
+---
+abstract: |
+    "M-M.E.S.S.   provides low-rank solvers for large-scale symmetric matrix equations
+           with sparse or sparse + low rank coefficients. The main focus is on
+           differential and algebraic Riccati equations appearing in control and model
+           order reduction, as well as algebraic Lyapunov equations for, e.g., balanced
+           truncation.
+    
+           The  underlying  dynamical  system may be of first or second order and 
+           structured proper differential algebraic equations (DAEs) that allow for
+           implicit index reduction are also supported.
+    
+           The  solvers philosophy is to always work on the implicitly linearized (for
+           second order systems) and/or implicitly projected (in the DAE case) matrix
+           equations. That means the implicit Lyapunov or Riccati equation is always of
+           the form known for a standard first order ODE, that may have a non identity
+           but invertible E matrix.
+    
+           Further, M-M.E.S.S. provides functions for Balanced Truncation and
+           (tangential) iterative rational Krylov algorithm (IRKA) for model order 
+           reduction (MOR) of first order state space systems and some examples
+           demonstrate the use of the algorithms in MOR of second order systems and DAEs.
+    
+           In close relation to the predecessor LyaPack, we use user supplied functions
+           (usfs) that implement the actions of the system matrices E and A in 
+           multiplication  and  (shifted) solves. We provide those functions for
+           standard state space systems, second order systems, structured DAEs of
+           index 1 and 2, as well as second order DAEs of index 1, 2 and 3. For more
+           information on usfs see help mess_usfs."
+authors: 
+  -
+    affiliation: "Max Planck Institute for Dynamics of Complex Technical Systems"
+    family-names: Saak
+    given-names: Jens
+    orcid: "https://orcid.org/0000-0001-5567-9637"
+  -
+    affiliation: "Max Planck Institute for Dynamics of Complex Technical Systems"
+    family-names: "Köhler"
+    given-names: Martin
+    orcid: "https://orcid.org/0000-0003-2338-9904"
+  -
+    affiliation: "Max Planck Institute for Dynamics of Complex Technical Systems"
+    family-names: Benner
+    given-names: Peter
+    orcid: "https://orcid.org/0000-0003-3362-4103"
+cff-version: "1.2.0"
+doi: "10.5281/zenodo.5938237"
+license: "BSD 2-Clause"
+message: "If you use this software, please cite it using these metadata."
+title: "M-M.E.S.S. -- Matrix Equations Sparse Solvers for MATLAB and Octave"
+version: "2.2"
+...

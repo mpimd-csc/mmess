@@ -37,7 +37,7 @@ function BT_TripleChain(variant, istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -92,7 +92,7 @@ opts.shifts.num_desired=5;
 opts.shifts.info=0;
 opts.shifts.method = 'projection';
 %%
-% Compute controlability Gramian factor
+% Compute controllability Gramian factor
 eqn.type = 'N';
 t_mess_lradi = tic;
 outB = mess_lradi(eqn, opts, oper);
@@ -104,8 +104,8 @@ if istest
    end
 else
     figure(1);
-    semilogy(outB.res,'linewidth',3);
-    title('0= AXM^T + MXA^T -BB^T');
+    semilogy(outB.res,'LineWidth',3);
+    title('0= A X E^T + E X A^T - BB^T');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
@@ -129,8 +129,8 @@ if istest
    end
 else
     figure(2);
-    semilogy(outC.res,'linewidth',3);
-    title('0= A^TXM + M^TXA -C^TC');
+    semilogy(outC.res,'LineWidth',3);
+    title('0 = A^T X E + E^T X A - C^T C');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);

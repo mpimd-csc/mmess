@@ -1,8 +1,8 @@
 function [ out, eqn, opts, oper ]=mess_accumulateK(eqn, opts, oper, out, pc, V1, V2)
 % Updates out.Knew and out.DeltaK
 %
-%  K = E'ZZ'B if eqn.type == 'N'
-%  K = EZZ'C' if eqn.type == 'T'
+%  K = E' ZZ' B if eqn.type == 'N'
+%  K = E ZZ' C' if eqn.type == 'T'
 %
 %
 % Input:
@@ -32,7 +32,7 @@ function [ out, eqn, opts, oper ]=mess_accumulateK(eqn, opts, oper, out, pc, V1,
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -48,17 +48,17 @@ end
 %% preprocess multiplication with E
 [eqn, opts, oper] = oper.mul_E_pre(eqn, opts, oper);
 
-%% update K and DektaK
+%% update K and DeltaK
 if isempty(pc)
     if eqn.haveE
         if opts.LDL_T
             % no separate BDF case; the computed K is not the
             % feedback matrix for the ARE resulting in a time
-            % step of the BDF mathod but the feedback matrix of
-            % the original DRE; thats why tau and beta don't
+            % step of the BDF method but the feedback matrix of
+            % the original DRE; that is why tau and beta do not
             % appear in K, e.g. as factor of B; for residual
             % computations of the ARE tau and beta need to be
-            % taken into acount.
+            % taken into account.
             if eqn.type == 'T'
                 out.Knew = oper.mul_E(eqn, opts,eqn.type,V1 ...
                 *(out.D * (V1'*eqn.B)),'N');
@@ -96,11 +96,11 @@ else
                     if opts.LDL_T
                         % no separate BDF case; the computed K is not the
                         % feedback matrix for the ARE resulting in a time
-                        % step of the BDF mathod but the feedback matrix of
-                        % the original DRE; thats why tau and beta don't
+                        % step of the BDF method but the feedback matrix of
+                        % the original DRE; that is why tau and beta do not
                         % appear in K, e.g. as factor of B; for residual
                         % computations of the ARE tau and beta need to be
-                        % taken into acount.
+                        % taken into account.
                         K_update = oper.mul_E(eqn, opts,eqn.type,V1,'N')*...
                             ((2*(-pc) * diag(eqn.S_diag))*(V1'*eqn.B));
                     else

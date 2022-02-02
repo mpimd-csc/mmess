@@ -48,7 +48,7 @@ function [Z, D, K] = mess_care(varargin)
 %        To get only the solution factor Z as output use:
 %   [Z, D] = mess_care(A, B, C, S, E)
 %
-%   If S is emptry, matrices A,B and E can be given as Z = mess_lyap(sys)
+%   If S is empty, matrices A,B and E can be given as Z = mess_lyap(sys)
 %   with sys = sparss(A, B , C_ ,D , E) a continuous-time first-order sparse
 %   state-space object of the following form:
 %                   E*x'(t) = A*x(t)  + B*u(t)
@@ -59,7 +59,7 @@ function [Z, D, K] = mess_care(varargin)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -73,7 +73,7 @@ ni = nargin;
 no = nargout;
 
 %% Equation type
-if ni==1 && isa(varargin{1}, 'sparss')
+if (ni == 1) && isa(varargin{1}, 'sparss')
     [eqn, oper] = mess_wrap_sparss(varargin{1});
     eqn.type = 'T';
     if(exist('eqn.D', 'var'))
@@ -97,22 +97,22 @@ else
             eqn.haveE = 0;
         elseif ni == 5
             eqn.haveE = 1;
-            eqn.E_    = varargin{5};
+            eqn.E_ = varargin{5};
         else
             error('MESS:notimplemented', 'Wrong number of input arguments');
         end
     else % Z*D*Z' case.
         opts.LDL_T = 1;
-        eqn.A_     = varargin{1};
-        eqn.B      = varargin{2};
-        eqn.C      = varargin{3};
-        eqn.S      = varargin{4};
+        eqn.A_ = varargin{1};
+        eqn.B = varargin{2};
+        eqn.C = varargin{3};
+        eqn.S = varargin{4};
 
         if ni == 4
             eqn.haveE = 0;
         elseif ni == 5
             eqn.haveE = 1;
-            eqn.E_    = varargin{5};
+            eqn.E_ = varargin{5};
         else
             error('MESS:notimplemented', 'Feature not yet implemented!');
         end
@@ -140,6 +140,7 @@ opts.radi.info         = 0;
 opts.radi.trunc_tol    = 1.0e-13;
 
 switch no
+
     case 1
         % Compute only K.
         opts.radi.compute_sol_fac = 0;
@@ -159,9 +160,9 @@ out = mess_lrradi(eqn, opts, oper);
 
 if out.res(end) > opts.radi.res_tol
     warning('MESS:convergence', ...
-        ['Convergence of solution only up to relative residual of %e!\n' ...
-        'Check mess_lrnm and mess_lrradi for customizable solvers.'], ...
-        out.res(end));
+            ['Convergence of solution only up to relative residual of %e!\n' ...
+             'Check mess_lrnm and mess_lrradi for customizable solvers.'], ...
+            out.res(end));
 end
 
 %% Prepare output

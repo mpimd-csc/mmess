@@ -16,7 +16,7 @@ function closed_step(eqn,Ar,Br,Cr,problem,K,Kr,istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -56,8 +56,8 @@ else
     figure();
     hold on;
     for j=1:size(eqn.C,1)
-        plot(T(taurange),y(j,taurange),colors(j),'linewidth',3);
-        plot(T(taurange),yr(j,taurange),strcat(colors(j),'--'),'linewidth',3);
+        plot(T(taurange),y(j,taurange),colors(j),'LineWidth',3);
+        plot(T(taurange),yr(j,taurange),strcat(colors(j),'--'),'LineWidth',3);
     end
     xlabel('time');
     ylabel('magnitude of outputs');
@@ -74,7 +74,7 @@ else
     %%
     figure();
     for j=1:size(eqn.C,1)
-        semilogy(T(taurange),abserr(j,taurange),colors(j),'linewidth',3);
+        semilogy(T(taurange),abserr(j,taurange),colors(j),'LineWidth',3);
         if 1==j, hold on; end
     end
     xlabel('time');
@@ -91,7 +91,7 @@ else
     figure();
 
     for j=1:size(eqn.C,1)
-        semilogy(T(taurange),relerr(j,taurange),colors(j),'linewidth',3);
+        semilogy(T(taurange),relerr(j,taurange),colors(j),'LineWidth',3);
         if 1==j, hold on; end
     end
     xlabel('time');

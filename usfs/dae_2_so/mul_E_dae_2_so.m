@@ -1,5 +1,5 @@
 function C = mul_E_dae_2_so(eqn, opts, opE, B, opB)%#ok<INUSL>
-%% function mul_A perfoms operation C = opE(E_)*opB(B)
+%% function mul_A performs operation C = opE(E_)*opB(B)
 %
 % Input:
 %   eqn     structure contains field E_
@@ -23,13 +23,13 @@ function C = mul_E_dae_2_so(eqn, opts, opE, B, opB)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 
-%% check input Paramters
+%% check input Parameters
 if (not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opE or opB is not a char');
 end
@@ -53,7 +53,7 @@ for mat='MG'
     end
 end
 
-%% perfom multiplication
+%% perform multiplication
 nv = size(eqn.M_,1);
 np = size(eqn.G_,1);
 
@@ -130,7 +130,7 @@ elseif (opB=='N' && (size(B,1)==(2*nv))) || (opB=='T' && (size(B,2)==(2*nv)))
 
     end
 else
-    error('MESS:error_arguemnts', 'B has wrong number of cols');
+    error('MESS:error_arguments', 'B has wrong number of cols');
 end
 
 end

@@ -14,7 +14,7 @@ function X = lyap2solve(A,B)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -23,51 +23,52 @@ function X = lyap2solve(A,B)
 m = size(A,1);
 n = size(B,2);
 
-[Q,R]=schur(A);
+[Q,R] = schur(A);
 idx = m:-1:1;
 
-Q2=Q(:,idx);
-R2=R(idx,idx)';
+Q2 = Q(:,idx);
+R2 = R(idx,idx)';
 
 B = Q'*B*Q2;
 
 Rsq = R*R;
-I=speye(m);
-j=1;
+Id = speye(m);
+k = 1;
 
-X=zeros(size(A));
+X = zeros(size(A));
 
-while (j < n+1)
+while k < (n+1)
 
-  if j==n ||...
-          (j<n  && ...
-           abs(R2(j+1,j)) < 10 * eps * max(abs(R2(j,j)), abs(R2(j+1,j+1))))
+    if k==n || ...
+       (k<n  && ...
+        abs(R2(k+1,k)) < 10.0 * eps * max(abs(R2(k,k)), abs(R2(k+1,k+1))))
 
-      if (j>1)
-          b = -B(:,j) - X(:,1:j-1)*R2(1:j-1,j);
-      else
-          b = -B(:,j) ;
-      end
-      X(:,j) = (R+R2(j,j)*I)\b;
-      j = j +1;
-  else
+        if k>1
+            b = -B(:,k) - X(:,1:k-1)*R2(1:k-1,k);
+        else
+            b = -B(:,k);
+        end
 
-      r11 = R2(j,j);  r12 = R2(j,j+1);
-      r21 = R2(j+1,j); r22 = R2(j+1,j+1);
+        X(:,k) = (R+R2(k,k)*Id)\b;
+        k = k + 1;
+    else
 
-      if (j>1)
-          b = -B(:,j:j+1) - X(:,1:j-1)*R2(1:j-1,j:j+1);
-      else
-          b = -B(:,j:j+1);
-      end
-      b = [R*b(:,1)+r22*b(:,1)-r21*b(:,2), R*b(:,2)+r11*b(:,2)-r12*b(:,1)];
+        r11 = R2(k,k);   r12 = R2(k,k+1);
+        r21 = R2(k+1,k); r22 = R2(k+1,k+1);
 
-      X(:,j:j+1) = ( Rsq+(r11+r22)*R + (r11*r22-r12*r21)*I)\b;
+        if k>1
+            b = -B(:,k:k+1) - X(:,1:k-1)*R2(1:k-1,k:k+1);
+        else
+            b = -B(:,k:k+1);
+        end
 
-      j = j + 2;
-  end
+        b = [R*b(:,1)+r22*b(:,1)-r21*b(:,2), R*b(:,2)+r11*b(:,2)-r12*b(:,1)];
+
+        X(:,k:k+1) = (Rsq+(r11+r22)*R + (r11*r22-r12*r21)*Id)\b;
+
+        k = k + 2;
+    end
 end
 
 X = Q*X*Q2';
-
 

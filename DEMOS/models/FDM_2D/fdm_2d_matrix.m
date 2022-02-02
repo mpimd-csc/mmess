@@ -3,7 +3,7 @@ function [A, name] = fdm_2d_matrix(n0,fx_str,fy_str,g_str)
 %  Generates the stiffness matrix A for the finite difference
 %  discretization (equidistant grid) of the PDE
 %
-%   laplace(u) - fx du/dx - fy du/dy - g u   =   r.h.s.     on Omega
+%   Laplace(u) - fx du/dx - fy du/dy - g u   =   r.h.s.     on Omega
 %
 %                                        u   =   0          on dOmega
 %

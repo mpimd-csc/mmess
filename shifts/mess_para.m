@@ -1,10 +1,10 @@
-function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opts, oper)
+function [p, out, eqn, opts, oper] = mess_para(eqn, opts, oper)
 %
 %  Estimation of suboptimal ADI shift parameters for the matrix (operator) F=A
 %
 %  Calling sequence:
 %
-%    [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opts, oper)
+%    [p, out, eqn, opts, oper] = mess_para(eqn, opts, oper)
 %
 %  Input:
 %
@@ -18,13 +18,18 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 %
 %    p         an opts.shifts.num_desired- or opts.shifts.num_desired+1-vector of
 %              suboptimal ADI parameters;
-%    err_code  Error code; = 1, if Ritz values with positive real parts
-%              have been encountered; otherwise, err_code = 0;
-%    rw        vector containing the Ritz values;
-%    Hp        Hessenberg matrix in Arnoldi process w.r.t. F;
-%    Hm        Hessenberg matrix in Arnoldi process w.r.t. inv(F);
-%    Vp        Orthogonal matrix in Arnoldi process w.r.t. F;
-%    Vm        Orthogonal matrix in Arnoldi process w.r.t. inv(F);
+%
+%    out       outputstructure potentially containing the following fields
+%              (depending on the method used): 
+%    out.err_code  Error code = 1, if Ritz values with positive real parts
+%                  have been encountered; otherwise, err_code = 0;
+%    out.rw        vector containing the Ritz values;
+%    out.Hp        Hessenberg matrix in Arnoldi process w.r.t. F;
+%    out.Hm        Hessenberg matrix in Arnoldi process w.r.t. inv(F);
+%    out.Vp        Orthogonal matrix in Arnoldi process w.r.t. F;
+%    out.Vm        Orthogonal matrix in Arnoldi process w.r.t. inv(F);
+%
+%    eqn, opts, oper  potentially altered versions of the above inputs.
 %
 % Input fields in struct eqn:
 %
@@ -81,7 +86,7 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 %                             (optional, default: 0)
 %
 %   opts.shifts.method        possible  values:
-%                             'heuristic', ('heur','Penzl','penzl')
+%                             'heuristic', ('heur', 'Penzl', 'penzl')
 %                                for Penzl's heuristics.
 %                             'wachspress', ('Wachspress')
 %                                for asymptotically optimal Wachspress
@@ -104,7 +109,7 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 %                             reciprocal are truncated.
 %                             (optional, default: [])
 %
-%   opts.shifts.banned        array of shift paramater values that the
+%   opts.shifts.banned        array of shift parameter values that the
 %                             ADI will not use.
 %                             shift parameter computation will remove all
 %                             shifts in a neighborhood of the banned
@@ -147,7 +152,7 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 %      Germany, shaker Verlag, ISBN 978-3-8440-4385-3 (Apr. 2016).
 %      URL http://hdl.handle.net/11858/00-001M-0000-0029-CE18-2
 %
-%   uses operatorfunction size
+%   uses operator function size
 %   and indirectly requires
 %   (heuristic and wachspress shifts)
 %    - size, sol_A, mul_A, sol_E, mul_E in mess_arn
@@ -157,13 +162,10 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
-
-
-%  MMESS (Jens Saak, October 2013)
 
 % Input data not completely checked!
 
@@ -171,46 +173,61 @@ function [p, err_code, rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_para(eqn, opt
 
 if not(isfield(opts.shifts,'method'))
     opts.shifts.method='heuristic';
-    warning('MESS:control_data','Missing shift parameter selection method. Switching to default: heuristic shifts');
+    warning('MESS:control_data', ...
+        ['Missing shift parameter selection method. ', ...
+         'Switching to default: heuristic shifts']);
 end
 
 if not(isfield(opts,'shifts')) || not(isstruct(opts.shifts))
-    warning('MESS:control_data',['shift parameter control structure missing.', ...
-        'Switching to default num_desired = 25, num_Ritz = 50, num_hRitz = 25.']);
+    warning('MESS:control_data',...
+        ['shift parameter control structure missing. ', ...
+         'Switching to defaults: ', ...
+         'num_desired = 25, num_Ritz = 50, num_hRitz = 25.']);
     opts.shifts.num_desired = 25;
     opts.shifts.num_Ritz = 50;
     opts.shifts.num_hRitz = 25;
 else
-    if not(isfield(opts.shifts,'num_desired'))||not(isnumeric(opts.shifts.num_desired))
+    if not(isfield(opts.shifts,'num_desired')) || ...
+            not(isnumeric(opts.shifts.num_desired))
         warning('MESS:control_data',...
             ['Missing or Corrupted opts.shifts.num_desired field.', ...
             'Switching to default: 25']);
         opts.shifts.num_desired = 25;
     end
-    if strcmp(opts.shifts.method,'heur')&&...
-       (not(isfield(opts.shifts,'num_Ritz'))||not(isnumeric(opts.shifts.num_Ritz)))
+    if strcmp(opts.shifts.method,'heur') && ...
+       (not(isfield(opts.shifts,'num_Ritz')) || ...
+       not(isnumeric(opts.shifts.num_Ritz)))
         warning('MESS:control_data',...
             ['Missing or Corrupted opts.shifts.num_Ritz field.', ...
             'Switching to default: 50']);
         opts.shifts.num_Ritz = 50;
     end
-    if strcmp(opts.shifts.method,'heur')&&...
-       (not(isfield(opts.shifts,'num_hRitz'))||not(isnumeric(opts.shifts.num_hRitz)))
+    if strcmp(opts.shifts.method,'heur') && ...
+       (not(isfield(opts.shifts,'num_hRitz')) || ...
+        not(isnumeric(opts.shifts.num_hRitz)))
         warning('MESS:control_data',...
             ['Missing or Corrupted opts.shifts.num_hRitz field.', ...
             'Switching to default: 25']);
         opts.shifts.num_hRitz = 25;
     end
 end
+
 if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
+
 if not(isfield(eqn, 'type')), eqn.type = 'N'; end
+
 [result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
+
 if not(result)
-    error('MESS:control_data', 'system data is not completely defined or corrupted');
+    error('MESS:control_data', ...
+        'system data is not completely defined or corrupted');
 end
-err_code = 0;
-if not(isfield(opts,'rosenbrock')), opts.rosenbrock=[]; end
-if isstruct(opts.rosenbrock)&&isfield(opts.rosenbrock,'tau')
+
+out.err_code = 0;
+
+rosenbrock = 0;
+if isfield(opts,'rosenbrock') && isstruct(opts.rosenbrock) && ...
+        isfield(opts.rosenbrock,'tau')
     rosenbrock = 1;
     if opts.rosenbrock.stage == 1
         pc = -1 / (2 * opts.rosenbrock.tau);
@@ -219,16 +236,15 @@ if isstruct(opts.rosenbrock)&&isfield(opts.rosenbrock,'tau')
         taugamma = (opts.rosenbrock.tau * opts.rosenbrock.gamma);
         pc = ( - 0.5) / taugamma;
     end
-else
-    rosenbrock = 0;
 end
-if not(isfield(opts,'bdf')), opts.bdf=[]; end
-if isstruct(opts.bdf) && isfield(opts.bdf, 'tau') && isfield(opts.bdf, 'beta')
+
+bdf = 0;
+if isfield(opts,'bdf') && isstruct(opts.bdf) && ...
+        isfield(opts.bdf, 'tau') && isfield(opts.bdf, 'beta')
     bdf = 1;
     pc = -1 / (2 * opts.bdf.tau * opts.bdf.beta);
-else
-    bdf = 0;
 end
+
 
 if not(isfield(opts.shifts, 'banned')) ...
         || not(isnumeric(opts.shifts.banned))
@@ -253,65 +269,60 @@ end
 
 %%
 switch opts.shifts.method
-    case {'heur','heuristic','penzl','Penzl'}
+    case {'heur', 'heuristic', 'penzl', 'Penzl'}
         %%
-        if isfield(oper,'get_ritz_vals')
+        if isfield(oper, 'get_ritz_vals')
+            [rw, out.Hp, out.Hm, out.Vp, out.Vm, eqn, opts, oper] = ...
+                oper.get_ritz_vals(eqn, opts, oper);
+        else
+            [rw, out.Hp, out.Hm, out.Vp, out.Vm, eqn, opts, oper] = ...
+                mess_get_ritz_vals(eqn, opts, oper);
+        end
+
+        p = mess_mnmx(rw, opts.shifts.num_desired);
+
+    case {'wachspress', 'Wachspress'}
+        %%
+        if isfield(oper, 'get_ritz_vals')
             if nargout < 4
-                rw = oper.get_ritz_vals(eqn,opts,oper);
+                rw = oper.get_ritz_vals(eqn, opts, oper);
             else
-                [rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = oper.get_ritz_vals(eqn,opts,oper);
+                [rw, out.Hp, out.Hm, out.Vp, out.Vm, eqn, opts, oper] = ...
+                    oper.get_ritz_vals(eqn, opts, oper);
             end
         else
             if nargout < 4
-                rw = mess_get_ritz_vals(eqn,opts,oper);
+                rw = mess_get_ritz_vals(eqn, opts, oper);
             else
-                [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_get_ritz_vals(eqn,opts,oper);
+                [rw, out.Hp, out.Hm, out.Vp, out.Vm, eqn, opts, oper] = ...
+                    mess_get_ritz_vals(eqn, opts, oper);
             end
         end
 
-        p = mess_mnmx(rw,opts.shifts.num_desired);
+        a = min(abs(real(rw)));
+        b = max(abs(real(rw)));
+        alpha = atan(max(imag(rw) ./ real(rw)));
 
-    case {'wachspress','Wachspress'}
-        %%
-        if isfield(oper,'get_ritz_vals')
-            if nargout < 4
-                rw = oper.get_ritz_vals(eqn,opts,oper);
-            else
-                [rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = oper.get_ritz_vals(eqn,opts,oper);
-            end
-        else
-            if nargout < 4
-                rw = mess_get_ritz_vals(eqn,opts,oper);
-            else
-                [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = mess_get_ritz_vals(eqn,opts,oper);
-            end
-        end
-
-        a=min(abs(real(rw)));
-        b=max(abs(real(rw)));
-        alpha=atan(max(imag(rw)./real(rw)));
-
-        if not(isfield(opts.shifts,'wachspress'))
-            opts.shifts.wachspress='T';
+        if not(isfield(opts.shifts, 'wachspress'))
+            opts.shifts.wachspress = 'T';
         end
         switch opts.shifts.wachspress
             case 'N'
                 p = mess_wachspress_n(a,b,alpha,opts.shifts.num_desired);
             case 'T'
-                if isfield(opts,'nm') && isfield(opts.nm,'inexact') && isa(opts.nm.inexact,'char')
-                    tol=opts.adi.outer_tol;
+                if isfield(opts,'nm') && ...
+                        isfield(opts.nm,'inexact') &&...
+                        isa(opts.nm.inexact,'char')
+                    tol = opts.adi.outer_tol;
                 else
                     tol=opts.adi.res_tol;
                 end
-                p = mess_wachspress(a,b,alpha,tol);
+                p = mess_wachspress(a, b, alpha, tol);
             otherwise
-                error('MESS:shift_method','wachspress selector needs to be either ''T'' or ''N''');
+                error('MESS:shift_method',...
+                      'wachspress selector needs to be either ''T'' or ''N''');
         end
     case 'projection'
-        if nargout > 3
-            error('MESS:shift_method', ...
-                'For shift method ''projection'' matrices Hp, Hm, Vp and Vm are not available.');
-        end
         if isfield(eqn, 'G')
             U = eqn.G;
         elseif eqn.type == 'N'
@@ -326,51 +337,24 @@ switch opts.shifts.method
         i = 1;
         while isempty(p)
             if bdf
-                if isfield(oper,'get_ritz_vals')
-                    p = oper.get_ritz_vals(eqn, opts, oper, U, ...
-                        (opts.bdf.tau * opts.bdf.beta) * ...
-                        oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N'), []);
-                else
-                    p = mess_projection_shifts(eqn, opts, oper, U, ...
-                        (opts.bdf.tau * opts.bdf.beta) * ...
-                        oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N'), []);
-                end
+                AU = (opts.bdf.tau * opts.bdf.beta) * ...
+                    oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N');
+
             elseif rosenbrock
-                if eqn.haveUV
+                AU = taugamma * ...
+                    oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N');
+                    
+                if isfield(eqn, 'haveUV') && eqn.haveUV
                     if eqn.type == 'N'
-                        if isfield(oper,'get_ritz_vals')
-                            p = oper.get_ritz_vals(eqn, opts, oper, U, ...
-                                taugamma * oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N') ...
-                                + eqn.U * (eqn.V' * U) , []);
-                        else
-                            p = mess_projection_shifts(eqn, opts, oper, U, ...
-                                taugamma * oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N') ...
-                                + eqn.U * (eqn.V' * U) , []);
-                        end
+                        AU = AU + eqn.U * (eqn.V' * U);
                     else
-                        if isfield(oper,'get_ritz_vals')
-                            p = oper.get_ritz_vals(eqn, opts, oper, U, ...
-                                taugamma * oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N') ...
-                                + eqn.V * (eqn.U' * U) , []);
-                        else
-                            p = mess_projection_shifts(eqn, opts, oper, U, ...
-                                taugamma * oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N') ...
-                                + eqn.V * (eqn.U' * U) , []);
-                        end
-                    end
-                else
-                    if isfield(oper,'get_ritz_vals')
-                        p = oper.get_ritz_vals(eqn, opts, oper, U, ...
-                            taugamma * oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N') ...
-                            , []);
-                    else
-                        p = mess_projection_shifts(eqn, opts, oper, U, ...
-                            taugamma * oper.mul_ApE(eqn, opts, eqn.type, pc, eqn.type, U, 'N') ...
-                            , []);
+                        AU = AU + eqn.V * (eqn.U' * U);
                     end
                 end
+                
             else
                 AU = oper.mul_A(eqn, opts, eqn.type, U, 'N');
+
                 if isfield(eqn, 'haveUV') && eqn.haveUV
                     if eqn.type == 'T'
                         AU = AU + eqn.V * (eqn.U' * U);
@@ -378,25 +362,31 @@ switch opts.shifts.method
                         AU = AU + eqn.U * (eqn.V' * U);
                     end
                 end
-                if isfield(oper,'get_ritz_vals')
-                    p = oper.get_ritz_vals(eqn, opts, oper, U, AU, []);
-                else
-                    p = mess_projection_shifts(eqn, opts, oper, U, AU, []);
-                end
             end
+
+            if isfield(oper,'get_ritz_vals')
+                p = oper.get_ritz_vals(eqn, opts, oper, U, AU, []);
+            else
+                p = mess_projection_shifts(eqn, opts, oper, U, AU, []);
+            end
+
             if isempty(p)
                 if  (i < 5)
-                    warning('MESS:mess_para',['Could not compute initial projection shifts. ',...
+                    warning('MESS:mess_para', ...
+                        ['Could not compute initial projection shifts. ',...
                         'Going to retry with random right hand side.']);
                     U = rand(size(U));
                 else
-                    error('MESS:mess_para','Could not compute initial projection shifts.');
+                    error('MESS:mess_para', ...
+                        'Could not compute initial projection shifts.');
                 end
             end
+            
             i = i + 1;
         end
     otherwise
-        error('MESS:shift_method','unknown shift computation method requested.');
+        error('MESS:shift_method', ...
+            'unknown shift computation method requested.');
 end
 
 %% check computed shifts
@@ -414,7 +404,7 @@ if isempty(p) % if all shifts banned try again with double amount
         num_desired = opts.shifts.num_desired;
         opts.shifts.num_desired = num_desired * 2;
         opts.shifts.recursion_level = opts.shifts.recursion_level + 1;
-        p = mess_para(eqn, opts, oper);
+        [p , ~, eqn, opts, oper] = mess_para(eqn, opts, oper);
         opts.shifts.num_desired = num_desired;
         opts.shifts.recursion_level = opts.shifts.recursion_level - 1;
     end
@@ -422,10 +412,9 @@ end
 
 p = mess_make_proper(p);
 
-
 %% finalize usfs
-[eqn,opts, oper] = oper.mul_A_post(eqn, opts, oper);
-[eqn,opts, oper] = oper.mul_E_post(eqn, opts, oper);
-[eqn,opts, oper] = oper.sol_A_post(eqn, opts, oper);
-[eqn,opts, oper] = oper.sol_E_post(eqn, opts, oper);
+[eqn, opts, oper] = oper.mul_A_post(eqn, opts, oper);
+[eqn, opts, oper] = oper.mul_E_post(eqn, opts, oper);
+[eqn, opts, oper] = oper.sol_A_post(eqn, opts, oper);
+[eqn, opts, oper] = oper.sol_E_post(eqn, opts, oper);
 end

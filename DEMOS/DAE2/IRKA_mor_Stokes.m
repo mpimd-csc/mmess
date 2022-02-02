@@ -11,7 +11,7 @@ function IRKA_mor_Stokes(istest)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -61,7 +61,7 @@ t_eval_ROM = tic;
 %% Evaluate the ROM quality
 % while the Gramians are computed exploiting the DAE structure, due to the
 % construction of the function handles we can not do so for the transfer
-% function. Therfore we need to extend the matrices B and C and call the
+% function. Therefore we need to extend the matrices B and C and call the
 % 'default' usfs for unstructured computation:
 eqn.B = eqn.Borig;
 eqn.C = eqn.Corig;

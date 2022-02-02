@@ -34,7 +34,7 @@ function LQR_DAE2_SO(istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -115,8 +115,8 @@ if istest
     end
 else
     figure(1);
-    semilogy(outnm.res,'linewidth',3);
-    title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
+    semilogy(outnm.res,'LineWidth',3);
+    title('0 = C^TC + A^T X E + E^T X A -E^T X BB^T X M');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
@@ -155,8 +155,8 @@ if istest
     end
 else
     figure(2);
-    semilogy(outradi.res,'linewidth',3);
-    title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
+    semilogy(outradi.res,'LineWidth',3);
+    title('0 = C^T C + A^T X E + E^T X A -E^T X BB^T X E');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
 end
@@ -170,9 +170,9 @@ if not(istest)
     ls_nm=cumsum([outnm.adi.niter]);
     ls_radi=1:outradi.niter;
 
-    semilogy(ls_nm,outnm.res,'k--',ls_radi,outradi.res,'b-','linewidth',3);
-    title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
-    xlabel('number of solves with A+p*M');
+    semilogy(ls_nm,outnm.res,'k--',ls_radi,outradi.res,'b-','LineWidth',3);
+    title('0 = C^T C + A^T X E + E^T X A -E^T X BB^T X E');
+    xlabel('number of solves with A + p * E');
     ylabel('normalized residual norm');
     legend('LR-NM','RADI');
 end

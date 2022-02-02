@@ -8,7 +8,7 @@ function X = sol_E_dae_3_so(eqn, opts, opE, B, opB)%#ok<INUSL>
 %
 %   opE     character specifies the form of opE(E)
 %           opE = 'N' solves E *X = opB(B)
-%           opE = 'T' sovles E'*X = opB(B)
+%           opE = 'T' solves E'*X = opB(B)
 %
 %   B       p-x-q matrix
 %
@@ -18,18 +18,18 @@ function X = sol_E_dae_3_so(eqn, opts, opE, B, opB)%#ok<INUSL>
 %
 % Output
 %
-%   X       matrix fullfills equation opE(E)*X = opB(B)
+%   X       matrix fulfills equation opE(E)*X = opB(B)
 
 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-%% check input Paramters
+%% check input Parameters
 if (not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opE or opB is not a char');
 end
@@ -101,7 +101,7 @@ if (opB=='N' && (size(B,1)==(2*nv+np))) || (opB=='T' && (size(B,2)==(2*nv+np)))
 elseif (opB=='N' && (size(B,1)==(2*nv))) || (opB=='T' && (size(B,2)==(2*nv)))
     error('MESS:error_usage','sol_E_dae_2_so is only coded for shift parameter computation');
 else
-    error('MESS:error_arguemnts', 'B has wrong number of cols');
+    error('MESS:error_arguments', 'B has wrong number of cols');
 end
 
 

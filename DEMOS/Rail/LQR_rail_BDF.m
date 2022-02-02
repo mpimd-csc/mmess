@@ -8,23 +8,23 @@ function LQR_rail_BDF(k)
 %
 % k           k-step BDF method
 %             possible values: 1, ..., 6
-%             (optinal, defaults to 2)
+%             (optional, defaults to 2)
 %
 % References:
 %
 % [1] N. Lang, H. Mena, J. Saak, On the benefits of the LDLT factorization
-%     for largescale differential matrix equation solvers, Linear Algebra
+%     for large scale differential matrix equation solvers, Linear Algebra
 %     Appl. 480 (2015) 4471.  https://doi.org/10.1016/j.laa.2015.04.006
 %
 % [2] N. Lang, Numerical methods for large-scale linear time-varying
 %     control systems and related differential matrix equations,
-%     Dissertation, Technische Universitt Chemnitz, Chemnitz, Germany,
+%     Dissertation, Technische Universität Chemnitz, Chemnitz, Germany,
 %     logos-Verlag, Berlin, ISBN 978-3-8325-4700-4 (Jun. 2017).
 %     URL https://www.logos-verlag.de/cgi-bin/buch/isbn/4700
 %
-% [3] J. Saak, Effiziente numerische Lsung eines
-%     Optimalsteuerungsproblems fr die Abkhlung von Stahlprofilen,
-%     Diplomarbeit, Fachbereich 3/Mathematik und Informatik, Universitt
+% [3] J. Saak, Effiziente numerische Lösung eines
+%     Optimalsteuerungsproblems fr die Abkühlung von Stahlprofilen,
+%     Diplomarbeit, Fachbereich 3/Mathematik und Informatik, Universität
 %     Bremen, D-28334 Bremen (Sep. 2003).
 %     https://doi.org/10.5281/zenodo.1187040
 %
@@ -36,14 +36,14 @@ function LQR_rail_BDF(k)
 %
 % [5] J. Saak, Efficient numerical solution of large scale algebraic matrix
 %     equations in PDE control and model order reduction, Dissertation,
-%     Technische Universitt Chemnitz, Chemnitz, Germany (Jul. 2009).
+%     Technische Universität Chemnitz, Chemnitz, Germany (Jul. 2009).
 %     URL http://nbn-resolving.de/urn:nbn:de:bsz:ch1-200901642
 %
 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -110,5 +110,5 @@ for i=1:length(out_bdf.Ks)
 end
 x = opts.bdf.time_steps;
 figure(1);
-plot(x,y,'linewidth',3);
+plot(x,y,'LineWidth',3);
 title('evolution of component (1,77) of the optimal feedback');

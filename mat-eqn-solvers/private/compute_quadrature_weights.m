@@ -6,7 +6,7 @@ function weights = compute_quadrature_weights(h, nodes)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -26,8 +26,8 @@ function weights = compute_quadrature_weights(h, nodes)
 
 
     function x = vandersolve(M,b)
-    % Solve the Vandermonde system Mx = b according to the method described
-    % in \r{A}ke Bj\"{o}rck and Victor Pereyra, "Solution of Vandermonde
+    % Solve the Vandermonde system M x = b according to the method described
+    % in A. Bjoerck and V. Pereyra, "Solution of Vandermonde
     % Systems of Equations", Mathematics of Computation, Vol. 24, No. 112
     % (Oct., 1970), pp. 893-903, http://www.jstor.org/stable/2004623.
     % (Eq. (14)-(15) for the primal system.)

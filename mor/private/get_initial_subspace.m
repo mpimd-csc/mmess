@@ -10,18 +10,21 @@ function U = get_initial_subspace(n,r)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 if nargin~=2
-    error('number of rows n and columns r are mandatory!');
+
+    error(['MESS:get_initial_subspace:', ...
+           'number of rows n and columns r are mandatory!']);
 end
+
 V = zeros(n,r);
 
-for j = 1:r
-    V(1:j:n,j) = 1.0;
+for k = 1:r
+    V(1:k:n,k) = 1.0;
 end
 
 [U, ~] = qr(V,0);

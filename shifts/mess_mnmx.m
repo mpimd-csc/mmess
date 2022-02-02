@@ -18,7 +18,7 @@ function p = mess_mnmx(rw,num_desired)
 %                  (length(rw) >= num_desired)
 %                  (The algorithm delivers either num_desired or
 %                  num_desired+1 parameters, to ensure closedness
-%                  unde complex conjugation!).
+%                  under complex conjugation!).
 %
 %  Output:
 %
@@ -29,7 +29,7 @@ function p = mess_mnmx(rw,num_desired)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

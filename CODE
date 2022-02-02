@@ -1,8 +1,8 @@
 name: Matrix Equations Sparse Solvers (for Matlab and Octave)
 shortname: M-M.E.S.S.
-version: 2.1
-release-date: 2021-04-30
-id: 10.5281/zenodo.4719688
+version: 2.2
+release-date: 2022-02-02
+id: 10.5281/zenodo.5938237
 id-type: doi
 authors: MESS developer community
 copyright holders: Jens Saak, Martin Köhler, Peter Benner
@@ -14,7 +14,7 @@ license-type: Open
 repository: private development / public releases
 repository-type: git
 languages: Matlab
-dependencies: GNU Octave >= 4.0, MATLAB >= 2014a
+dependencies: GNU Octave >= 5.1, MATLAB >= 2014a
 systems: Linux, Windows, MacOS
 website: https://gitlab.mpi-magdeburg.mpg.de/mess/mmess-releases
 keywords: symmetric matrix equations, LR-ADI, Newton Kleinman, BDF methods, Rosenbrock methods, splitting methods, Riccati iteration, balanced trunation, IRKA

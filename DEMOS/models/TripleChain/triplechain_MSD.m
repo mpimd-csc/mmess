@@ -1,20 +1,20 @@
-function [M,E,K]=triplechain_MSD(n1,alpha,beta,v)
-% function [M,E,K]=triplechain_MSD(n1,alpha,beta,v)
+function [M, E, K] = triplechain_MSD(n1, alpha, beta, v)
+% function [M, E, K] = triplechain_MSD(n1, alpha, beta, v)
 %
-% Generates mass spring damper system of three coupled mass sprong damper
+% Generates mass spring damper system of three coupled mass spring damper
 % chains as in [1,example 2] with proportional damping. The resulting
 % system has dimension 3*n1+1
 %
 % Output:
 %
-% M,E,K    mass , damping and stiffness matrices of the system
+% M, E, K    mass, damping and stiffness matrices of the system
 %
 % Input:
 %
-% n1          length of each of the three coupled chains.
-% alpha,beta  coefficients in the proportional damping rule:
-%             Dp=alpha*M+beta*K;
-% v           viskosity of the three additional dampers
+% n1           length of each of the three coupled chains.
+% alpha, beta  coefficients in the proportional damping rule:
+%              E = alpha * M + beta * K;
+% v            viscosity of the three additional dampers
 %
 % [1] N.Truhar and K.Veselic
 %     An efficient method for estimating the optimal dampers' viscosity for
@@ -26,7 +26,7 @@ function [M,E,K]=triplechain_MSD(n1,alpha,beta,v)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

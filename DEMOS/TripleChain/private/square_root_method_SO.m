@@ -1,5 +1,5 @@
 function [TL,TR] = square_root_method_SO(M, max_ord, tol, inform, U,V)
-% Square root method for the computation of the tranformation matrices to
+% Square root method for the computation of the transformation matrices to
 % balance and reduce second order systems
 %
 % Call
@@ -24,7 +24,7 @@ function [TL,TR] = square_root_method_SO(M, max_ord, tol, inform, U,V)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

@@ -36,13 +36,13 @@ function C = mul_ApE_dae_2_so(eqn, opts, opA,p,opE, B, opB)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 
-%% check input Paramters
+%% check input Parameters
 if (not(ischar(opA)) || not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opA, opE or opB is not a char');
 end
@@ -93,7 +93,7 @@ else
 end
 
 if eqn.haveE
-    %% perfom solve operations for E ~= Identity
+    %% perform solve operations for E ~= Identity
     switch opA
       case 'N'
         switch opE
@@ -171,7 +171,7 @@ if eqn.haveE
         end
     end
 else
-    %% perfom solve operations for E = Identity
+    %% perform solve operations for E = Identity
     switch opA
       case 'N'
         switch opB

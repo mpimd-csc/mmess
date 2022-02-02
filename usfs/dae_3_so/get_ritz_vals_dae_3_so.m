@@ -1,4 +1,5 @@
-function [rw, Hp, Hm, Vp, Vm] = get_ritz_vals_dae_3_so(eqn, opts, oper, U, W, p_old)
+function [rw, Hp, Hm, Vp, Vm, eqn, opts, oper] = ...
+    get_ritz_vals_dae_3_so(eqn, opts, oper, U, W, p_old)
 %  This function is an exact copy of the Penzl heuristic part in mess_para.
 %  the only difference is that B or C and K are filled up by trailing zero
 %  blocks to allow for the computation of the Ritz values with respect to
@@ -8,7 +9,7 @@ function [rw, Hp, Hm, Vp, Vm] = get_ritz_vals_dae_3_so(eqn, opts, oper, U, W, p_
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -24,17 +25,18 @@ end
 
 [result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
 if not(result)
-    error('MESS:control_data', 'system data is not completely defined or corrupted');
+    error('MESS:control_data', ...
+       'system data is not completely defined or corrupted');
 end
 % returns order of A or states of A, A is supposed to be square
 nv = size(eqn.M_,1);
 np = size(eqn.G_,1);
 
 %%
-% here we add the trailing zero blocks. Note that we are not passing the
-% eqn structure back as an output, so this change is not visible in
+% here we add the trailing zero blocks. Note that we are passing the
+% eqn structure back as an output, so to ensure this change is not visible in
 % anything above this routine and will only be passed on to the function
-% handles used in here.
+% handles used in here, we need to truncate again later.
 if isfield(eqn, 'U') && not(isempty(eqn.U))
     eqn.U = [eqn.U; sparse(np, size(eqn.U, 2))];
 end
@@ -51,8 +53,7 @@ if isfield(opts.shifts, 'method') && ...
     else
         W = [W; zeros(2 * nv + np - size(W, 1), size(W, 2))];
     end
-    rw = mess_projection_shifts(eqn, opts, oper, U, ...
-        W, p_old);
+    rw = mess_projection_shifts(eqn, opts, oper, U, W, p_old);
 else
     if (not(isfield(opts.shifts, 'b0')) || isempty(opts.shifts.b0))
         opts.shifts.b0 = ones(n,1);
@@ -69,4 +70,13 @@ if isfield(opts.shifts,'truncate') && isnumeric(opts.shifts.truncate)
     rw = rw(abs(rw)<opts.shifts.truncate);
     rw = rw(abs(rw)>1/opts.shifts.truncate);
 end
+%%
+% Let's truncate U and V back
+if isfield(eqn, 'U') && not(isempty(eqn.U))
+    eqn.U = eqn.U(1:2*nv, :);
+end
+if isfield(eqn,'V') && not(isempty(eqn.V))
+    eqn.V= eqn.V(1:2*nv, :);
+end
+
 end

@@ -7,9 +7,9 @@ systems used in the demonstration examples.
 
 **FDM_2D** Contains the functions for generating scalable models of
   the finite difference semi-discretized model of a heat equation on
-  the unit square. The functios support convection, as well as
+  the unit square. The functions support convection, as well as
   reaction terms at the users choice. They are exact copies of the
-  files from the Lyapack package.
+  files from the LyaPack package.
 
 **NSE** Prepared to store the external download for the Karman vortex
   shedding model in a 2d channel.
@@ -25,7 +25,7 @@ systems used in the demonstration examples.
   **example_from_Saak09.m**
 
 **msd_ind3_by_t_stykel**
-  Tatjana Stykels mass spring damper system with holonomic
+  Tatjana Stykel's mass spring damper system with holonomic
   constraints, i.e., the index-3 DAE case.
 
 **stokes**

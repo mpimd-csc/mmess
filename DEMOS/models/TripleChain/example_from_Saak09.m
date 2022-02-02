@@ -15,7 +15,7 @@
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -31,11 +31,10 @@ v=5e0;
 B=ones(3*n1+1,1);
 Cp=B';
 Cv=zeros(size(Cp));
-%Cv=B';
+
 
 %%
 nsample=200;
-%w=logspace(-4,0,nsample);
 w=logspace(-4,2,nsample);
 
 tro=zeros(1,nsample);
@@ -50,7 +49,7 @@ for k=1:nsample
 end
 fprintf('\n\n');
 figure(1)
-loglog(w, tro)
-xlabel('\omega')
-ylabel('\sigma_{max}(G(j\omega))')
-title('Transfer functions of original systems')
+loglog(w, tro, 'LineWidth', 3);
+xlabel('\omega');
+ylabel('\sigma_{max}(G(j\omega))');
+title('Transfer functions of original systems');

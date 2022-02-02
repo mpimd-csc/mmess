@@ -54,7 +54,7 @@ function [out, eqn, opts, oper] = mess_exp_action(eqn, opts, oper, h, L, t0)
 % Output:
 %  out              structure containing the following:
 %
-%  out.Z            the matrix expontial action
+%  out.Z            the matrix exponential action
 %
 %  out.converged    flag for the iterative methods, which is 1 if the
 %                   method converged and 0 otherwise
@@ -65,7 +65,7 @@ function [out, eqn, opts, oper] = mess_exp_action(eqn, opts, oper, h, L, t0)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -151,7 +151,7 @@ end
 switch opts.exp_action.method
 
     case 'Krylov'
-        [n, p] = size(L);
+        [~, p] = size(L);
         normL = norm(L);
         tol = opts.exp_action.tol;
 
@@ -165,34 +165,11 @@ switch opts.exp_action.method
                                              'N'), ...
                                   'N');
 
-        % Subspace reloading intentionally disabled for now,
-        % but structure kept for future enhancement
-        if true %not(isfield(opts.exp_action.Krylov, 'subspace'))
-            kmin = 1;
-            kmax = 2;
+        kmin = 1;
+        kmax = 2; % Do two initial blocks before estimating the error
 
-            [Vk, R] = qr(L, 0); % also, here Vk = U1
-            Hk = [];
-        else
-            subspace = opts.exp_action.Krylov.subspace; %#ok<UNRCH>
-
-            Vk = subspace.Vk;
-            Hk = subspace.Hk;
-            Ukp1 = subspace.Ukp1;
-            Hkp1 = subspace.Hkp1;
-            R = subspace.R;
-
-            k = size(Vk, 2) / p;
-            kmin = k + 1;
-            kmax = kmin + 5;
-
-            Vk(:, k*p+1:(k+1)*p) = Ukp1;
-            Hk(k*p+1:(k+1)*p, (k-1)*p+1:k*p) = Hkp1;
-        end
-
-        if p*kmax > n
-            kmax = floor(n/p);
-        end
+        [Vk, R] = qr(L, 0); % Here, Vk = U1
+        Hk = [];
 
         converged = false;
         while not(converged)
@@ -230,13 +207,6 @@ switch opts.exp_action.method
                         % efficient way
                         eHk = eHt(1:k*p, 1:k*p);
                         out.Z = Vk*(eHk(:, 1:p)*R);
-                        subspace.Vk = Vk;
-                        subspace.Hk = Hk;
-                        subspace.Ukp1 = Ukp1;
-                        subspace.Hkp1 = Hkp1;
-                        subspace.R = R;
-                        opts.exp_action.Krylov.subspace ...
-                            = subspace;
                         return
                     end
                 end
@@ -250,15 +220,9 @@ switch opts.exp_action.method
             kmax = kmax + 3; % Add two blocks in every step
 
             if kmax > kabsmax
-                out.Z = -1; % TODO: improve error handling
+                out.Z = NaN; % TODO: improve error handling, see #312
                 out.converged = false;
                 out.errest = Inf;
-                subspace.Vk = Vk;
-                subspace.Hk = Hk;
-                subspace.Ukp1 = Ukp1;
-                subspace.Hkp1 = Hkp1;
-                subspace.R = R;
-                opts.exp_action.Krylov.subspace = subspace;
                 warning('MESS:exp_action', ...
                         ['Krylov method for matrix exponential action ' ...
                          'did NOT converge!']);

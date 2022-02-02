@@ -7,9 +7,9 @@ function out =  LQR_rail_splitting(k, exp_action, method,istest)
 %
 % k           refinement level of the model to use
 %             (0 - 5, i.e. 109 - 79841 Dofs)
-%             (optinal, defaults to 2, i.e. 1357 Dofs)
+%             (optional, defaults to 2, i.e. 1357 Dofs)
 %
-% exp_action  parameters for computing actions of matrix exponentials, see
+% exp_action  parameters for computing matrix-exponential actions, see
 %             mat-eqn-solvers/private/mess_exp_action.m for details
 %             (optional, defaults to exp_action.method = 'Krylov',
 %             exp_action.tol = 1e-8)
@@ -29,13 +29,13 @@ function out =  LQR_rail_splitting(k, exp_action, method,istest)
 %     (2015), pp. 2791-2796. https://doi.org/10.1109/TAC.2015.2398889
 %
 % [2] T. Stillfjord, Adaptive high-order splitting schemes for large-scale
-%     diffederential Riccati equations, Numer. Algorithms,  (2017).
+%     differential Riccati equations, Numer. Algorithms,  (2017).
 %     https://doi.org/10.1007/s11075-017-0416-8
 %
-% [3] J. Saak, Effiziente numerische L\"{o}sung eines
-%     Optimalsteuerungsproblems f\"{u}r die Abk\"{u}hlung von
+% [3] J. Saak, Effiziente numerische Lösung eines
+%     Optimalsteuerungsproblems für die Abkühlung von
 %     Stahlprofilen, Diplomarbeit, Fachbereich 3/Mathematik und Informatik,
-%     Universit\"{a}t Bremen, D-28334 Bremen (Sep. 2003).
+%     Universität Bremen, D-28334 Bremen (Sep. 2003).
 %     https://doi.org/10.5281/zenodo.1187040
 %
 % [4] P. Benner, J. Saak, A semi-discretized heat transfer model for
@@ -46,14 +46,14 @@ function out =  LQR_rail_splitting(k, exp_action, method,istest)
 %
 % [5] J. Saak, Efficient numerical solution of large scale algebraic matrix
 %     equations in PDE control and model order reduction, Dissertation,
-%     Technische Universit\"{a}t Chemnitz, Chemnitz, Germany (Jul. 2009).
+%     Technische Universität Chemnitz, Chemnitz, Germany (Jul. 2009).
 %     URL http://nbn-resolving.de/urn:nbn:de:bsz:ch1-200901642
 %
 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -113,6 +113,6 @@ fprintf(1,'mess_splitting_dre took %6.2f seconds \n',t_elapsed);
 if not(istest)
     t = opts.splitting.time_steps;
     figure;
-    plot(t, out.ms,'linewidth',3);
+    plot(t, out.ms,'LineWidth',3);
     title('Ranks of approximations over time');
 end

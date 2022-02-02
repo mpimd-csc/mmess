@@ -1,4 +1,4 @@
-function LQR_DAE2(problem,lvl,re,istest)
+function LQR_DAE2(problem, level, re, istest)
 % Computes a stabilizing feedback by implicitly solving the generalized
 % Riccati equation for the equivalent projected system on the hidden manifold.
 %
@@ -7,7 +7,7 @@ function LQR_DAE2(problem,lvl,re,istest)
 %               linearized Navier-Stokes-Equation.
 %               (optional, defaults to 'Stokes')
 %
-% lvl           discretization level 1 through 5
+% level         discretization level 1 through 5
 %               (optional, only used in 'NSE' case, default: 1)
 %
 % re            Reynolds number 300, 400, or 500
@@ -24,7 +24,7 @@ function LQR_DAE2(problem,lvl,re,istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -34,7 +34,7 @@ oper = operatormanager('dae_2');
 
 %% Problem data
 if nargin<1, problem='stokes'; end
-if nargin<2, lvl=1; end
+if nargin<2, level=1; end
 if nargin<3, re=500; end
 if nargin<4, istest=0; end
 
@@ -52,7 +52,7 @@ switch lower(problem)
         eqn.B=eqn.B(1:st,:);
         eqn.C=eqn.C(:,1:st);
     case 'nse'
-        [eqn, K0, ~] = mess_get_NSE(re, lvl);
+        [eqn, K0, ~] = mess_get_NSE(re, level);
         opts.nm.K0 = K0;
         opts.radi.K0 = K0;
     otherwise
@@ -99,8 +99,8 @@ fprintf(1,'mess_lrnm took %6.2f seconds \n' , t_elapsed1);
 if not(istest)
     figure(1);
     disp(outnm.res);
-    semilogy(outnm.res,'linewidth',3);
-    title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
+    semilogy(outnm.res,'LineWidth',3);
+    title('0 = C^T C + A^T X E + E^T X A - E^T X BB^T X E');
     xlabel('number of newton iterations');
     ylabel('normalized residual norm');
     pause(1);
@@ -135,8 +135,8 @@ t_elapsed2 = toc(t_mess_lrradi);
 fprintf(1,'mess_lrradi took %6.2f seconds \n' ,t_elapsed2);
 if not(istest)
     figure();
-    semilogy(outradi.res,'linewidth',3);
-    title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
+    semilogy(outradi.res,'LineWidth',3);
+    title('0 = C^TC + A^T X E + E^T X A - E^T X BB^T X E');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
 end
@@ -150,8 +150,8 @@ else
     ls_nm=[outnm.adi.niter];
     ls_radi=1:outradi.niter;
 
-    semilogy(cumsum(ls_nm),outnm.res,'k--',ls_radi,outradi.res,'b-','linewidth',3);
-    title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
+    semilogy(cumsum(ls_nm),outnm.res,'k--',ls_radi,outradi.res,'b-','LineWidth',3);
+    title('0 = C^T C + A^T X E + E^T X A - E^T X BB^T X E');
     xlabel('number of solves with A+p*M');
     ylabel('normalized residual norm');
     legend('LR-NM','RADI');

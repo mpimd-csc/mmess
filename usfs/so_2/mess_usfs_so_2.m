@@ -1,11 +1,9 @@
-function mess_usfs_so_2
-%% function mess_usfs_so_2
 % The second order system
 %
 %       M x"(t) + E*x'(t) + K*x(t) = B2*u(t)
 %                             y(t) = Cp*x(t) + Cv*x'(t)
 %
-% is transformed to the first order system
+% is implicitly transformed to the first order system
 %
 %                        E_f*z'(t) = A_f*z(t) + B_f*u(t)
 %                             y(t) = C_f*z(t)
@@ -26,7 +24,7 @@ function mess_usfs_so_2
 %         | x(t)  |
 %   z(t)= | x'(t) | .
 %
-% Matrices M, E, K are assumed to be quadratic, symmetric and positive
+% Matrices M, E, K are assumed to be square, symmetric and positive
 % definite.
 %
 % The fieldnames have to end with _  to indicate that the data
@@ -43,7 +41,7 @@ function mess_usfs_so_2
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

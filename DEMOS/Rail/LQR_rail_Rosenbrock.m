@@ -8,12 +8,12 @@ function LQR_rail_Rosenbrock(k)
 %
 % k           k-stage Rosenbrock method
 %             possible values: 1, 2
-%             (optinal, defaults to 2)
+%             (optional, defaults to 2)
 %
 % References:
 %
 % [1] N. Lang, H. Mena, J. Saak, On the benefits of the LDLT factorization
-%     for largescale differential matrix equation solvers, Linear Algebra
+%     for large-scale differential matrix equation solvers, Linear Algebra
 %     Appl. 480 (2015) 44–71.  https://doi.org/10.1016/j.laa.2015.04.006
 %
 % [2] N. Lang, Numerical methods for large-scale linear time-varying
@@ -43,7 +43,7 @@ function LQR_rail_Rosenbrock(k)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -91,7 +91,7 @@ for i=1:length(out_ros.Ks)
 end
 x = opts.rosenbrock.time_steps;
 figure(1);
-plot(x,y,'linewidth',3);
+plot(x,y,'LineWidth',3);
 title('evolution of component (1,77) of the optimal feedback');
 xlabel('time');
 ylabel('magnitude');

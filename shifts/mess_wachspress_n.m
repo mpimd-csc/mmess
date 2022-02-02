@@ -23,9 +23,9 @@ function p=mess_wachspress_n(a,b,alpha,num_desired)
 %
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -49,7 +49,7 @@ else
     c2 = 2/(1+(a/b+b/a)/2);
     m = 2*cos(alpha)*cos(alpha)/c2 -1;
     if (m<1)
-        error(['Shift parameters would be complex, function not aplicable, ' ...
+        error(['Shift parameters would be complex, function not applicable, ' ...
             'aborting!']);
 
         %
@@ -80,5 +80,3 @@ for i=1:J
     %one dn. the later can be ported to
     %FORTRAN or C Code very easily
 end
-
-

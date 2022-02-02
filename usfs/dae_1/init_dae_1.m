@@ -1,7 +1,7 @@
 function [result, eqn, opts, oper] = init_dae_1(eqn, opts, oper, flag1, flag2)
 % function [result, eqn, opts, oper] = init_dae_1(eqn, opts, oper, flag1, flag2)
-% return true or false if Data for A_ and E_ resp. flag1 and flag2  are a
-% vailabe and correct in eqn.
+% return true or false if Data for A_ and E_ resp. flag1 and flag2  are 
+% available and correct in eqn.
 %
 %   result = init(eqn,flag1);
 %   result = init(eqn,flag1,flag2);
@@ -31,13 +31,13 @@ function [result, eqn, opts, oper] = init_dae_1(eqn, opts, oper, flag1, flag2)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 
-%% check input Paramters
+%% check input Parameters
 na = nargin;
 if not(isfield(eqn, 'LTV')),  eqn.LTV=0; end
 if(na<3)
@@ -248,7 +248,7 @@ n=size(A,1);
 
 if not(eqn.haveE)
     if isfield(eqn, 'E_time')
-        error('MESS:equatin_data',['Detected eqn.E_time where eqn.haveE '...
+        error('MESS:equation_data',['Detected eqn.E_time where eqn.haveE '...
             'is 0. You need to set haveE=1 or delete E_']);
     else
         result = 1;

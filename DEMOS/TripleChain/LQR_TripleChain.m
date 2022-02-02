@@ -4,7 +4,7 @@ function LQR_TripleChain(n1, usfs, shifts, istest)
 % computations use either first or second companion form linearization. In
 % order to reduce the complexity, the 'so_1' and 'so_2' function handles
 % cast all operations in the linearized 2n x 2n model back to operations
-% with respect ot the original nxn matrices [3,4]. The default function
+% with respect to the original n x n matrices [3,4]. The default function
 % handles explicitly form the 2n x 2n matrices and treat them as a first
 % order system.
 %
@@ -51,7 +51,7 @@ function LQR_TripleChain(n1, usfs, shifts, istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -151,8 +151,8 @@ if istest
 else
     figure(1);
     disp(outnm.res);
-    semilogy(outnm.res,'linewidth',3);
-    title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
+    semilogy(outnm.res,'LineWidth',3);
+    title('0= C^TC + A^T X E + E^T X A -E^T X BB^T X M');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
@@ -188,8 +188,8 @@ if istest
    end
 else
     figure(2);
-    semilogy(outradi.res,'linewidth',3);
-    title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
+    semilogy(outradi.res,'LineWidth',3);
+    title('0= C^T C + A^T X E + E^T X A -E^T X BB^T X E');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
 end
@@ -209,9 +209,9 @@ else
     ls_nm=[outnm.adi.niter];
     ls_radi=1:outradi.niter;
 
-    semilogy(cumsum(ls_nm),outnm.res,'k--',ls_radi,outradi.res,'b-','linewidth',3);
-    title('0= C^TC + A^TXM + M^TXA -M^TXBB^TXM');
-    xlabel('number of solves with A+p*M');
+    semilogy(cumsum(ls_nm),outnm.res,'k--',ls_radi,outradi.res,'b-','LineWidth',3);
+    title('0= C^T C + A^T X E + E^T X A - E^T X BB^T X E');
+    xlabel('number of solves with A+p*E');
     ylabel('normalized residual norm');
     legend('LR-NM','RADI');
 end

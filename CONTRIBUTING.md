@@ -62,11 +62,11 @@ guidelines below:
   i.e. the tests will fail when a longer line is
   detected. Documentation strings should strictly keep the 80
   characters bound for readability reasons.
-* any checked in code must pass the `checkcode` tests in MATLAB,
+* any checked-in code must pass the `checkcode` tests in MATLAB,
   i.e. you are not allowed to have red or orange marks in the MATLAB
   editor. However, when absolutely necessary those warnings may be
   suppressed. (E.g. in ADI the growth of the solution factor is
-  avoidable only with significand implementation overhead)
+  avoidable only with significant implementation overhead)
 * We always use `not()` rather than `~` for negation for easier
   reading. (Enforced by CI!)
 * To support our abstraction and provide maximum flexibility to users,
@@ -93,6 +93,10 @@ guidelines below:
   be repeated, consider to put them into a function and call it
   where necessary. If a helper function lacks functionality consider
   extending rather than doubling it.
+* We prefer comments to start with a space for readability, i.e.
+  `% comment` rather than `%comment`.
+* We use blanks around operators and after commas in argument lists,
+  e.g. `y = a * x + b;` and not `y=a*x+b;`
 
 ## Maintainability
 
@@ -104,7 +108,7 @@ follow these guidelines:
 * Work on a single issue per merge request or branch.
 * branch and merge often, since long living branches tend to become
   messy to handle and synchronize with the master.
-* Try to 'rebase' your work onto the master before mergeing or
+* Try to 'rebase' your work onto the master before merging or
   requesting a merge, if possible
 
 ## Test Framework

@@ -1,7 +1,7 @@
 function [result, eqn, opts, oper] = init_dae_2(eqn, opts, oper, flag1, flag2)
 % function [result, eqn, opts, oper] = init_dae_2(eqn, opts, oper, flag1, flag2)
 % return true or false if Data for A_ and E_ resp. flag1 and flag2  are
-% availabe and correct in eqn.
+% available and correct in eqn.
 %
 %   result = init_dae_2(eqn,flag1);
 %   result = init_dae_2(eqn,flag1,flag2);
@@ -32,13 +32,13 @@ function [result, eqn, opts, oper] = init_dae_2(eqn, opts, oper, flag1, flag2)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 
-%% check input Paramters
+%% check input Parameters
 if(nargin<=3)
     error('MESS:check_data','Number of input Arguments must be at least 3');
 

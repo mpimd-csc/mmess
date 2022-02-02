@@ -38,7 +38,7 @@ function eqn = mess_get_BIPS(model, alpha)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -82,7 +82,11 @@ catch
         case 'Y'
             url = 'https://csc.mpi-magdeburg.mpg.de/';
             folder = 'mpcsc/software/mess/mmess/models/BIPS/';
-            websave(full_file, [url, folder, base_file]);
+            if exist('websave','file')
+                websave(full_file, [url, folder, base_file]);
+            else
+                urlwrite([url, folder, base_file], full_file); %#ok<URLWR>
+            end
         case 'N'
             error('The download is required.');
         otherwise
@@ -99,7 +103,20 @@ else
     eqn.A_ = Bips.A(pp, pp)-alpha*Bips.E(pp,pp);
 end
 eqn.E_ = Bips.E(pp, pp);
-eqn.B = Bips.b(pp, :);
-eqn.C = Bips.c( : , pp);
+switch model
+    case {7, 8, 9, 10, 11, 12, 13}
+        eqn.B = Bips.b(pp, :);
+        eqn.C = Bips.c( : , pp);
+    case {1, 3, 4}
+        eqn.B = Bips.b(pp, :);
+        eqn.C = Bips.c(pp, :)';
+    case {2, 5}
+        eqn.B = Bips.B(pp, :);
+        eqn.C = Bips.C(pp, :)';
+    case 6
+        eqn.B = Bips.B(pp, :);
+        eqn.C = Bips.C(:, pp);
+        disp('Attention: This model is not stable!')
+end
 eqn.st = length(p);
 eqn.haveE = 1;

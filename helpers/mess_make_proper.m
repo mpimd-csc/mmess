@@ -13,16 +13,16 @@ function [ y, perm ] = mess_make_proper( x )
 %  Output:
 %
 %  y       a vector of proper shifts, i.e. closed under complex
-%          conjugation and with pairs as succesive entries
+%          conjugation and with pairs as successive entries
 %  perm    the permutation applied to reorder the shifts, e.g. to
-%          apply the correspunding reordering on the associated basis
+%          apply the corresponding reordering on the associated basis
 %          vectors in IRKA as well.
 %
 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

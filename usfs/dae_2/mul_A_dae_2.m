@@ -1,5 +1,5 @@
 function C = mul_A_dae_2(eqn, opts, opA, B, opB)%#ok<INUSL>
-%% function mul_A perfoms operation C = opA(A_)*opB(B)
+%% function mul_A performs operation C = opA(A_)*opB(B)
 % Depending on the size of B either multiplication with
 %     A = [A1 F;
 %           G 0 ]
@@ -31,13 +31,13 @@ function C = mul_A_dae_2(eqn, opts, opA, B, opB)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 
-%% check input Paramters
+%% check input Parameters
 if (not(ischar(opA)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opA or opB is not a char');
 end
@@ -89,7 +89,7 @@ else
     end
 end
 
-%% perfom multiplication
+%% perform multiplication
 if dim==n
     switch opA
 

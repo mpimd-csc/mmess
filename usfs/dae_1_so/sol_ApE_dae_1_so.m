@@ -29,7 +29,7 @@ function X = sol_ApE_dae_1_so(eqn, opts, opA, p, opE, C, opC)%#ok<INUSL>
 %
 % Output
 %
-%   X       matrix fullfills equation (opA(A)+p*opE(E))*X = C
+%   X       matrix fulfills equation (opA(A)+p*opE(E))*X = C
 %
 %   uses no other dae_1_so function
 %
@@ -38,13 +38,13 @@ function X = sol_ApE_dae_1_so(eqn, opts, opA, p, opE, C, opC)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 
-%% check input Paramters
+%% check input Parameters
 if (not(ischar(opA)) || not(ischar(opE)) || not(ischar(opC)))
     error('MESS:error_arguments', 'opA, opE or opC is not a char');
 end
@@ -108,7 +108,7 @@ end
 
 
 %% solve (A + p * E) * x = C
-%% perfom solve operations for E ~= Identity
+%% perform solve operations for E ~= Identity
 switch opA
 
     case 'N'

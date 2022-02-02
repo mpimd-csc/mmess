@@ -11,15 +11,15 @@ function [nodes, weights] = gauss_quadrature_parameters(h, order)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 % Golub-Welsch algorithm on the interval [-1, 1]
 N = (order - 1) / 2;
-j = 1:N;
-beta = j ./ sqrt(4*j.^2 - 1);
+k = 1:N;
+beta = k ./ sqrt(4*k.^2 - 1);
 
 J = diag(beta(1:end-1), -1) + diag(beta(1:end-1), 1);
 [V, nodes] = eig(J, 'vector');

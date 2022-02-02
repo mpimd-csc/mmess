@@ -29,7 +29,7 @@ function [out, eqn, opts, oper] = mess_lyapunov_bilinear(eqn, opts, oper)
 %
 %   eqn.C       dense (m2 x n) matrix C
 %
-%   eqn.N_      for teh 'default' usfs: Cellarray with N_k = N{k} for
+%   eqn.N_      for the 'default' usfs: Cell array with N_k = N{k} for
 %               k = 1,2, ...
 %               (if all N_k are given in one large matrix  of size
 %                n x (n * number_of_matrices)
@@ -104,19 +104,19 @@ function [out, eqn, opts, oper] = mess_lyapunov_bilinear(eqn, opts, oper)
 % References
 %
 % [1] P. K. Goyal, System-theoretic model order reduction for bilinear and
-%     quadraticbilinear systems, Dissertation, Department of Mathematics,
+%     quadratic-bilinear systems, Dissertation, Department of Mathematics,
 %     Otto von Guericke University, Magdeburg, Germany (2018).
 %     https://doi.org/10.25673/5319.
 %
 % [2] P. Benner, P. Goyal, Balanced truncation model order reduction for
-%     quadraticbilinear systems, e-prints 1705.00160, arXiv, math.OC (2017).
+%     quadratic-bilinear systems, e-prints 1705.00160, arXiv, math.OC (2017).
 %     URL https://arxiv.org/abs/1705.00160
 %
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -124,8 +124,9 @@ function [out, eqn, opts, oper] = mess_lyapunov_bilinear(eqn, opts, oper)
 
 %% Check oper
 if not(isequal(oper.name, 'default'))
-    error('MESS:notimplemented',...
-        'Feature not yet implemented! Only accepts operatormanager(''default'')');
+    error('MESS:notimplemented', ...
+          ['Feature not yet implemented!', ...
+           'Only accepts operatormanager(''default'')']);
 end
 
 %% Check for eqn
@@ -136,11 +137,11 @@ if not(isfield(eqn, 'type')), eqn.type = 'N'; end
 [~, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
 
 % Check for B and C
-if not(isfield(eqn, 'B'))||isempty(eqn.B)
+if not(isfield(eqn, 'B')) || isempty(eqn.B)
     warning('MESS:control_data','eqn.B is missing');
 end
 
-if not(isfield(eqn, 'C'))||isempty(eqn.C)
+if not(isfield(eqn, 'C')) || isempty(eqn.C)
     warning('MESS:control_data','eqn.C is missing');
 end
 
@@ -157,7 +158,7 @@ end
 % Transform N to Cell if given as matrix and check N
 [eqn, opts, oper] = oper.mul_N_pre(eqn, opts, oper);
 
-%% check opts for subStructures
+%% check opts for substructures
 if not(isfield(opts, 'norm')), opts.norm ='fro'; end
 
 expected_subStructures = {'blyap', 'shifts','adi', 'fopts'};
@@ -165,11 +166,11 @@ expected_subStructures = {'blyap', 'shifts','adi', 'fopts'};
 expected_sub_subStructures{1} = {'maxiter', 'rel_diff_tol', 'res_tol'};
 default_values{1} = {10, 1e-5, 1e-5};
 
-expected_sub_subStructures{2} = {'num_Ritz', 'num_hRitz',...
-    'method', 'num_desired'};
+expected_sub_subStructures{2} = {'num_Ritz', 'num_hRitz', ...
+                                 'method', 'num_desired'};
 default_values{2} = {50, 25, 'projection', 6};
 
-expected_sub_subStructures{3} = {'maxiter', 'res_tol',...
+expected_sub_subStructures{3} = {'maxiter', 'res_tol', ...
     'rel_diff_tol', 'norm'};
 default_values{3} = {100, 1e-12, 0, 'fro'};
 
@@ -177,12 +178,12 @@ expected_sub_subStructures{4} = {'LDL_T', 'norm'};
 default_values{4} = {0, 'fro'};
 
 opts = check_opts(opts, expected_subStructures, expected_sub_subStructures, ...
-    default_values);
+                  default_values);
 
 % check res2_norm opts
 if not(isfield(opts, 'resopts')) || isempty(opts.resopts)
     warning('MESS:control_data',...
-        'opts.resopts is missing. parameters set to default values');
+            'opts.resopts is missing. parameters set to default values');
     fields = {'res'};
     c = cell(length(fields), 1);
     opts.resopts = cell2struct(c, fields);
@@ -197,15 +198,15 @@ opts.resopts = check_opts(opts.resopts,...
     default_values_resopts);
 
 %% Initialize Data
-eqn_iter = eqn; %Equationset per Iteration
-B_iter = eqn.B; %changes per Iteration
-C_iter = eqn.C; %changes per Iteration
+eqn_iter = eqn; % Equationset per Iteration
+B_iter = eqn.B; % changes per Iteration
+C_iter = eqn.C; % changes per Iteration
 
 Z = [];
 rz_new = 0;
 
-ranksZ = zeros(opts.blyap.maxiter, 1); %to save output
-lyapNorm = zeros(opts.blyap.maxiter, 1); %to save output
+ranksZ = zeros(opts.blyap.maxiter, 1); % to save output
+lyapNorm = zeros(opts.blyap.maxiter, 1); % to save output
 
 rowA = size(eqn.A_, 1);
 numberOf_N_matrices = length(eqn.N_);
@@ -225,30 +226,30 @@ if not(isfield(opts.blyap, 'info'))
 else
     if not(isnumeric(opts.blyap.info)) && not(islogical(opts.blyap.info))
         error('MESS:info',...
-            'opts.shifts.info parameter must be logical or numeric.');
+              'opts.shifts.info parameter must be logical or numeric.');
     end
     tic
 end
 
 %% Start iteration
-for i = 1 : (opts.blyap.maxiter)
+for k = 1 : (opts.blyap.maxiter)
     % Solve A*VV'E' + EVV'A'  + BB' = 0 or
     % Solve A'VV'E  + E'VV'A  + C'C = 0
     eqn_iter.B = B_iter;
     eqn_iter.C = C_iter;
 
     out_lradi = mess_lradi(eqn_iter, opts, oper);
-    V   =  mess_column_compression( out_lradi.Z, 'N', [], eps);
+    V =  mess_column_compression( out_lradi.Z, 'N', [], eps);
 
     % column_compression
     colV = size(V, 2);
     compress = zeros(rowA, numberOf_N_matrices * colV);
 
-    col_start=1;
+    col_start = 1;
     % building [N_1*V, ..., N_k*V], or the same with N_k' for type 'T'
     for currentN_k = 1:numberOf_N_matrices
-        NV = mess_column_compression(...
-            oper.mul_N(eqn, opts, eqn.type, V, 'N', currentN_k), 'N', [], eps);
+        NV = mess_column_compression(oper.mul_N(eqn, opts, eqn.type, V, 'N', ...
+                                     currentN_k), 'N', [], eps);
         col_NV = size(NV, 2);
         columns = col_start:(col_start+col_NV-1);
         compress(:, columns) = NV;
@@ -257,9 +258,11 @@ for i = 1 : (opts.blyap.maxiter)
 
     switch eqn.type
         case 'N'
-            B_iter = mess_column_compression (compress(:, 1:col_start-1), 'N', [], eps);
+            B_iter = mess_column_compression(compress(:, 1:col_start-1), ...
+                                             'N', [], eps);
         case 'T'
-            C_iter = mess_column_compression (compress(:, 1:col_start-1), 'N', [], eps);
+            C_iter = mess_column_compression(compress(:, 1:col_start-1), ...
+                                             'N', [], eps);
             C_iter = C_iter';
         otherwise
             error('MESS:control_data','eqn.type has to be ''N'' or ''T''');
@@ -271,57 +274,57 @@ for i = 1 : (opts.blyap.maxiter)
     rZ_old = rz_new;
     rz_new = rank(Z);
 
-    ranksZ(i)= rank(Z);
+    ranksZ(k) = rank(Z);
 
 
     normZ = norm(Z' * Z);
     normV = norm(V)^2;
 
     % test the conditions
-    if  ((normV/normZ) < opts.blyap.rel_diff_tol) || rZ_old == rz_new
+    if ((normV/normZ) < opts.blyap.rel_diff_tol) || (rZ_old == rz_new)
         % calculate ||A*Z*Z'*E' + E*Z*Z'*A' + Sum_N_k*P*N_k' + B*B|| for
         % current Z
         [lyapunov_Norm, ~, ~, ~, eqn, opts.fopts, oper] = mess_res2_norms(Z,...
             'lyapunov_QB', eqn, opts.fopts, oper, opts.resopts);
 
-        lyapNorm(i) = lyapunov_Norm;
+        lyapNorm(k) = lyapunov_Norm;
 
-        if lyapunov_Norm < opts.blyap.res_tol * norm_B_or_C
-            niter_bilinear = i;
+        if lyapunov_Norm < (opts.blyap.res_tol * norm_B_or_C)
+            niter_bilinear = k;
 
             if opts.blyap.info
-                fprintf('step: %4d residual: %e rank(Z): %d \n',...
-                    i, lyapNorm(i), rz_new);
-                fprintf(['Converged at step: %4d with residual: %e rank(Z):',...
-                    '%d \n'], i, lyapNorm(i), rz_new);
+                fprintf('step: %4d residual: %e rank(Z): %d \n', ...
+                        k, lyapNorm(k), rz_new);
+                fprintf(['Converged at step: %4d with residual: %e rank(Z):', ...
+                        '%d \n'], k, lyapNorm(k), rz_new);
             end
             break
         end
     end
 
-    if i == opts.blyap.maxiter
+    if k == opts.blyap.maxiter
         [lyapunov_Norm, ~, ~, ~, eqn, opts.fopts, oper] = ...
             mess_res2_norms(Z,'lyapunov_QB', eqn, opts.fopts, ...
             oper, opts.resopts);
 
-        lyapNorm(i) = lyapunov_Norm;
-        niter_bilinear = i;
+        lyapNorm(k) = lyapunov_Norm;
+        niter_bilinear = k;
 
         warning('MESS:maxiter', ...
-            'REACHED MAXIMUM ITERATION NUMBER, FINAL RESIDUAL: %d',...
-            lyapunov_Norm);
+                'REACHED MAXIMUM ITERATION NUMBER, FINAL RESIDUAL: %d', ...
+                lyapunov_Norm);
 
         if opts.blyap.info
-            fprintf('step: %4d residual: %e rank(Z): %d \n',...
-                i, rz_new, lyapNorm(i));
+            fprintf('step: %4d residual: %e rank(Z): %d \n', ...
+                    k, rz_new, lyapNorm(k));
             fprintf(['Did not converge after %4d steps last residual:', ...
-                ' %e rank(Z): %d \n'], i, lyapNorm(i), rz_new);
+                     ' %e rank(Z): %d \n'], k, lyapNorm(k), rz_new);
         end
     end
 
     if opts.blyap.info
-        fprintf('step: %4d residual: %e rank(Z): %d \n',...
-            i,  lyapNorm(i), rz_new);
+        fprintf('step: %4d residual: %e rank(Z): %d \n', ...
+                k, lyapNorm(k), rz_new);
     end
 end
 
@@ -337,14 +340,14 @@ out.niter_bilinear = niter_bilinear;
 
 % format rank output
 out.rankZ_bilinear = zeros(out.niter_bilinear, 1);
-for i = 1 : out.niter_bilinear
-    out.rankZ_bilinear(i) = ranksZ(i);
+for k = 1 : out.niter_bilinear
+    out.rankZ_bilinear(k) = ranksZ(k);
 end
 
 % format residual output
 out.resNorm_bilinear = zeros(out.niter_bilinear, 1);
-for i = 1 : out.niter_bilinear
-    out.resNorm_bilinear(i) = lyapNorm(i);
+for k = 1 : out.niter_bilinear
+    out.resNorm_bilinear(k) = lyapNorm(k);
 end
 
 % Transform N back into Matrix (only if it wasn't given as a cell)
@@ -352,9 +355,9 @@ end
 
 end
 
-
-function opts = check_opts(opts, expected_subStructures,...
-    expected_sub_subStructures, default_values)
+%% Local function: check_opts
+function opts = check_opts(opts, expected_subStructures, ...
+                           expected_sub_subStructures, default_values)
 % helper function
 
 % Check for opts
@@ -362,14 +365,14 @@ function opts = check_opts(opts, expected_subStructures,...
 %   opts                             struct to be checked for options
 %
 %   expected_subStructures           input as cell with the names of the
-%                                    necessary substructes
+%                                    necessary substructures
 %
 %   expected_sub_subStructures       input as cell with the names of the
-%                                    necessary sub_substructes
+%                                    necessary sub_substructures
 %                                    {n} names of the nth substructure
 %
 %   default_values                   input as cell with the default values for
-%                                    the necessary sub_substructes
+%                                    the necessary sub_substructures
 %                                    {n} values of the nth substructure
 %
 % Output
@@ -378,54 +381,49 @@ function opts = check_opts(opts, expected_subStructures,...
 %
 %
 
-for i = 1 : length(expected_subStructures)
+for k = 1 : length(expected_subStructures)
     % checks if all necessary data is given
     if not(length(expected_subStructures) == length(expected_sub_subStructures))
         error('MESS:control_data', ...
-            'Sub_SubStructure for some SubStructure is missing!')
+              'Sub_SubStructure for some SubStructure is missing!')
     end
 
-    if not(length(expected_sub_subStructures{i}) == length(default_values{i}))
+    if not(length(expected_sub_subStructures{k}) == length(default_values{k}))
         error('MESS:control_data', ...
-            'Not every sub_subStructe has an assigned default Value!');
+              'Not every sub_subStructure has an assigned default value!');
     end
 
     % creates structures if not yet existing
-    if not(isfield(opts, (expected_subStructures{i})))|| ...
-            isempty(opts.(expected_subStructures{i}))
+    if not(isfield(opts, (expected_subStructures{k}))) || ...
+       isempty(opts.(expected_subStructures{k}))
         warning('MESS:control_data', ...
-            'opts.%s is missing. parameters set to default values',...
-            expected_subStructures{1});
+                'opts.%s is missing. parameters set to default values', ...
+                expected_subStructures{1});
 
-        create_empty_opt = cell(length(expected_sub_subStructures{i}), 1);
-        opts.(expected_subStructures{i}) = cell2struct(create_empty_opt,...
-            expected_sub_subStructures{i});
+        create_empty_opt = cell(length(expected_sub_subStructures{k}), 1);
+        opts.(expected_subStructures{k}) = cell2struct(create_empty_opt, ...
+                                               expected_sub_subStructures{k});
     end
 
-
-    for j = 1 : length(expected_sub_subStructures{i})
+    for l = 1 : length(expected_sub_subStructures{k})
 
         % assigins default values if there are no given values
-        if  not(isfield(opts.(expected_subStructures{i}), ...
-                expected_sub_subStructures{i}{j})) || ...
-                isempty(opts.(expected_subStructures{i}).(expected_sub_subStructures{i}{j}))
-            default_message = default_values{i}{j};
+        if not(isfield(opts.(expected_subStructures{k}), ...
+               expected_sub_subStructures{k}{l})) || ...
+           isempty(opts.(expected_subStructures{k}).(expected_sub_subStructures{k}{l}))
+
+            default_message = default_values{k}{l};
 
             if not(ischar(default_message))
-                default_message = num2str(default_values{i}{j});
+                default_message = num2str(default_values{k}{l});
             end
 
-            warning('MESS:control_data','opts.%s.%s is set to %s (default)',...
-                expected_subStructures{i}, expected_sub_subStructures{i}{j}, default_message);
-            opts.(expected_subStructures{i}).(expected_sub_subStructures{i}{j}) = default_values{i}{j};
+            warning('MESS:control_data','opts.%s.%s is set to %s (default)', ...
+                    expected_subStructures{k}, expected_sub_subStructures{k}{l}, default_message);
+
+            opts.(expected_subStructures{k}).(expected_sub_subStructures{k}{l}) = default_values{k}{l};
         end
     end
 end
 
 end
-
-
-
-
-
-

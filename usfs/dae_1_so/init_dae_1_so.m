@@ -1,6 +1,6 @@
 function [result, eqn, opts, oper] = init_dae_1_so(eqn, opts, oper, flag1, flag2)
 % function [result, eqn, opts, oper] = init_dae_1_so(eqn, opts, oper, flag1, flag2)
-% return true or false if data for A and E resp. flag1 and flag2  are availabe
+% return true or false if data for A and E resp. flag1 and flag2  are available
 % and correct in eqn.
 %
 %   result = init_dae_1_so(eqn,flag1);
@@ -33,7 +33,7 @@ function [result, eqn, opts, oper] = init_dae_1_so(eqn, opts, oper, flag1, flag2
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

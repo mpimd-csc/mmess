@@ -1,6 +1,6 @@
 function C=mul_E_dae_1_so(eqn, opts, opE, B, opB)%#ok<INUSL>
 
-%% function mul_A_so_1 perfoms operation C = opE(E)*opB(B)
+%% function mul_A_so_1 performs operation C = opE(E)*opB(B)
 % for E as in (2) in help mess_usfs_dae1_so 
 %
 %  C = mul_E_dae_1_so(eqn, opts, opE, B, opB)
@@ -30,13 +30,13 @@ function C=mul_E_dae_1_so(eqn, opts, opE, B, opB)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 
-%% check input Paramters
+%% check input Parameters
 if (not(ischar(opE)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opE or opB is not a char');
 end
@@ -86,7 +86,7 @@ if issymmetric(eqn.E_) && issymmetric(eqn.M_)
     opE = 'N';   % let us avoid unnecessary transposition of matrices
 end
 
-%% perfom multiplication
+%% perform multiplication
 switch opE
 
     case 'N'

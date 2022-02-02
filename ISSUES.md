@@ -27,12 +27,15 @@
   `eqn.Rinv`.
 * `mess_splitting_dre` does not give the expected order of
   approximation in the LTV case for order larger 2.
-* `mess_splitting_dre` works for the LTV case only if A(t)*A(s)=A(s)*A(t). This is
-   not checked in the code and has to be ensured by the user.
+* `mess_splitting_dre` works for the LTV case only if
+   `A(t)*A(s)=A(s)*A(t)`. This is not checked in the code and has to
+   be ensured by the user.
+* `mess_tangential_irka` was observed to converge exceptionally slow
+  using MATLAB R2019b on certain Intel Sandy bridge processors.
 
 ## Compatibility with other Software
 
-* The sssMOR toolbox from MORlab @ TUM contains an earlier version of
+* The sssMOR toolbox from MORLab @ TUM contains an earlier version of
   M-M.E.S.S. this may lead to conflicts with our internal
   data-management. Also some wrong number of inputs or outputs error
   messages can appear.

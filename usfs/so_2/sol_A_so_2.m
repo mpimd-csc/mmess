@@ -14,7 +14,7 @@ function X=sol_A_so_2(eqn, opts,opA,B,opB)%#ok<INUSL>
 %   opts    structure containing parameters for the algorithm
 %   opA     character specifying the shape of A
 %           opA = 'N' solves A *X = opB(B)
-%           opA = 'T' sovles A'*X = opB(B)
+%           opA = 'T' solves A'*X = opB(B)
 %   B       p-x-q matrix
 %   opB     character specifying the shape of B
 %           opB = 'N' solves opA(A)*X = B
@@ -22,7 +22,7 @@ function X=sol_A_so_2(eqn, opts,opA,B,opB)%#ok<INUSL>
 %
 %   Output:
 %                                       |-K  0|
-%   X       matrix fullfilling equation | 0  M| *X= opB(B)
+%   X       matrix fulfilling equation | 0  M| *X= opB(B)
 %
 %   This function does not use other so3 functions.
 %
@@ -31,7 +31,7 @@ function X=sol_A_so_2(eqn, opts,opA,B,opB)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

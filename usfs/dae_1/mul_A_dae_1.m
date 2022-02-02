@@ -1,5 +1,5 @@
 function C = mul_A_dae_1(eqn, opts, opA, B, opB)%#ok<INUSL>
-%% function mul_A perfoms operation C = opA(A_)*opB(B)
+%% function mul_A performs operation C = opA(A_)*opB(B)
 %
 % Input:
 %   eqn     structure contains field A_
@@ -19,7 +19,7 @@ function C = mul_A_dae_1(eqn, opts, opA, B, opB)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -33,7 +33,7 @@ function C = mul_A_dae_1(eqn, opts, opA, B, opB)%#ok<INUSL>
 %
 %   uses size_dae_1
 
-%% check input Paramters
+%% check input Parameters
 if (not(ischar(opA)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opA or opB is not a char');
 end
@@ -65,7 +65,7 @@ n = size(eqn.A_,1);
 st = eqn.st;
 one = 1:st;
 two = st + 1 : n;
-%% perfom multiplication
+%% perform multiplication
 switch opA
 
     case 'N'

@@ -1,5 +1,5 @@
 function C = mul_A_dae_3_so(eqn, opts, opA, B, opB)%#ok<INUSL>
-%% function mul_A perfoms operation C = opA(A_)*opB(B)
+%% function mul_A performs operation C = opA(A_)*opB(B)
 %
 % Input:
 %   eqn     structure contains field A_
@@ -27,12 +27,12 @@ function C = mul_A_dae_3_so(eqn, opts, opA, B, opB)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-%% check input Paramters
+%% check input Parameters
 if (not(ischar(opA)) || not(ischar(opB)))
     error('MESS:error_arguments', 'opA or opB is not a char');
 end
@@ -79,7 +79,7 @@ else
     end
 end
 
-%% perfom multiplication
+%% perform multiplication
 
 if (opB=='N' && (size(B,1)==(2*nv+np))) || (opB=='T' && (size(B,2)==(2*nv+np)))
     switch opA
@@ -118,7 +118,7 @@ if (opB=='N' && (size(B,1)==(2*nv+np))) || (opB=='T' && (size(B,2)==(2*nv+np)))
 elseif (opB=='N' && (size(B,1)==(2*nv))) || (opB=='T' && (size(B,2)==(2*nv)))
     error('MESS:error_usage','mul_A_dae_3_so is only coded for shift parameter computation');
 else
-    error('MESS:error_arguemnts', 'B has wrong number of cols');
+    error('MESS:error_arguments', 'B has wrong number of cols');
 end
 if opB == 'N'
     C = C(1 : rowB, : );

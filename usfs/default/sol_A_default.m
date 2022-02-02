@@ -19,7 +19,7 @@ function X=sol_A_default(eqn, opts,opA,B,opB)
 %
 %    Output:
 %
-%    X         matrix fullfilling equation  opA(A_)*X = opB(B)
+%    X         matrix fulfilling equation  opA(A_)*X = opB(B)
 %
 % This function uses another default function size_default(eqn,
 % opts) to obtain the number of rows of matrix A_ in structure
@@ -28,7 +28,7 @@ function X=sol_A_default(eqn, opts,opA,B,opB)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -36,26 +36,27 @@ function X=sol_A_default(eqn, opts,opA,B,opB)
 
 
 %% check input parameters
-if (not(ischar(opA)) || not(ischar(opB)))
+if not(ischar(opA)) || not(ischar(opB))
     error('MESS:error_arguments', 'opA or opB is not a char');
 end
 
-opA = upper(opA); opB = upper(opB);
-if(not((opA=='N' || opA=='T')))
-    error('MESS:error_arguments','opA is not ''N'' or ''T''');
+opA = upper(opA);
+opB = upper(opB);
+if not( opA=='N' || opA=='T' )
+    error('MESS:error_arguments', 'opA is not ''N'' or ''T''');
 end
 
-if(not((opB=='N' || opB=='T')))
-    error('MESS:error_arguments','opB is not ''N'' or ''T''');
+if not( opB=='N' || opB=='T' )
+    error('MESS:error_arguments', 'opB is not ''N'' or ''T''');
 end
 
-if (not(isnumeric(B))) || (not(ismatrix(B)))
-    error('MESS:error_arguments','B has to ba a matrix');
+if not( isnumeric(B)) ||  not(ismatrix(B))
+    error('MESS:error_arguments', 'B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if(not(isfield(eqn,'A_')))
-    error('MESS:error_arguments','field eqn.A_ is not defined');
+if not(isfield(eqn,'A_'))
+    error('MESS:error_arguments', 'field eqn.A_ is not defined');
 end
 
 rowA = size_default(eqn, opts);
@@ -67,41 +68,41 @@ switch opA
   case 'N'
     switch opB
 
-        %implement solve A_*X=B
+      %implement solve A_ * X = B
       case 'N'
-        if(rowA~=size(B,1))
-            error('MESS:error_arguments',['number of rows of A_ ' ...
-                                'differs with number of rows of B']);
+        if not(rowA == size(B,1))
+            error('MESS:error_arguments', ...
+                  'number of rows of A_ differs with number of rows of B');
         end
-        X = eqn.A_\B;
+        X = eqn.A_ \ B;
 
-        %implement solve A_*X=B'
+      %implement solve A_ * X = B'
       case 'T'
-        if(rowA~=size(B,2))
-            error('MESS:error_arguments',['number of rows of A_ ' ...
-                                'differs with number of columns of B']);
+        if not(rowA == size(B,2))
+            error('MESS:error_arguments', ...
+                  'number of rows of A_ differs with number of columns of B');
         end
-        X = eqn.A_\B';
+        X = eqn.A_ \ B';
     end
 
   case 'T'
     switch opB
 
-        %implement solve A_'*X=B
+      %implement solve A_' * X = B
       case 'N'
-        if(colA~=size(B,1))
-            error('MESS:error_arguments',['number of columns of A_ ' ...
-                                'differs with number of rows of B']);
+        if not(colA == size(B,1))
+            error('MESS:error_arguments', ...
+                  'number of columns of A_ differs with number of rows of B');
         end
-        X = eqn.A_'\B;
+        X = eqn.A_' \ B;
 
-        %implement solve A_'*X=B'
+        %implement solve A_' * X = B'
       case 'T'
-        if(colA~=size(B,2))
-            error('MESS:error_arguments',['number of columns of A_ ' ...
+        if not(colA == size(B,2))
+            error('MESS:error_arguments', ['number of columns of A_ ' ...
                                 'differs with number of columns of B']);
         end
-        X = eqn.A_'\B';
+        X = eqn.A_' \ B';
     end
 
 end

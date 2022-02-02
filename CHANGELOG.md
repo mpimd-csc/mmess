@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## version 2.2
+
+### Added
+
+- Rail data are now available in additional sizes, via automatic
+  downloads at runtime.
+
+### Changed
+
+- `mess_balanced_truncation` now adapts the default Lyapunov residual
+  tolerances to the right hand side (RHS) and densifies RHS factors
+  prior to compression.
+- Documentation has been updated especially for usfs sets
+
+### Fixed
+
+- `mess_balanced_truncation` would fail on certain incomplete `opts`
+  structures, which are now reporting proper errors so users can
+  adapt.
+- various smaller issues (outdated API, typographic errors) in the
+  documentation have been fixed.
+- automatic downloading of additional examples now also works in
+  Octave
+- `mess_get_BIPS` was failing on some models that used a differing
+  naming scheme
+- some comments in the `default` usfs have been updated to better match the
+  current implementation
+- figures now use consistent line-width for all graphs
+- typographic errors and outdated defaults in the help texts have been
+  corrected
+
 ## version 2.1
 
 ### Added
@@ -14,7 +45,7 @@
 
 - We changed the license to BSD 2-Clause!
 - `README.md` received some improvements pointing to references and
-  documentation more explcicitly.
+  documentation more explicitly.
 - Sigma magnitude plots now allow presampling of the full order model
   when, e.g. a sequence of ROMs is being processed.
 - `mess_balanced_truncation` now always performs a column compression
@@ -92,7 +123,7 @@
   - `opts.adi.shifts` has moved to `opts.shifts` such that also RADI
     can use it independent of ADI
   - `opts.norm` now determines the norm for all methods rather than
-     having to consistently specifiy the same norm in each substructure
+     having to consistently specify the same norm in each substructure
   - initial feedbacks for the Riccati solvers are now stored in the
     `opts` structure for the method rather than `eqn`
 - The projection shift routine uses the flag `opts.shifts.implicitVtAV`.
@@ -123,7 +154,7 @@
 
 ## version 1.0
 
-Compared to the predecessor lyapack a couple of things have changed.
+Compared to the predecessor LyaPack a couple of things have changed.
 
 - The user supplied functions are now managed by an operator manager
 - The low rank ADI now has:

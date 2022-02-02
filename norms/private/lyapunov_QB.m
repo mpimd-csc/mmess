@@ -23,7 +23,7 @@ function y = lyapunov_QB(Z , x, eqn, oper, opts, ~)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -59,32 +59,38 @@ colCompress_end = colZ;
 
 % Building [N_1*Z, ..., N_k*Z] with N_k' for type 'T'
 for currentN_k = 1 : numberOf_N_matrices
+
     bilinearSUM(:, colCompress_start:colCompress_end) = ...
         oper.mul_N(eqn,opts,eqn.type,Z,'N',currentN_k);
+
     colCompress_start = colCompress_end + 1;
     colCompress_end = colCompress_end + colZ;
 end
 
 switch eqn.type
     case 'N'
-        y3 = bilinearSUM *(bilinearSUM' * x);
+        y3 = bilinearSUM * (bilinearSUM' * x);
     case 'T'
-        y3 = bilinearSUM *(bilinearSUM' * x);
+        y3 = bilinearSUM * (bilinearSUM' * x);
     otherwise
         error('MESS:control_data','eqn.type has to be ''N'' or ''T''');
 end
 
 %% Terms with A
-y2= Z * (Z' * y2);
+y2 = Z * (Z' * y2);
+
 if eqn.haveE
-    y2= oper.mul_E(eqn, opts, eqn.type, y2, 'N');
+    y2 = oper.mul_E(eqn, opts, eqn.type, y2, 'N');
 end
+
 %% Complete SUM
+y = y1 + y2 + y3;
+
 switch eqn.type
     case 'N'
-        y = y1 + y2 + eqn.pB *(eqn.pB' * x) + y3;
+        y = y + eqn.pB *(eqn.pB' * x);
     case 'T'
-        y = y1 + y2 + eqn.pC' *(eqn.pC * x) + y3;
+        y = y + eqn.pC' *(eqn.pC * x);
     otherwise
         error('MESS:control_data','eqn.type has to be ''N'' or ''T''');
 end

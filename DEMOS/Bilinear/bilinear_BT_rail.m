@@ -5,7 +5,7 @@ function bilinear_BT_rail(refinements)
 % Call: bilinear_BT_rail(refinements)
 %
 % Input:
-%   refinement   The grid refinement level detemining the problem size.
+%   refinement   The grid refinement level determining the problem size.
 %                See `mess_get_bilinear_rail` for details.  The default
 %                uses the size n = 5177 model.
 %                (optional, default: 3)
@@ -13,7 +13,7 @@ function bilinear_BT_rail(refinements)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -21,7 +21,7 @@ function bilinear_BT_rail(refinements)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -96,15 +96,12 @@ tvals = t0:1:tf;
 % Start ode45 for original and reduced order systems
 u = ones(size(eqn.B,2),1);
 x0 = zeros(size(eqn.A_,1),1);
-% if octave
-%     options=odeset('RelTol', 1e-6);
-% else
-    options=odeset(...
-        'RelTol', 1e-6, ...
-        'Mass', eqn.E_, ...
-        'MStateDependence', 'none',...
-        'MassSingular', 'no');
-%end
+options=odeset(...
+    'RelTol', 1e-6, ...
+    'Mass', eqn.E_, ...
+    'MStateDependence', 'none',...
+    'MassSingular', 'no');
+
 [~, x] = ...
     ode15s(@(t,x)bilinear_system(t,x, u, eqn, opts, oper), tvals, x0, options);
 
@@ -127,9 +124,9 @@ leg_comp = {'FOM out 1', 'FOM out 2', 'FOM out 3', 'FOM out 4', 'FOM out 5', ...
 leg_err = {'out 1', 'out 2', 'out 3', 'out 4', 'out 5', 'out 6'};
 
 figure()
-plot(tvals, y, '-', 'LineWidth', 2)
+plot(tvals, y, '-', 'LineWidth', 3)
 hold on
-plot(tvals, y_r, '--', 'LineWidth', 2)
+plot(tvals, y_r, '--', 'LineWidth', 3)
 xlabel('time [s]')
 ylabel('magnitude')
 legend(leg_comp, 'Location','northeastoutside')
@@ -142,7 +139,7 @@ relErr = abs(absErr ./ y);
 
 % plot relative error
 figure()
-semilogy(tvals, relErr, 'LineWidth', 2);
+semilogy(tvals, relErr, 'LineWidth', 3);
 xlabel('time [s]')
 ylabel('magnitude')
 legend(leg_err, 'Location','northeastoutside')

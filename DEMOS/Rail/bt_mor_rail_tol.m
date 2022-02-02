@@ -10,10 +10,10 @@ function [Ar, Br, Cr] = bt_mor_rail_tol(k,tol,shifts,istest)
 %
 % k           refinement level of the model to use
 %             (0 - 5, i.e. 109 - 79841 Dofs)
-%             (optinal, defaults to 3, i.e. 5177 Dofs)
+%             (optional, defaults to 3, i.e. 5177 Dofs)
 %
 % tol         truncation tolerance for the Hankel singular values
-%             (optional; defalts to 1e-6)
+%             (optional; defaults to 1e-6)
 %
 % shifts      shift selection used in ADI;  possible choices:
 %               'heur'       :   Penzl heuristic shifts
@@ -27,7 +27,7 @@ function [Ar, Br, Cr] = bt_mor_rail_tol(k,tol,shifts,istest)
 %
 % Outputs
 %
-% Ar, Br, Cr  the reduced orde system matrices.
+% Ar, Br, Cr  the reduced order system matrices.
 %
 % References
 % [1] A. C. Antoulas, Approximation of Large-Scale Dynamical Systems, Vol.
@@ -56,7 +56,7 @@ function [Ar, Br, Cr] = bt_mor_rail_tol(k,tol,shifts,istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -113,8 +113,8 @@ if istest
     end
 else
     figure(1);
-    semilogy(outB.res,'linewidth',3);
-    title('AXM^T + MXA^T = -BB^T');
+    semilogy(outB.res,'LineWidth',3);
+    title('A X E^T + E X A^T = -BB^T');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
@@ -122,7 +122,7 @@ end
 disp('size outB.Z:');
 disp(size(outB.Z));
 
-%% Compute low-rank factor of Observatibility Gramian
+%% Compute low-rank factor of Observability Gramian
 eqn.type = 'T';                     % Lyapunov eq. for Observability Gram.
 t_mess_lradi = tic;
 outC = mess_lradi(eqn, opts, oper); % run ADI iteration
@@ -136,8 +136,8 @@ if istest
     end
 else
     figure(2);
-    semilogy(outC.res,'linewidth',3);
-    title('A^TXM + M^TXA = -C^TC');
+    semilogy(outC.res,'LineWidth',3);
+    title('A^T X E + E^T X A = -C^T C');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
@@ -178,7 +178,7 @@ if istest
     end
 else
     figure;
-    semilogy(HSV,'linewidth',3);
+    semilogy(HSV,'LineWidth',3);
     title('Computed Hankel singular values');
     xlabel('index');
     ylabel('magnitude');

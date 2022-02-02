@@ -9,7 +9,7 @@ function Lyapunov_rail_LDL_ADI(k,shifts,implicit,istest)
 %
 % k           refinement level of the model to use
 %             (0 - 5, i.e. 109 - 79841 Dofs)
-%             (optinal, defaults to 2, i.e. 1357 Dofs)
+%             (optional, defaults to 2, i.e. 1357 Dofs)
 %
 % shifts      ADI shift selection strategy. Possible values:
 %              'heur'        Penzl's heuristic shifts
@@ -38,7 +38,7 @@ function Lyapunov_rail_LDL_ADI(k,shifts,implicit,istest)
 %     URL http://hdl.handle.net/11858/00-001M-0000-0029-CE18-2
 %
 % [3] N. Lang, H. Mena, J. Saak, On the benefits of the LDLT factorization
-%     for largescale differential matrix equation solvers, Linear Algebra
+%     for large-scale differential matrix equation solvers, Linear Algebra
 %     Appl. 480 (2015) 44–71.
 %     https://doi.org/10.1016/j.laa.2015.04.006
 %
@@ -68,7 +68,7 @@ function Lyapunov_rail_LDL_ADI(k,shifts,implicit,istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -133,7 +133,7 @@ if istest
    end
 else
     figure(1);
-    semilogy(out.res,'linewidth',3);
+    semilogy(out.res,'LineWidth',3);
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
@@ -161,7 +161,7 @@ if istest
    end
 else
     figure(2);
-    semilogy(out1.res,'linewidth',3);
+    semilogy(out1.res,'LineWidth',3);
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);

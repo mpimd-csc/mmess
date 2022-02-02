@@ -1,5 +1,5 @@
 function [Er,Ar,Br,Cr] = IRKA_rail(k,r,istest)
-% Computes a loclly H2-optimal reduced order model of order r for
+% Computes a locally H2-optimal reduced order model of order r for
 % the selective cooling of Steel profiles application described in
 % [1,2,3] via the tangential IRKA method.
 %
@@ -9,7 +9,7 @@ function [Er,Ar,Br,Cr] = IRKA_rail(k,r,istest)
 %
 % k           refinement level of the model to use
 %             (0 - 5, i.e. 109 - 79841 Dofs)
-%             (optinal, defaults to 2, i.e. 1357 Dofs)
+%             (optional, defaults to 2, i.e. 1357 Dofs)
 %
 % r           desired dimension of the reduced order model
 %             (optional, defaults to 10)
@@ -44,7 +44,7 @@ function [Er,Ar,Br,Cr] = IRKA_rail(k,r,istest)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -69,12 +69,12 @@ if nargin < 3
     istest = 0;
 end
 opts.irka.maxiter =100;
-opts.irka.shift_tol = 1e-4;
+opts.irka.shift_tol = 1e-3;
 opts.irka.h2_tol = 1e-6;
 if istest
     opts.irka.info = 1;
 else
-    opts.irka.info = 2;
+    opts.irka.info = 3;
 end
 opts.irka.init = 'logspace';
 

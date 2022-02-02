@@ -11,7 +11,33 @@
 - Jens Saak [ORCID:0000-0001-5567-9637](https://orcid.org/0000-0001-5567-9637)
 - Martin Köhler [ORCID:0000-0003-2338-9904](https://orcid.org/0000-0003-2338-9904)
 
-## Version 2.1.0
+## Version 2.2
+
+- Quirin Aumann[ORCID:0000-0001-7942-5703](https://orcid.org/0000-0001-7942-5703)
+  - bug and documentation fixes in IRKA
+  - release testing
+- Christian Himpe [ORCID:0000-0003-2194-6754](https://orcid.org/0000-0003-2194-6754)
+  - code review
+  - documentation fixes
+  - release testing
+- Jens Saak [ORCID:0000-0001-5567-9637](https://orcid.org/0000-0001-5567-9637)
+  - improved MOR functions,
+  - larger Rail examples (for both the linear and bilinear cases),
+  - BIPS example fixes,
+  - Documentation updates,
+  - release testing,
+  - code review
+- Tony Stillfjord [ORCID:0000-0001-6123-4271](https://orcid.org/0000-0001-6123-4271)
+  - splitting scheme for DREs related improvements.
+- Steffen Werner [ORCID:0000-0003-1667-4862](https://orcid.org/0000-0003-1667-4862)
+  - code review
+
+### Student Assistants and Interns
+
+- Adrian Schulze
+  - Spellchecker for comments, strings and MD-files, for both CLI and CI
+
+## Version 2.1
 
 - Björn Baran [ORCID:0000-0001-6570-3653](https://orcid.org/0000-0001-6570-3653)
   - fixes and improvements in DRE methods,

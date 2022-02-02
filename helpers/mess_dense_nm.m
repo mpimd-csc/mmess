@@ -1,5 +1,5 @@
 function X = mess_dense_nm(A,B,C,E,X0,S)
-% naive Newton Kleinman iteration  for the ARE
+% naive Newton Kleinman iteration for the ARE
 %
 %     A'*X*E+E'*X*A+C'*S*C-E'*X*B*B'*X*E = 0
 %
@@ -15,7 +15,7 @@ function X = mess_dense_nm(A,B,C,E,X0,S)
 %
 % This file is part of the M-M.E.S.S. project 
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -42,12 +42,10 @@ end
 tol = 1e-12;
 maxiter = 50;
 
-F = B*B';
 if (nargin == 6) && not(isempty(S))
     if not(issymmetric(S))
         error('MESS:data', 'S must be symmetric');
     end
-    G = C' * S * C;
     % S must be symmetric pos. semidef. for lyapchol or lyap_sgn_fac
     if strcmp(meth, 'lyapchol') || strcmp(meth, 'lyap_sgn_fac')
         [U,S_diag] = eig(S);
@@ -55,6 +53,8 @@ if (nargin == 6) && not(isempty(S))
             meth='lyap2solve';
         end
     end
+
+    G = C' * S * C;
     switch meth
         case 'lyap'
             G = (G + G') / 2; % make sure it's symmetric for e.g. lyap
@@ -89,8 +89,11 @@ res0 = norm(G);
 if (nargin<4) || isempty(E)
     E = eye(size(A,1));
 end
-for i=1:maxiter
-    if i>1 || ( (nargin==5) && not(isempty(X0)) )
+
+F = B*B';
+
+for k=1:maxiter
+    if k>1 || ( (nargin==5) && not(isempty(X0)) )
         K = B'*X0*E;
     else
         K = zeros(size(B'));
@@ -119,8 +122,8 @@ for i=1:maxiter
     end
 end
 
-if i==maxiter && not(rc<tol) &&not(res<tol*res0)
+if k==maxiter && not(rc<tol) && not(res<tol*res0)
     warning('MESS:denseNM:convergence',...
-        ['dense Newton method stopped by maximum iteration number.',...
-         ' Results may be inaccurate!']);
+            ['dense Newton method stopped by maximum iteration number.',...
+             ' Results may be inaccurate!']);
 end

@@ -29,7 +29,7 @@ function X=sol_ApE_so_2(eqn, opts,opA,p,opE,B,opB)%#ok<INUSL>
 %   Output:
 %
 %                                       (|-K  0|     |E  M|)
-%   X       matrix fullfilling equation (| 0  M| + p*|M  0|)*X = opB(B)
+%   X       matrix fulfilling equation (| 0  M| + p*|M  0|)*X = opB(B)
 %
 %   This function does not use other so3 functions.
 %
@@ -38,7 +38,7 @@ function X=sol_ApE_so_2(eqn, opts,opA,p,opE,B,opB)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

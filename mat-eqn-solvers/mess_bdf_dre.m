@@ -1,6 +1,6 @@
 function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
 %% function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
-%   LDL^T factored BDF method solving diffenrential Riccati equation
+%   LDL^T factored BDF method solving differential Riccati equation
 %   E*d/dt X(t)*E' =-B*B' - E*X(t)*A' - A*X(t)*E' + E*X(t)*C'*C*X(t)*E' (N)
 %   E'*d/dt X(t)*E =-C'*C - E'*X(t)*A - A'*X(t)*E + E'*X(t)*B*B'*X(t)*E (T)
 %   backward in time.
@@ -46,7 +46,7 @@ function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
 %               (optional)
 %
 %   eqn.LTV     possible  values: 0, 1, false, true
-%               indicates autonmous (false) or
+%               indicates autonomous (false) or
 %               non-autonomous (true) differential
 %               Riccati equation
 %               (optional, default: 0)
@@ -111,7 +111,7 @@ function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2021 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -125,41 +125,50 @@ function [out, eqn, opts, oper] = mess_bdf_dre(eqn, opts, oper)
 if not(isfield(opts,'bdf')) || not(isstruct(opts.bdf))
     error('MESS:control_data','BDF control structure opts.bdf missing.');
 end % Single fields are checked below or inside mess_lradi
+
 if not(isfield(opts.bdf,'time_steps')) || not(isnumeric(opts.bdf.time_steps)) ...
-        || isscalar(opts.bdf.time_steps)
+   || isscalar(opts.bdf.time_steps)
     error('MESS:control_data','opts.bdf.time_steps is missing.');
 end
+
 opts.t0 = opts.bdf.time_steps(1);
 t1 = opts.bdf.time_steps(2);
 tend = opts.bdf.time_steps(end);
 opts.bdf.tau = t1 - opts.t0;
 tau_original = opts.bdf.tau;
 eq_err = norm(opts.bdf.time_steps - linspace(opts.t0, tend, length(opts.bdf.time_steps)));
-if eq_err > eps * length(opts.bdf.time_steps)
-    error('MESS:control_data',...
-        'opts.bdf.time_steps has to contain equidistant time steps.');
+
+if eq_err > (eps * length(opts.bdf.time_steps))
+    error('MESS:control_data', ...
+          'opts.bdf.time_steps has to contain equidistant time steps.');
 end
 
-if not(isfield(opts.bdf,'step')),  opts.bdf.step=1; end
+if not(isfield(opts.bdf,'step')),  opts.bdf.step = 1; end
+
 if rem(opts.bdf.step, 1) || (opts.bdf.step < 1) || (opts.bdf.step > 4)
     error('MESS:control_data','opts.bdf.step has an invalid value.');
 end
-if not(isfield(opts.bdf,'info')),  opts.bdf.info=0; end
-if not(isfield(opts.bdf,'trunc_tol')),  ...
-    opts.bdf.trunc_tol=eps * oper.size(eqn, opts); end
+
+if not(isfield(opts.bdf,'info')), opts.bdf.info = 0; end
+
+if not(isfield(opts.bdf,'trunc_tol'))
+    opts.bdf.trunc_tol = eps * oper.size(eqn, opts);
+end
+
 if not(isfield(opts.bdf, 'trunc_info')), opts.bdf.trunc_info = 0; end
-if not(isfield(opts.bdf,'save_solution')),  opts.bdf.save_solution=0; end
+
+if not(isfield(opts.bdf,'save_solution')), opts.bdf.save_solution = 0; end
+
 if opts.bdf.step > 2
     if not(isfield(opts.bdf,'startup_iter') )
         opts.bdf.startup_iter = 8;
     end
+
     if rem(opts.bdf.startup_iter, 1)
-    error('MESS:control_data',...
-        'opts.bdf.startup_iter has an invalid value.');
+        error('MESS:control_data',...
+              'opts.bdf.startup_iter has an invalid value.');
     end
 end
-
-
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -168,9 +177,11 @@ end
 if not(isfield(opts,'nm')) || not(isstruct(opts.nm))
     error('MESS:control_data','Newton control structure opts.nm missing.');
 end
+
 if isfield(opts.nm,'res_tol') && isnumeric(opts.nm.res_tol)
     out.res = [];
 end
+
 if isfield(opts.nm,'rel_diff_tol') && isnumeric(opts.nm.rel_diff_tol)
     out.rc = [];
 end
@@ -182,10 +193,13 @@ end
 if not(isfield(opts,'adi')) || not(isstruct(opts.adi))
     error('MESS:control_data','ADI control structure opts.adi missing.');
 end
-if not(isfield(opts.adi,'compute_sol_fac'))||not(isnumeric(opts.adi.compute_sol_fac)) || ...
-    (not(opts.adi.compute_sol_fac))
+
+if not(isfield(opts.adi,'compute_sol_fac')) || ...
+   not(isnumeric(opts.adi.compute_sol_fac)) || ...
+   not(opts.adi.compute_sol_fac)
+
     warning('MESS:compute_sol_fac', ...
-        'Missing or Corrupted compute_sol_fac field. Switching to default.');
+           'Missing or Corrupted compute_sol_fac field. Switching to default.');
     opts.adi.compute_sol_fac = 1;
 end
 
@@ -196,18 +210,21 @@ end
 if not(isfield(opts,'shifts')) || not(isstruct(opts.shifts))
     error('MESS:control_data','shifts control structure opts.shifts missing.');
 end
+
 if not(isfield(opts.shifts,'implicitVtAV'))
     opts.shifts.implicitVtAV = true;
 end
-if (not(isnumeric(opts.shifts.implicitVtAV)) && ...
-        not(islogical(opts.shifts.implicitVtAV)))
+
+if not(isnumeric(opts.shifts.implicitVtAV)) && ...
+   not(islogical(opts.shifts.implicitVtAV))
     warning('MESS:implicitVtAV', ...
-        'Missing or Corrupted implicitVtAV field. Switching to default (true).');
+       'Missing or Corrupted implicitVtAV field. Switching to default (true).');
     opts.shifts.implicitVtAV = true;
 end
-if  not(opts.shifts.implicitVtAV)
+
+if not(opts.shifts.implicitVtAV)
     warning('MESS:implicitVtAV', ...
-        'implicitVtAV must be true for mess_bdf_dre. Switching to default (true).');
+    'implicitVtAV must be true for mess_bdf_dre. Switching to default (true).');
     opts.shifts.implicitVtAV = true;
 end
 
@@ -215,25 +232,30 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check system data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if not(isfield(eqn, 'LTV')),  eqn.LTV=0; end
-if isfield(opts,'LDL_T') && opts.LDL_T==0
+if not(isfield(eqn, 'LTV')), eqn.LTV = 0; end
+
+if isfield(opts,'LDL_T') && (opts.LDL_T == 0)
     warning('MESS:control_data',['The BDF code does only support ' ...
-                        'LDL_T solutions.\n Setting opts.LDL_T=1']);
+                                 'LDL_T solutions.\n Setting opts.LDL_T=1']);
 end
+
 opts.LDL_T = 1;
+
 if not(isfield(eqn,'type'))
     eqn.type='N';
     warning('MESS:control_data',['Unable to determine type of equation.'...
-        'Falling back to type ''N''']);
-elseif (eqn.type~='N')&&(eqn.type~='T')
+                                 'Falling back to type ''N''']);
+
+elseif not(eqn.type=='N') && not(eqn.type=='T')
     error('MESS:equation_type','Equation type must be either ''T'' or ''N''');
 end
+
 [result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
 
 if eqn.LTV
     if isfield(oper, 'eval_matrix_functions')
         [eqn, opts, oper] = oper.eval_matrix_functions(eqn, opts, oper, ...
-            opts.bdf.time_steps(end));
+                                                       opts.bdf.time_steps(end));
     else
         error('MESS:missing_feature', ['The function eval_matrix_functions is ', ...
                                        'required for LTV problems, but it has ', ...
@@ -241,12 +263,15 @@ if eqn.LTV
                                        'of USFS functions']);
     end
 end
+
 if not(isfield(eqn, 'C')) || not(isnumeric(eqn.C))
     error('MESS:control_data', 'eqn.C is not defined or corrupted');
 end
+
 if not(isfield(eqn, 'B')) || not(isnumeric(eqn.B))
     error('MESS:control_data', 'eqn.B is not defined or corrupted');
 end
+
 if not(isfield(eqn, 'L0')) || not(isnumeric(eqn.L0))
     warning('MESS:control_data', ...
             ['Initial condition factor L0 is not defined or corrupted.',...
@@ -254,6 +279,7 @@ if not(isfield(eqn, 'L0')) || not(isnumeric(eqn.L0))
     n = oper.size(eqn, opts);
     eqn.L0 = zeros(n,1);
 end
+
 if not(isfield(eqn, 'D0')) || not(isnumeric(eqn.D0))
     warning('MESS:control_data', ...
             ['Initial condition factor D0 is not defined or corrupted.',...
@@ -262,8 +288,9 @@ if not(isfield(eqn, 'D0')) || not(isnumeric(eqn.D0))
 end
 
 if not(result)
-    error('MESS:control_data', 'system data is not completely defined or corrupted');
+    error('MESS:control_data','system data is not completely defined or corrupted');
 end
+
 if eqn.type == 'T'
     q = size(eqn.C, 1);
 else
@@ -276,13 +303,17 @@ end
 % All checks done. Here comes the real work!
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialize usfs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 [eqn, opts, oper] = oper.mul_E_pre(eqn, opts, oper);
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialize BDF parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 alpha = zeros(6, 6);
 alpha(1, 1) = -1;
 alpha(1 : 2, 2) = [-4. / 3.; 1. / 3.];
@@ -295,8 +326,10 @@ step = opts.bdf.step;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Initialize data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 times = opts.bdf.time_steps(end:-1:1);
 extra_steps = 0;
+
 if step == 3
     % add small time steps to initialize L with correct order
     tau_small = opts.bdf.tau / 2^(opts.bdf.startup_iter);
@@ -305,10 +338,11 @@ if step == 3
     times_extra = zeros(1, opts.bdf.startup_iter + 3);
     times_extra(1) = times(1); % copy endtime
     times_extra(2) = times(1) - tau_small; % one BDF 1 step
-    times_extra(3 : end) = times(1) - ...
-        tau_small * 2.^(1:opts.bdf.startup_iter + 1); % BDF 2 steps
+    times_extra(3:end) = times(1) - ...
+                         tau_small * 2.^(1:opts.bdf.startup_iter + 1); % BDF 2 steps
     times = [times_extra, times(4 : end)];
     extra_steps = length(times_extra);
+
 elseif step == 4
     % add small time steps to initialize L with correct order
     tau_small = opts.bdf.tau / 2^(opts.bdf.startup_iter + 1);
@@ -328,6 +362,7 @@ elseif step == 4
 end
 L = eqn.L0;
 D = eye(size(L, 2));
+
 if eqn.type == 'T'
     K0 = oper.mul_E(eqn, opts, eqn.type, (L * (L' * eqn.B)), 'N');
 else
@@ -341,11 +376,13 @@ Iq = eye(q);
 if opts.bdf.save_solution
     out.Ls = {L}; % L of step 0
     out.Ds = {D}; % D of step 0
-    elseif eqn.LTV % for LTV 2 step BDF save last L anyway
-        out.Ls = {L}; % L of step 0
+elseif eqn.LTV % for LTV 2 step BDF save last L anyway
+    out.Ls = {L}; % L of step 0
 end
+
 out.Ks = {K0'}; % K of step 0
 
+% FIXME: dead code
 %     end
 %     out.Ks = zeros(p,oper.size(eqn)); % K of step 0
 if eqn.type == 'T'
@@ -353,29 +390,37 @@ if eqn.type == 'T'
 else
     B = eqn.B;
 end
+
 ETL = [];
+
 if not(eqn.LTV)
     ETL_0 = oper.mul_E(eqn, opts, eqn.type, L, 'N');
 end
+
 Ds_0 = D;
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Start iteration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-for j = 2 : length(times)
-    t = times(j);
+for k = 2 : length(times)
+    t = times(k);
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Set order and beta
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    opts.bdf.step = min(step, j - 1);
+
+    opts.bdf.step = min(step, k - 1);
     tau_old = opts.bdf.tau;
-    opts.bdf.tau = times(j - 1) - times(j);
-    if j <= extra_steps && opts.bdf.step == step
+    opts.bdf.tau = times(k - 1) - times(k);
+
+    if (k <= extra_steps) && (opts.bdf.step == step)
         % additional smaller time steps with one order less
         opts.bdf.step = opts.bdf.step - 1;
     end
+
     opts.bdf.beta = beta(opts.bdf.step);
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Update data
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -390,13 +435,13 @@ for j = 2 : length(times)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Set order and beta
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     opts.bdf.step = min(step, j - 1);
+%     opts.bdf.step = min(step, j - 1); % FIXME: dead code
 
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % update E' * L
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if abs(tau_old - opts.bdf.tau) > 1e+4 *eps
+    if abs(tau_old - opts.bdf.tau) > (1e+4 * eps) % FIXME: add comment for magic number
         % in startup phase to initialize L with correct order, tau was
         % doubled from last time step to this, remove intermediate step
         if step == 3
@@ -406,55 +451,70 @@ for j = 2 : length(times)
                     out.Ds = [out.Ds(1 : end - 2), out.Ds(end)];
                 end
             end
+
             if not(eqn.LTV)
                 ETL( : , 1 : L_lengths(1)) = [];
             end
+
             L_lengths(1) = L_lengths(2);
             L_lengths(2) = 0;
             out.Ks = [out.Ks(1 : end - 2), out.Ks(end)];
             Ds = [Ds(1 : end - 2), Ds(end)];
+
             if isfield(out, 'res')
                 out.res = [out.res(1 : end - 2), out.res(end)];
             end
+
             if isfield(out, 'rc')
                 out.rc = [out.rc(1 : end - 2), out.rc(end)];
             end
+
         elseif step == 4
             if eqn.LTV || opts.bdf.save_solution
                 out.Ls = [out.Ls(1 : end - 4), out.Ls(end - 2), out.Ls(end)];
+
                 if opts.bdf.save_solution
                     out.Ds = [out.Ds(1 : end - 4), out.Ds(end - 2), out.Ds(end)];
                 end
             end
+
             if not(eqn.LTV)
                 ETL( : , sum(L_lengths(1:2)) + 1 : sum(L_lengths(1:3))) = [];
                 ETL( : , 1 : L_lengths(1)) = [];
                 ETL = [ETL, ETL_0]; %#ok<AGROW>
-%                 L_lengths(4) = size(ETL_0, 2);
+%                 L_lengths(4) = size(ETL_0, 2); % FIXME: dead code
             end
+
             Ds = [Ds, {Ds_0}]; %#ok<AGROW>
+
             L_lengths = [L_lengths([2, 4]); 0; 0];
             out.Ks = [out.Ks(1 : end - 4), out.Ks(end - 2), out.Ks(end)];
             Ds = [Ds(1 : end - 4), Ds(end - 2), Ds(end)];
+
             if isfield(out, 'res')
                 out.res = [out.res(1 : end - 4), out.res(end - 2), out.res(end)];
             end
+
             if isfield(out, 'rc')
                 out.rc = [out.rc(1 : end - 4), out.rc(end - 2), out.rc(end)];
             end
         end
+% FIXME: dead code
 %     elseif step == 4 && opts.bdf.step == step - 1 && j > 4 ...X
 %             && not(eqn.LTV)
 %         ETL_0 = ETL( : , end - L_lengths(opts.bdf.step) + 1 : end);
 %         Ds_0 = Ds{end};
     end
-    %     if not(isempty(L))
+    %     if not(isempty(L)) % FIXME: dead code
     if eqn.LTV
+
         for s = 2 : opts.bdf.step
             L = [L, out.Ls{s}]; %#ok<AGROW>
         end
+
         ETL = [];
     end
+
     if isempty(ETL)
         ETL = oper.mul_E(eqn, opts, eqn.type, L, 'N');
     else
@@ -468,13 +528,16 @@ for j = 2 : length(times)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % update D blocks for S
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     alphaDs = -alpha(1, opts.bdf.step) * D;
-    for i = 2 : opts.bdf.step
-        if size(Ds, 2) >= i - 1
-            alphaDs = blkdiag(alphaDs, ...
-                -alpha(i, opts.bdf.step) * Ds{i - 1});
+
+    for l = 2 : opts.bdf.step
+
+        if size(Ds, 2) >= l - 1
+            alphaDs = blkdiag(alphaDs, -alpha(l, opts.bdf.step) * Ds{l - 1});
         end
     end
+
     if size(Ds, 2) == opts.bdf.step
         Ds = {D, Ds{1 : end - 1}};
     else
@@ -485,17 +548,20 @@ for j = 2 : length(times)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % update C/B and S
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     if eqn.type == 'T'
         eqn.C = [C; ETL'];
     else
         eqn.B = [B, ETL];
     end
+
     eqn.S = blkdiag(opts.bdf.tau * opts.bdf.beta * Iq, alphaDs);
 
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % perform column compression
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     if eqn.type == 'T'
         [eqn.C, eqn.S] = mess_column_compression(eqn.C, 'T', eqn.S, ...
             opts.bdf.trunc_tol, opts.bdf.trunc_info);
@@ -514,41 +580,50 @@ for j = 2 : length(times)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % perform column compression
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     [L, D] = mess_column_compression(nmout.Z, 'N', nmout.D, ...
-        opts.bdf.trunc_tol, opts.bdf.trunc_info);
+                                     opts.bdf.trunc_tol, opts.bdf.trunc_info);
 
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % print status information
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     if opts.bdf.info
         fprintf('BDF step %4d s\n', t);
         fprintf('\t Newton steps: %2d \n', nmout.niter);
         fprintf('\t Rank %d\n', size(Ds{1},1));
     end
+
     if opts.bdf.save_solution
         out.Ls = [{L}, out.Ls];
         out.Ds = [{D}, out.Ds];
     elseif eqn.LTV % for LTV 2 step BDF save last L anyway
         out.Ls = [{L}, out.Ls(1:min(step, length(out.Ls)))];
     end
+
     out.Ks = [{nmout.K}, out.Ks];
+
     if isfield(opts.nm,'res_tol') && isnumeric(opts.nm.res_tol)
         out.res = [nmout.res(end), out.res];
     end
+
     if isfield(opts.nm,'rel_diff_tol') && isnumeric(opts.nm.rel_diff_tol)
         out.rc = [nmout.rc(end), out.rc];
     end
-
 end
+
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Clean up
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 if eqn.LTV && not(opts.bdf.save_solution)
     out = rmfield(out, 'Ls');
 end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % finalize usfs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 [eqn, opts, oper] = oper.mul_E_post(eqn, opts, oper);
