@@ -19,7 +19,7 @@ The DOI for version 2.2 is
 ```
 @Misc{SaaKB21-mmess-2.2,
   author =       {Saak, J. and K\"{o}hler, M. and Benner, P.},
-  title =        {{M-M.E.S.S.}-2.1 -- The Matrix Equations Sparse Solvers
+  title =        {{M-M.E.S.S.}-2.2 -- The Matrix Equations Sparse Solvers
                   library},
   month =        feb,
   year =         2022,
