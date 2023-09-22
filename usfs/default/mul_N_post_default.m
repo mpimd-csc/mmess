@@ -18,25 +18,24 @@ function [eqn, opts, oper] = mul_N_post_default(eqn, opts, oper)
 %              eqn.Ncount      (should be 1)
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
 % checks if mul_E_pre was initialized
-if(not(isfield(eqn, 'Ncount'))) || not(isnumeric(eqn.Ncount))
-    error('MESS:error_arguments', ['field eqn.Ncount is not defined. Did ' ...
-        'you forget to run mul_E_pre?']);
+if (not(isfield(eqn, 'Ncount'))) || not(isnumeric(eqn.Ncount))
+    mess_err(opts, 'error_arguments', ['field eqn.Ncount is not defined. Did ' ...
+                                       'you forget to run mul_E_pre?']);
 end
 
 % checks Ncount and decides output as cell or matrix
 if eqn.Ncount > 1
     eqn.Ncount = eqn.Ncount - 1;
 else
-    if not(isfield(eqn, 'originalN'))||isempty(eqn.originalN)
+    if not(isfield(eqn, 'originalN')) || isempty(eqn.originalN)
         eqn.N_ = eqn.N_;
     else
         eqn.N_ = eqn.originalN;

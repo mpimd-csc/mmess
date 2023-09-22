@@ -1,4 +1,4 @@
-function C = mul_N_default(eqn, opts, opN, B, opB, h) %#ok<INUSL>
+function C = mul_N_default(eqn, opts, opN, B, opB, h)
 % function C = mul_N_default(eqn, opts, opN, B, opB)
 %
 % This function returns C = N{h}*B, with a given Matrix N{h} and input
@@ -31,13 +31,12 @@ function C = mul_N_default(eqn, opts, opN, B, opB, h) %#ok<INUSL>
 % opts) to obtain the number of rows of matrix N in structure eqn.
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
-
 
 %% check data in eqn structure
 
@@ -50,19 +49,21 @@ switch opN
     case 'N'
         switch opB
 
-            %implement operation N*B
+            % implement operation N*B
             case 'N'
-                if(colN~=size(B, 1))
-                    error('MESS:error_arguments',['number of columns of N ' ...
-                        'differs with number of rows of B']);
+                if not(colN == size(B, 1))
+                    mess_err(opts, 'error_arguments', ...
+                             ['number of columns of N differs with ' ...
+                              'number of rows of B']);
                 end
                 C = eqn.N_{h} * B;
 
-                %implement operation N*B'
+                % implement operation N*B'
             case 'T'
-                if(colN ~= size(B, 2))
-                    error('MESS:error_arguments',['number of columns of N ' ...
-                        'differs with number of columns of B']);
+                if not(colN == size(B, 2))
+                    mess_err(opts, 'error_arguments', ...
+                             ['number of columns of N differs with ' ...
+                              'number of columns of B']);
                 end
                 C = eqn.N_{h} * B';
         end
@@ -70,19 +71,21 @@ switch opN
     case 'T'
         switch opB
 
-            %implement operation N'*B
+            % implement operation N'*B
             case 'N'
-                if(rowN ~= size(B, 1))
-                    error('MESS:error_arguments',['number of rows of N ' ...
-                        'differs with number rows of B']);
+                if not(rowN == size(B, 1))
+                    mess_err(opts, 'error_arguments', ...
+                             ['number of rows of N differs with ' ...
+                              'number rows of B']);
                 end
                 C = eqn.N_{h}' * B;
 
-                %implement operatio N'*B'
+                % implement operation N'*B'
             case 'T'
-                if(rowN ~= size(B, 2))
-                    error('MESS:error_arguments',['number of rows of N ' ...
-                        'differs with number of columns of B']);
+                if not(rowN == size(B, 2))
+                    mess_err(opts, 'error_arguments', ...
+                             ['number of rows of N differs with ' ...
+                              'number of columns of B']);
                 end
                 C = eqn.N_{h}' * B';
         end
@@ -90,4 +93,3 @@ switch opN
 end
 
 end
-

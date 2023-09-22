@@ -1,4 +1,4 @@
-function p = mess_mnmx(rw,num_desired)
+function p = mess_mnmx(rw, num_desired)
 %
 %  Suboptimal solution of the ADI minimax problem. The delivered parameter
 %  set is closed under complex conjugation.
@@ -29,55 +29,54 @@ function p = mess_mnmx(rw,num_desired)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
-
 
 %  Exact copy from
 %
 %  LYAPACK 1.0 (Thilo Penzl, October 1999)
 
 % Input data not completely checked!
-if not(isnumeric(num_desired)) || (length(num_desired) ~= 1)
-    error('MESS:error_arguments','num_desired has to be of numeric type');
+if not(isnumeric(num_desired)) || not(length(num_desired) == 1)
+    mess_err(opts, 'error_arguments', 'num_desired has to be of numeric type');
 end
 if not(isnumeric(rw))
-    error('MESS:error_arguments','rw has to be a vector of numeric type');
+    mess_err(opts, 'error_arguments', 'rw has to be a vector of numeric type');
 end
-if length(rw)<num_desired
-  error('length(rw) must be at least num_desired.');
+if length(rw) < num_desired
+    mess_err(opts, 'error_arguments', ...
+             'length(rw) must be at least num_desired.');
 end
 
 max_rr = +Inf;                       % Choose initial parameter (pair)
 
 for i = 1:length(rw)
-  max_r = mess_s(rw(i),rw);
-  if max_r < max_rr
-    p0 = rw(i);
-    max_rr = max_r;
-  end
+    max_r = mess_s(rw(i), rw);
+    if max_r < max_rr
+        p0 = rw(i);
+        max_rr = max_r;
+    end
 end
 
 if imag(p0)
-  p = [ p0; conj(p0) ];
+    p = [p0; conj(p0)];
 else
-  p = p0;
+    p = p0;
 end
 
-[~,i] = mess_s(p,rw);         % Choose further parameters.
+[~, i] = mess_s(p, rw);         % Choose further parameters.
 
-while size(p,1) < num_desired
+while size(p, 1) < num_desired
 
-  p0 = rw(i);
-  if imag(p0)
-    p = [ p; p0; conj(p0) ]; %#ok<AGROW>
-  else
-    p = [ p; p0]; %#ok<AGROW>
-  end
+    p0 = rw(i);
+    if imag(p0)
+        p = [p; p0; conj(p0)]; %#ok<AGROW>
+    else
+        p = [p; p0]; %#ok<AGROW>
+    end
 
-  [~,i] = mess_s(p,rw);
+    [~, i] = mess_s(p, rw);
 
 end
-

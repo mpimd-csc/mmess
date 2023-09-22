@@ -1,4 +1,4 @@
-function Lyapunov_rail_LDL_ADI(k,shifts,implicit,istest)
+function Lyapunov_rail_LDL_ADI(k, shifts, implicit, istest)
 % Computes the solution of the generalized Lyapunov equation via the
 % low-rank ADI iteration in both ZZ^T [1,2] and LDL^T[3] formulation for the
 % selective cooling of Steel profiles application described in [4,5,6].
@@ -51,8 +51,8 @@ function Lyapunov_rail_LDL_ADI(k,shifts,implicit,istest)
 % [5] P. Benner, J. Saak, A semi-discretized heat transfer model for
 %     optimal cooling of steel profiles, in: P. Benner, V. Mehrmann, D.
 %     Sorensen (Eds.), Dimension Reduction of Large-Scale Systems, Vol. 45
-%     of Lect. Notes Comput. Sci. Eng., Springer-Verlag, Berlin/Heidelberg,
-%     Germany, 2005, pp. 353–356.
+%     of Lecture Notes in Computational Science and Engineering,
+%     Springer-Verlag, Berlin/Heidelberg, Germany, 2005, pp. 353–356.
 %     https://doi.org/10.1007/3-540-27909-1_19
 %
 % [6] J. Saak, Efficient numerical solution of large scale algebraic matrix
@@ -68,122 +68,135 @@ function Lyapunov_rail_LDL_ADI(k,shifts,implicit,istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 %%
-narginchk(0,4);
-if nargin<1, k=2; end
-if nargin<2, shifts='wachspress'; end
-if nargin<3, implicit=0; end
-if nargin<4, istest=0; end
+narginchk(0, 4);
+if nargin < 1
+    k = 2;
+end
+if nargin < 2
+    shifts = 'wachspress';
+end
+if nargin < 3
+    implicit = 0;
+end
+if nargin < 4
+    istest = false;
+end
 %%
 % set operation
-oper = operatormanager('default');
+opts = struct();
+[oper, opts] = operatormanager(opts, 'default');
 % Problem data
 eqn = mess_get_linear_rail(k);
 %%
 
 % ADI tolerances and maximum iteration number
-opts.adi.maxiter = 100;
-opts.adi.res_tol = 1e-12;
+opts.adi.maxiter      = 100;
+opts.adi.res_tol      = 1e-12;
 opts.adi.rel_diff_tol = 1e-16;
-opts.adi.info = 1;
+opts.adi.info         = 1;
 
 eqn.type = 'T';
 
-
 %%
-%Heuristic shift parameters via basic Arnoldi
-n=oper.size(eqn, opts);
-opts.shifts.num_Ritz=50;
-opts.shifts.num_hRitz=25;
+% Heuristic shift parameters via basic Arnoldi
+n = oper.size(eqn, opts);
+opts.shifts.num_Ritz    = 50;
+opts.shifts.num_hRitz   = 25;
 opts.shifts.num_desired = 6;
 
-opts.shifts.b0=ones(n,1);
+opts.shifts.b0 = ones(n, 1);
 switch lower(shifts)
 
     case 'heur'
-        opts.shifts.method = 'heur';
+        opts.shifts.method       = 'heur';
 
     case 'wachspress'
-        opts.shifts.method = 'wachspress';
-        opts.shifts.wachspress = 'T';
+        opts.shifts.method       = 'wachspress';
+        opts.shifts.wachspress   = 'T';
 
     case 'projection'
-        opts.shifts.method = 'projection';
+        opts.shifts.method       = 'projection';
         opts.shifts.implicitVtAV = implicit;
 end
 opts.norm = 'fro';
 
 %%
-fprintf('########################\n');
-fprintf('# ADI with ZZ^T:        \n');
-fprintf('########################\n');
+mess_fprintf(opts, '########################\n');
+mess_fprintf(opts, '# ADI with ZZ^T:        \n');
+mess_fprintf(opts, '########################\n');
 t_mess_lradi = tic;
 out = mess_lradi(eqn, opts, oper);
 t_elapsed1 = toc(t_mess_lradi);
-fprintf(1,'mess_lradi took %6.2f seconds \n',t_elapsed1);
+mess_fprintf(opts, 'mess_lradi took %6.2f seconds \n', t_elapsed1);
 
 if istest
-    if min(out.res)>=opts.adi.res_tol
-       error('MESS:TEST:accuracy','unexpectedly inaccurate result');
-   end
+    if min(out.res) >= opts.adi.res_tol
+        mess_err(opts, 'TEST:accuracy', ...
+                 'unexpectedly inaccurate result');
+    end
 else
     figure(1);
-    semilogy(out.res,'LineWidth',3);
+    semilogy(out.res, 'LineWidth', 3);
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
 end
-disp('size out.Z:');
-disp(size(out.Z));
+[mZ, nZ] = size(out.Z);
+mess_fprintf(opts, 'size out.Z: %d x %d\n\n', mZ, nZ);
 
 %% Set LDL fields
-opts.LDL_T = 1;
-eqn.S = diag([4,4,9,9,16,16]);
-eqn.G = eqn.C' * diag([4,4,9,9,16,16].^(-0.5));
+opts.LDL_T = true;
+eqn.T = diag([4, 4, 9, 9, 16, 16]);
+eqn.W = eqn.C' * diag([4, 4, 9, 9, 16, 16].^(-0.5));
 
 %%
-fprintf('########################\n');
-fprintf('# ADI with LDL^T:       \n');
-fprintf('########################\n');
+mess_fprintf(opts, '########################\n');
+mess_fprintf(opts, '# ADI with LDL^T:       \n');
+mess_fprintf(opts, '########################\n');
 t_mess_lradi = tic;
 out1 = mess_lradi(eqn, opts, oper);
 t_elapsed2 = toc(t_mess_lradi);
-fprintf(1,'mess_lradi took %6.2f seconds \n',t_elapsed2);
+mess_fprintf(opts, 'mess_lradi took %6.2f seconds \n', t_elapsed2);
 
 if istest
-    if min(out.res)>=opts.adi.res_tol
-       error('MESS:TEST:accuracy','unexpectedly inaccurate result');
-   end
+    if min(out.res) >= opts.adi.res_tol
+        mess_err(opts, 'TEST:accuracy', ...
+                 'unexpectedly inaccurate result');
+    end
 else
     figure(2);
-    semilogy(out1.res,'LineWidth',3);
+    semilogy(out1.res, 'LineWidth', 3);
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
 end
-disp('size out1.Z:');
-disp(size(out1.Z));
+[mZ, nZ] = size(out1.Z);
+mess_fprintf(opts, 'size out1.Z: %d x %d\n\n', mZ, nZ);
 
 %% Difference of Lyapunov solutions
-if k<3
+if k < 3
     % This is mainly for consistency checking on our continuous
     % integration tests.
     % NEVER FORM SUCH DYADIC PRODUCTS IN PRODUCTION CODE!!!
-    err = norm(out.Z * out.Z' - out1.Z * out1.D * out1.Z') /...
+    err = norm(out.Z * out.Z' - out1.Z * out1.D * out1.Z') / ...
           norm(out.Z * out.Z');
-    fprintf(['Relative difference between solution with and without ' ...
-             'LDL^T: \t %g\n'], err);
-    if err>1e-11
+    mess_fprintf(opts, ...
+                 ['Relative difference between solution with and without ' ...
+                  'LDL^T: \t %g\n'], ...
+                 err);
+    if err > 1e-11
         if implicit
             shifts = [shifts '(implicit)'];
         end
-        error('MESS:TEST:accuracy',...
-              ['unexpectedly inaccurate result relative difference',...
-               ' %e > 1e-12 in case %s'],err,shifts);
+        mess_err(opts, 'TEST:accuracy', ...
+                 ['unexpectedly inaccurate result relative difference', ...
+                  ' %e > 1e-12 in case %s'], ...
+                 err, shifts);
     end
 end

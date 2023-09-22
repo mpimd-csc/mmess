@@ -1,4 +1,4 @@
-function X=sol_E_default(eqn, opts,opE,B,opB)
+function X = sol_E_default(eqn, opts, opE, B, opB)
 % function X=sol_E_default(eqn, opts,opE,B,opB)
 %
 % This function returns X = E_\B, where matrix E_ given by
@@ -29,33 +29,32 @@ function X=sol_E_default(eqn, opts,opE,B,opB)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
-
 %% check input parameters
 if not(ischar(opE)) || not(ischar(opB))
-    error('MESS:error_arguments', 'opE or opB is not a char');
+    mess_err(opts, 'error_arguments', 'opE or opB is not a char');
 end
-opE = upper(opE); opB = upper(opB);
-if not( opE=='N' || opE=='T' )
-    error('MESS:error_arguments', 'opE is not ''N'' or ''T''');
+opE = upper(opE);
+opB = upper(opB);
+if not(opE == 'N' || opE == 'T')
+    mess_err(opts, 'error_arguments', 'opE is not ''N'' or ''T''');
 end
 
-if not( opB=='N' || opB=='T' )
-    error('MESS:error_arguments', 'opB is not ''N'' or ''T''');
+if not(opB == 'N' || opB == 'T')
+    mess_err(opts, 'error_arguments', 'opB is not ''N'' or ''T''');
 end
 
 if not(isnumeric(B)) || not(ismatrix(B))
-    error('MESS:error_arguments', 'B has to ba a matrix');
+    mess_err(opts, 'error_arguments', 'B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if not(isfield(eqn,'E_'))
-    error('MESS:error_arguments', 'field eqn.E_ is not defined');
+if not(isfield(eqn, 'E_'))
+    mess_err(opts, 'error_arguments', 'field eqn.E_ is not defined');
 end
 
 rowE = size_default(eqn, opts);
@@ -70,18 +69,18 @@ switch opE
             % implement solve E_ * X = B
             case 'N'
                 if not(rowE == size(B, 1))
-                    error('MESS:error_arguments', ...
-                          ['number of rows of E_ differs with number ' ...
-                           'of rows of B']);
+                    mess_err(opts, 'error_arguments', ...
+                             ['number of rows of E_ differs with number ' ...
+                              'of rows of B']);
                 end
                 X = eqn.E_ \ B;
 
-            % implement solve E_ * X = B'
+                % implement solve E_ * X = B'
             case 'T'
                 if not(rowE == size(B, 2))
-                    error('MESS:error_arguments', ...
-                          ['number of rows of E_ differs with number ' ...
-                           'of columns of B']);
+                    mess_err(opts, 'error_arguments', ...
+                             ['number of rows of E_ differs with number ' ...
+                              'of columns of B']);
                 end
                 X = eqn.E_ \ B';
         end
@@ -92,18 +91,18 @@ switch opE
             % implement solve E_' * X = B
             case 'N'
                 if not(colE == size(B, 1))
-                    error('MESS:error_arguments', ...
-                          ['number of columns of E_ differs with number ' ...
-                           'of rows of B']);
+                    mess_err(opts, 'error_arguments', ...
+                             ['number of columns of E_ differs with number ' ...
+                              'of rows of B']);
                 end
                 X = eqn.E_' \ B;
 
-            % implement solve E_' * X = B'
+                % implement solve E_' * X = B'
             case 'T'
-                if not(colE ==size(B, 2))
-                    error('MESS:error_arguments',['number of columns ' ...
-                                        'of E_ differs with number ' ...
-                                        'of columns of B']);
+                if not(colE == size(B, 2))
+                    mess_err(opts, 'error_arguments', ['number of columns ' ...
+                                                       'of E_ differs with number ' ...
+                                                       'of columns of B']);
                 end
                 X = eqn.E_' \ B';
         end
@@ -111,4 +110,3 @@ switch opE
 end
 
 end
-

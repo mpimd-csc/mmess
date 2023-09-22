@@ -34,7 +34,7 @@ function HINFR_rail(k, istest)
 % [4] P. Benner, J. Saak, A semi-discretized heat transfer model for
 %     optimal cooling of steel profiles, in: P. Benner, V. Mehrmann, D.
 %     Sorensen (Eds.), Dimension Reduction of Large-Scale Systems, Vol. 45
-%     of Lect. Notes Comput. Sci. Eng., Springer-Verlag, Berlin/Heidelberg,
+%     of Lecture Notes in Computational Science and Engineering, Springer-Verlag, Berlin/Heidelberg,
 %     Germany, 2005, pp. 353–356. https://doi.org/10.1007/3-540-27909-1_19
 %
 % [5] J. Saak, Efficient numerical solution of large scale algebraic matrix
@@ -44,21 +44,25 @@ function HINFR_rail(k, istest)
 %
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
 %%
-narginchk(0,2);
-if nargin<1, k=2; end
-if nargin<2, istest=0; end
+narginchk(0, 2);
+if nargin < 1
+    k = 2;
+end
+if nargin < 2
+    istest = false;
+end
 
 %% set operation
-oper = operatormanager('default');
+opts = struct();
+[oper, opts] = operatormanager(opts, 'default');
 
 %% Problem data
 eqn = mess_get_linear_rail(k);
@@ -66,9 +70,8 @@ eqn = mess_get_linear_rail(k);
 eqn.B1 = eqn.B;
 eqn.B2 = eqn.B;
 eqn.C1 = eqn.C;
-eqn = rmfield(eqn,'B');
-eqn = rmfield(eqn,'C');
-
+eqn = rmfield(eqn, 'B');
+eqn = rmfield(eqn, 'C');
 
 %% Optional parameters.
 opts.norm                = 2;
@@ -77,13 +80,13 @@ opts.shifts.history = 42;
 opts.shifts.num_desired      = 5;
 % choose either of the three shift methods, here
 opts.shifts.method = 'gen-ham-opti';
-%opts.shifts.method = 'heur';
-%opts.shifts.method = 'projection';
+% opts.shifts.method = 'heur';
+% opts.shifts.method = 'projection';
 
 % RADI settings
 opts.shifts.naive_update_mode = false; % .. Suggest false (smart update is faster; convergence is the same).
-opts.radi.compute_sol_fac     = 1;
-opts.radi.get_ZZt             = 1;
+opts.radi.compute_sol_fac     = true;
+opts.radi.get_ZZt             = true;
 opts.radi.maxiter             = 200;
 opts.radi.res_tol             = 1.0e-10;
 opts.radi.rel_diff_tol        = 1.0e-16;
@@ -100,22 +103,24 @@ opts.ri.info           = 1;
 %% Solve the equation.
 eqn.type = 'T';
 gam      = 10;
-eqn.B1   = 1/gam * eqn.B1;
+eqn.B1   = 1 / gam * eqn.B1;
 t_mess_lrri = tic;
 out = mess_lrri(eqn, opts, oper);
 t_elapsed = toc(t_mess_lrri);
-fprintf(1,'mess_lrri took %6.2f seconds \n' , t_elapsed );
+mess_fprintf(opts, 'mess_lrri took %6.2f seconds \n', t_elapsed);
 
 %% Residual behavior.
 if istest
     if min(out.res) >= opts.ri.res_tol
-       error('MESS:TEST:accuracy','unexpectedly inaccurate result');
-   end
+        mess_err(opts, 'TEST:accuracy', 'unexpectedly inaccurate result');
+    end
 else
     figure(1);
-    semilogy(out.res,'LineWidth',3);
+    semilogy(out.res, 'LineWidth', 3);
     hold on;
-    for i = 1:length(out.radi), semilogy(out.radi(i).res,'LineWidth',3); end
+    for i = 1:length(out.radi)
+        semilogy(out.radi(i).res, 'LineWidth', 3);
+    end
     hold off;
     title(['0= C_1^T C_1 + A^T X E + E^T X A  + E^T X (\gamma^{-2}B_1 ' ...
            'B_1^T - B_2 B_2^T) X E']);
@@ -123,5 +128,5 @@ else
     ylabel('normalized residual norm');
     legend('Riccati Iteration', 'RADI (step 1)', 'RADI (step 2)');
 end
-disp('size out.Z:');
-disp(size(out.Z));
+mess_fprintf(opts, 'size out.Z: %d x %d\n', ...
+             size(out.Z, 1), size(out.Z, 2));

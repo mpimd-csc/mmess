@@ -1,20 +1,15 @@
-function y = lyapunov(Z,x,eqn,oper,opts, D)
+function y = lyapunov(Z, x, eqn, oper, opts, D)
 % Computes matrix vector product with the Lyapunov operator.
 %
 % Input:
 %  Z         Low-rank solution factor of the Riccati equation
 %  x         vector for matrix vector product
-%  eqn       structure with data for A, E and fields G
-%                  eqn.E(optional, eqn.haveE specifies whether it is
-%                  there) in the above equation with ZZ' or LDL' approximating X
-%                  eqn.haveUV specifies whether feedback is there
-%
-%  oper      structure contains function handles for operations with
-%                  A, E
+%  eqn       structure with data for A, E and fields W
+%  oper      structure contains function handles for operations with A, E
 %  opts      full options structure (passed on to function handles in oper)
 %
 %  D         solution factor D for the LDL^T
-%            decomposition, i.e., opts.LDL_T=1
+%            decomposition, i.e., opts.LDL_T = true
 %  eqn.type 'N' or 'T' for type of Lyapunov equation
 %
 % Output:
@@ -23,11 +18,10 @@ function y = lyapunov(Z,x,eqn,oper,opts, D)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
-
 
 if eqn.type == 'N'
     adjoint = 'T';
@@ -36,14 +30,14 @@ else
 end
 
 if isempty(D) && opts.LDL_T
-    error('MESS:lyapunov:LDL^T formulation needs D to get passed.');
+    mess_err(opts, 'lyapunov:LDL^T formulation needs D to get passed.');
 end
 
 if eqn.haveE
     if opts.LDL_T
-        z = Z * mess_LDL_mul_D(eqn,D, Z' * oper.mul_E(eqn, opts,adjoint,x,'N'));
+        z = Z * mess_LDL_mul_D(eqn, D, Z' * oper.mul_E(eqn, opts, adjoint, x, 'N'));
     else
-        z = Z * (Z' * (oper.mul_E(eqn, opts,adjoint,x,'N')));
+        z = Z * (Z' * (oper.mul_E(eqn, opts, adjoint, x, 'N')));
     end
 else
     if opts.LDL_T
@@ -73,24 +67,23 @@ else
 end
 
 if eqn.haveE
-    y2 = oper.mul_E(eqn, opts,eqn.type, y2, 'N');
+    y2 = oper.mul_E(eqn, opts, eqn.type, y2, 'N');
 end
 
 y = y1 + y2;
 
 if opts.LDL_T
-    y = y + eqn.G * (eqn.S * (eqn.G' * x));
+    y = y + eqn.W * (eqn.T * (eqn.W' * x));
 else
-    y = y + eqn.G * (eqn.G' * x);
+    y = y + eqn.W * (eqn.W' * x);
 end
 
 % in case of Rosenbrock we get a -1/(2*timestep)*(E'*Z*Z'*E)
 % from both F and F'
-if isfield(opts,'rosenbrock') && not(isempty(opts.rosenbrock))
+if isfield(opts, 'rosenbrock') && not(isempty(opts.rosenbrock))
     if eqn.haveE       % generalized equations
-        y = y - (1.0/opts.rosenbrock.stepsize) * oper.mul_E(eqn, opts,eqn.type,z,'N');
+        y = y - (1.0 / opts.rosenbrock.stepsize) * oper.mul_E(eqn, opts, eqn.type, z, 'N');
     else
-        y = y - (1.0/opts.rosenbrock.stepsize) * z;
+        y = y - (1.0 / opts.rosenbrock.stepsize) * z;
     end
 end
-

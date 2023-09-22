@@ -22,21 +22,12 @@ function [eqn, opts, oper] = ...
 %                   with A and E
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
-if isfield(eqn, 'EL') && isfield(eqn, 'EU')
-    if isfield(eqn, 'Ecount')
-        eqn.Ecount = eqn.Ecount + 1;
-    else
-        eqn.Ecount = 2;
-    end
-else
-    [eqn.EL, eqn.EU] = lu(eqn.E_);
-    eqn.Ecount       = 1;
-end
+eqn = LU_E(eqn);
+eqn = LU_A(eqn);

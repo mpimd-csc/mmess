@@ -1,4 +1,4 @@
-function U = get_initial_subspace(n,r)
+function U = get_initial_subspace(n, r)
 %
 %  U = get_initial_subspace(n,r)
 %
@@ -8,23 +8,23 @@ function U = get_initial_subspace(n,r)
 % column and so on. The first entry is always one.
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
+opts = struct;
+if not(nargin == 2)
 
-if nargin~=2
-
-    error(['MESS:get_initial_subspace:', ...
-           'number of rows n and columns r are mandatory!']);
+    mess_err(opts, 'get_initial_subspace', ...
+             'number of rows n and columns r are mandatory!');
 end
 
-V = zeros(n,r);
+V = zeros(n, r);
 
 for k = 1:r
-    V(1:k:n,k) = 1.0;
+    V(1:k:n, k) = 1.0;
 end
 
-[U, ~] = qr(V,0);
+[U, ~] = qr(V, 0);

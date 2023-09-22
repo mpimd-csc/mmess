@@ -1,4 +1,4 @@
-function [Er,Ar,Br,Cr] = IRKA_FDM(n0,r,istest)
+function [Er, Ar, Br, Cr] = IRKA_FDM(n0, r, istest)
 % IRKA_FDM computes a reduced order model via the IRKA method (see
 % e.g. [1]) for a finite difference discretized convection
 % diffusion model on the unit square described in [2].
@@ -35,33 +35,33 @@ function [Er,Ar,Br,Cr] = IRKA_FDM(n0,r,istest)
 %     available from http://www.tu-chemnitz.de/sfb393/sfb00pr.html (2000).
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 %%
-if nargin<1
-    n0=100;
+if nargin < 1
+    n0 = 100;
 end
 
 E = speye(n0^2);
-A = fdm_2d_matrix(n0,'10*x','100*y','0');
-B = fdm_2d_vector(n0,'.1<x<=.3');
-C = fdm_2d_vector(n0,'.7<x<=.9')';
+A = fdm_2d_matrix(n0, '10*x', '100*y', '0');
+B = fdm_2d_vector(n0, '.1<x<=.3');
+C = fdm_2d_vector(n0, '.7<x<=.9')';
 
 %%
-if nargin<2
+if nargin < 2
     opts.irka.r = 10;
 else
     opts.irka.r = r;
 end
 if nargin < 3
-    istest = 0;
+    istest = false;
 end
-opts.irka.maxiter =20;
+opts.irka.maxiter = 20;
 opts.irka.shift_tol = 1e-2;
 opts.irka.h2_tol = 1e-6;
 if istest
@@ -71,12 +71,8 @@ else
 end
 opts.irka.init = 'logspace';
 
-[Er,Ar,Br,Cr,~,~,~,~,~] = mess_tangential_irka(E,A,B,C,opts);
+[Er, Ar, Br, Cr, ~, outinfo] = mess_tangential_irka(E, A, B, C, [], opts);
 
-if istest
-    [~, ID] = lastwarn;
-    lastwarn('');
-    if strcmp(ID,'MESS:IRKA:convergence')
-        error('IRKA converged unexpectedly slow');
-    end
+if istest && isequal(outinfo.term_flag, 'maxiter')
+    mess_err(opts, 'convergence', 'IRKA converged unexpectedly slow');
 end

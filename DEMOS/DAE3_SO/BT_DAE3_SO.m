@@ -54,17 +54,16 @@ function BT_DAE3_SO(model, tol, max_ord, maxiter, istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
 %% Input checks
-narginchk(0,5);
+narginchk(0, 5);
 
 if nargin < 1
-    model='Stykel_small';
+    model = 'Stykel_small';
 end
 
 if nargin < 2
@@ -80,104 +79,122 @@ if nargin < 4
 end
 
 if nargin < 5
-    istest = 0;
+    istest = false;
 end
 %% set operation manager for the structured computations of Gramians
-oper = operatormanager('dae_3_so');
-
+opts = struct();
+[oper, opts] = operatormanager(opts, 'dae_3_so');
 %% load problem data
 
 switch lower(model)
-    case {'stykel_small','stykel_large'}
-        if strcmp(model,'stykel_small')
-            sys = load(sprintf('%s/../models/ms_ind3_by_t_stykel/g600.mat',...
-                fileparts(mfilename('fullpath'))));
+    case {'stykel_small', 'stykel_large'}
+        if strcmp(model, 'stykel_small')
+            sys = load(sprintf('%s/../models/ms_ind3_by_t_stykel/g600.mat', ...
+                               fileparts(mfilename('fullpath'))));
         else
-            sys = load(sprintf('%s/../models/ms_ind3_by_t_stykel/g6000.mat',...
-                fileparts(mfilename('fullpath'))));
+            sys = load(sprintf('%s/../models/ms_ind3_by_t_stykel/g6000.mat', ...
+                               fileparts(mfilename('fullpath'))));
         end
-        eqn.M_=sys.M;
-        eqn.E_=sys.D;
-        eqn.K_=sys.K;
-        eqn.G_=sys.G;
-        eqn.haveE=1;
+        eqn.M_ = sys.M;
+        eqn.E_ = sys.D;
+        eqn.K_ = sys.K;
+        eqn.G_ = sys.G;
+        eqn.haveE = true;
         eqn.alpha = -0.02;
-        nv = size(eqn.M_,1);
-        np = size(eqn.G_,1);
-        eqn.B = full(sys.B(1:2*nv,:));
-        eqn.C = full(sys.C(:,1:2*nv));
+        nv = size(eqn.M_, 1);
+        np = size(eqn.G_, 1);
+        eqn.B = full(sys.B(1:2 * nv, :));
+        eqn.C = full(sys.C(:, 1:2 * nv));
         clear E A B C M D K G;
     case 'tv2'
-        n1=151; % make sure it is odd!
-        alpha=0.01;
-        v=5e0;
+        n1 = 151; % make sure it is odd!
+        alpha = 0.01;
+        v = 5e0;
 
-        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,alpha,v);
+        [eqn.M_, eqn.E_, eqn.K_] = triplechain_MSD(n1, alpha, alpha, v);
         eqn.E_ = -eqn.E_;
         eqn.K_ = -eqn.K_;
-        eqn.G_ = sparse(3,3*n1+1);
-        n12=ceil(n1/2); % n1 is odd so this is the index of
-                        % the center of the string
-        eqn.G_(1,1)=-1;       eqn.G_(1,n12)=2;       eqn.G_(1,n1)=-1;
-        eqn.G_(2,n1+1)=-1;    eqn.G_(2,n1+n12)=2;   eqn.G_(2,2*n1)=-1;
-        eqn.G_(3,2*n1+1)=-1;  eqn.G_(3,2*n1+n12)=2;  eqn.G_(3,3*n1)=-1;
+        eqn.G_ = sparse(3, 3 * n1 + 1);
+        n12 = ceil(n1 / 2); % n1 is odd so this is the index of
+        % the center of the string
+        eqn.G_(1, 1) = -1;
+        eqn.G_(1, n12) = 2;
+        eqn.G_(1, n1) = -1;
+        eqn.G_(2, n1 + 1) = -1;
+        eqn.G_(2, n1 + n12) = 2;
+        eqn.G_(2, 2 * n1) = -1;
+        eqn.G_(3, 2 * n1 + 1) = -1;
+        eqn.G_(3, 2 * n1 + n12) = 2;
+        eqn.G_(3, 3 * n1) = -1;
 
-        nv = size(eqn.M_,1);
-        np = size(eqn.G_,1);
-        eqn.B=zeros(6*n1+2,3);
-        eqn.B(3*n1+6,1)=1;
-        eqn.B(5*n1+n12+6,2)=1;
-        eqn.B(end-6,3)=1;
-        eqn.C=zeros(3,6*n1+2);
-        eqn.C(1,3*n1+1)=1;
-        eqn.C(2,2*n1)=1;
-        eqn.C(3,2*n1+floor(n12/2))=1;
-        eqn.haveE=1;
+        nv = size(eqn.M_, 1);
+        np = size(eqn.G_, 1);
+        eqn.B = zeros(6 * n1 + 2, 3);
+        eqn.B(3 * n1 + 6, 1) = 1;
+        eqn.B(5 * n1 + n12 + 6, 2) = 1;
+        eqn.B(end - 6, 3) = 1;
+        eqn.C = zeros(3, 6 * n1 + 2);
+        eqn.C(1, 3 * n1 + 1) = 1;
+        eqn.C(2, 2 * n1) = 1;
+        eqn.C(3, 2 * n1 + floor(n12 / 2)) = 1;
+        eqn.haveE = true;
         eqn.alpha = -0.02;
     case 'tv'
-        n1=151; % make sure it is odd!
-        alpha=0.01;
-        v=5e0;
+        n1 = 151; % make sure it is odd!
+        alpha = 0.01;
+        v = 5e0;
 
-        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,alpha,v);
+        [eqn.M_, eqn.E_, eqn.K_] = triplechain_MSD(n1, alpha, alpha, v);
         eqn.E_ = -eqn.E_;
         eqn.K_ = -eqn.K_;
-        eqn.G_ = sparse(3,3*n1+1);
-        n12=ceil(n1/2); % n1 is odd so this is the index of
-                        % the center of the string
-        eqn.G_(1,1)=1/3;       eqn.G_(1,n12)=1/3;       eqn.G_(1,n1)=1/3;
-        eqn.G_(2,n1+1)=1/3;    eqn.G_(2,n1+n12)=1/3;   eqn.G_(2,2*n1)=1/3;
-        eqn.G_(3,2*n1+1)=1/3;  eqn.G_(3,2*n1+n12)=1/3;  eqn.G_(3,3*n1)=1/3;
+        eqn.G_ = sparse(3, 3 * n1 + 1);
+        n12 = ceil(n1 / 2); % n1 is odd so this is the index of
+        % the center of the string
+        eqn.G_(1, 1) = 1 / 3;
+        eqn.G_(1, n12) = 1 / 3;
+        eqn.G_(1, n1) = 1 / 3;
+        eqn.G_(2, n1 + 1) = 1 / 3;
+        eqn.G_(2, n1 + n12) = 1 / 3;
+        eqn.G_(2, 2 * n1) = 1 / 3;
+        eqn.G_(3, 2 * n1 + 1) = 1 / 3;
+        eqn.G_(3, 2 * n1 + n12) = 1 / 3;
+        eqn.G_(3, 3 * n1) = 1 / 3;
 
-        nv = size(eqn.M_,1);
-        np = size(eqn.G_,1);
-        eqn.B=[zeros(3*n1+1,1);ones(3*n1+1,1)];
-        eqn.C=[ones(3*n1+1,1);zeros(3*n1+1,1)]';
-        eqn.haveE=1;
+        nv = size(eqn.M_, 1);
+        np = size(eqn.G_, 1);
+        eqn.B = [zeros(3 * n1 + 1, 1); ones(3 * n1 + 1, 1)];
+        eqn.C = [ones(3 * n1 + 1, 1); zeros(3 * n1 + 1, 1)]';
+        eqn.haveE = true;
         eqn.alpha = -0.02;
-   case 'truhar_veselic'
-        n1=1500; % make sure it is even!
-        alpha=0.01;
-        v=5e0;
+    case 'truhar_veselic'
+        n1 = 1500; % make sure it is even!
+        alpha = 0.01;
+        v = 5e0;
 
-        [eqn.M_,eqn.E_,eqn.K_]=triplechain_MSD(n1,alpha,alpha,v);
+        [eqn.M_, eqn.E_, eqn.K_] = triplechain_MSD(n1, alpha, alpha, v);
         eqn.E_ = -eqn.E_;
         eqn.K_ = -eqn.K_;
-        eqn.G_ = sparse(6,3*n1+1);
-        eqn.G_(1,1)=1;   eqn.G_(1,n1/2)=-1;
-        eqn.G_(2,n1/2+1)=1;eqn.G_(2,n1)=-1;
-        eqn.G_(3,n1+1)=1;eqn.G_(3,n1+n1/2)=-1;
-        eqn.G_(4,n1+n1/2+1)=1;eqn.G_(4,2*n1)=-1;
-        eqn.G_(5,2*n1+1)=1;eqn.G_(5,2*n1+n1/2)=-1;
-        eqn.G_(6,2*n1+n1/2+1)=1;eqn.G_(6,3*n1)=-1;
-        nv = size(eqn.M_,1);
-        np = size(eqn.G_,1);
-        eqn.B=[zeros(3*n1+1,1);ones(3*n1+1,1)];
-        eqn.C=[ones(3*n1+1,1);zeros(3*n1+1,1)]';
-        eqn.haveE=1;
+        eqn.G_ = sparse(6, 3 * n1 + 1);
+        eqn.G_(1, 1) = 1;
+        eqn.G_(1, n1 / 2) = -1;
+        eqn.G_(2, n1 / 2 + 1) = 1;
+        eqn.G_(2, n1) = -1;
+        eqn.G_(3, n1 + 1) = 1;
+        eqn.G_(3, n1 + n1 / 2) = -1;
+        eqn.G_(4, n1 + n1 / 2 + 1) = 1;
+        eqn.G_(4, 2 * n1) = -1;
+        eqn.G_(5, 2 * n1 + 1) = 1;
+        eqn.G_(5, 2 * n1 + n1 / 2) = -1;
+        eqn.G_(6, 2 * n1 + n1 / 2 + 1) = 1;
+        eqn.G_(6, 3 * n1) = -1;
+        nv = size(eqn.M_, 1);
+        np = size(eqn.G_, 1);
+        eqn.B = [zeros(3 * n1 + 1, 1); ones(3 * n1 + 1, 1)];
+        eqn.C = [ones(3 * n1 + 1, 1); zeros(3 * n1 + 1, 1)]';
+        eqn.haveE = true;
         eqn.alpha = -0.02;
     otherwise
-        fprintf('unknown model requested!\n');
+        mess_err(opts, 'unknown model requested!\n');
         return
 end
 %% options
@@ -186,18 +203,18 @@ opts.adi.maxiter = maxiter;
 opts.adi.res_tol = 1e-10;
 opts.adi.rel_diff_tol = 1e-11;
 opts.norm = 'fro';
-opts.shifts.method='projection';
-opts.shifts.num_desired=25;
+opts.shifts.method = 'projection';
+opts.shifts.num_desired = 25;
 
 %% LRADI for the two Gramian factors
 %  controllability Gramian
 eqn.type = 'T';
 opts.adi.info = 1;
-t_mess_lradi1 =tic;
-[p, ~, eqn, opts, oper] = mess_para(eqn, opts, oper); 
+t_mess_lradi1 = tic;
+[p, ~, eqn, opts, oper] = mess_para(eqn, opts, oper);
 % use an additional alpha-shift to improve convergence and ROM quality for
 % the triple chain model
-if strcmp(model,'Truhar_Veselic')||strcmp(model,'TV')||strcmp(model,'TV2')
+if strcmp(model, 'Truhar_Veselic') || strcmp(model, 'TV') || strcmp(model, 'TV2')
     opts.shifts.p = p - 0.5;
 else
     opts.shifts.p = p;
@@ -206,20 +223,20 @@ end
 outC = mess_lradi(eqn, opts, oper);
 
 t_elapsed1 = toc(t_mess_lradi1);
-fprintf(1,'mess_lradi took %6.2f seconds \n', t_elapsed1);
+mess_fprintf(opts, 'mess_lradi took %6.2f seconds \n\n', t_elapsed1);
 
 % observability Gramian
 eqn.type = 'N';
 t_mess_lradi2 = tic;
 outB = mess_lradi(eqn, opts, oper);
 t_elapsed2 = toc(t_mess_lradi2);
-fprintf(1,'mess_lradi took %6.2f seconds \n' , t_elapsed2);
+mess_fprintf(opts, 'mess_lradi took %6.2f seconds \n', t_elapsed2);
 
 %% Reduced Order Model computation via square root method (SRM)
 fprintf('\nComputing reduced order model via square root method\n\n');
-opts.srm.tol=tol;
-opts.srm.max_ord=max_ord;
-opts.srm.info=1;
+opts.srm.tol = tol;
+opts.srm.max_ord = max_ord;
+opts.srm.info = 1;
 
 t_SRM_ROM = tic;
 [TL, TR] = mess_square_root_method(eqn, opts, oper, outB.Z, outC.Z);
@@ -229,51 +246,55 @@ ROM.B = TL' * eqn.B;
 ROM.C = eqn.C * TR;
 ROM.E = eye(size(ROM.A));
 t_elapsed3 = toc(t_SRM_ROM);
-fprintf(1,'ROM matrices computation took %6.2f seconds \n' , t_elapsed3);
+mess_fprintf(opts, 'ROM matrices computation took %6.2f seconds \n\n', ...
+             t_elapsed3);
 
 %% Frequency-domain evaluation of the (transfer function of the)
 %  ROM and comparison to the original model.
 %
-% We feed the mess_sigma_plot with usfs that do not exploit the DAE structure:
+% We feed the mess_tf_plot with usfs that do not exploit the DAE structure:
 t_FD_eval = tic;
-opts.sigma.nsample = 200;
+opts.tf_plot.nsample = 200;
 if istest
-    opts.sigma.info = 0;
+    opts.tf_plot.info = 0;
 else
-    opts.sigma.info = 2;
+    opts.tf_plot.info = 2;
 end
-if strcmp(model,'TV2')
-    opts.sigma.fmin=-2;
-    opts.sigma.fmax=1;
+if strcmp(model, 'TV2')
+    opts.tf_plot.fmin = -2;
+    opts.tf_plot.fmax = 1;
 else
-    opts.sigma.fmin=-4;
-    opts.sigma.fmax=4;
+    opts.tf_plot.fmin = -4;
+    opts.tf_plot.fmax = 4;
 end
 
-NG = sparse(np,nv);
-NS = sparse(np,np);
+opts.tf_plot.type = 'sigma';
+
+NG = sparse(np, nv);
+NS = sparse(np, np);
 eqnu.M_ = [eqn.M_ NG'; NG NS];
 eqnu.E_ = [-eqn.E_ NG'; NG NS];
-eqnu.K_ = [-eqn.K_ -eqn.G_';-eqn.G_ NS];
-eqnu.C =  [zeros(size(eqn.C,1),np+nv), eqn.C(:,1:nv), zeros(size(eqn.C,1),np)];
-eqnu.B =  [eqn.B(nv+1:2*nv,:);zeros(2*np+nv,size(eqn.B,2))];
-eqnu.haveE = 1;
+eqnu.K_ = [-eqn.K_ -eqn.G_'; -eqn.G_ NS];
+eqnu.C =  [zeros(size(eqn.C, 1), np + nv), eqn.C(:, 1:nv), zeros(size(eqn.C, 1), np)];
+eqnu.B =  [eqn.B(nv + 1:2 * nv, :); zeros(2 * np + nv, size(eqn.B, 2))];
+eqnu.haveE = true;
 
-operu = operatormanager('so_1');
+[operu, opts] = operatormanager(opts, 'so_1');
 
-out = mess_sigma_plot(eqnu, opts, operu, ROM); err = out.err;
+out = mess_tf_plot(eqnu, opts, operu, ROM);
+err = out.err;
 
 t_elapsed4 = toc(t_FD_eval);
-fprintf(1,'frequency-domain evaluation took %6.2f \n' , t_elapsed4);
+mess_fprintf(opts, 'frequency-domain evaluation took %6.2f \n\n', t_elapsed4);
 
 %% final accuracy test used in the continuous integration system or
 %  plot of the computed
 if istest
     % the errors are not always perfect in this example, but let's see
-    % wether they are "good enough"...
-    if (max(err) > (50*tol))
-        error('MESS:TEST:accuracy', ['unexpectedly inaccurate result ' ...
-                            'for %s %g %d %d (%g)'], model, tol, ...
-              max_ord, maxiter,max(err));
+    % whether they are "good enough"...
+    if max(err) > (50 * tol)
+        mess_err(opts, 'TEST:accuracy', ...
+                 'unexpectedly inaccurate result for %s %g %d %d (%g)', ...
+                 model, tol, max_ord, maxiter, max(err));
     end
 end

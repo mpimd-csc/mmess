@@ -51,18 +51,17 @@ function eqn = mess_get_bilinear_rail(k)
 %  [3] P. Benner, J. Saak, A semi-discretized heat transfer model
 %      for optimal cooling of steel profiles, in: P. Benner,
 %      V. Mehrmann, D. Sorensen (Eds.), Dimension Reduction of
-%      Large-Scale Systems, Vol. 45 of Lect. Notes Comput. Sci. Eng.,
+%      Large-Scale Systems, Vol. 45 of Lecture Notes in Computational Science and Engineering,
 %      Springer-Verlag, Berlin/Heidelberg, Germany, 2005,
 %      pp. 353–356. https://doi.org/10.1007/3-540-27909-1_19.
 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
-
 
 % Model Parameters
 lambda = 26.4;
@@ -79,7 +78,7 @@ data = mess_load_rail(k);
 
 eqn.E_ = data.M;
 
-eqn.A_ = -( alpha * data.S + gamma_k * robin * data.M_GAMMA_6 );
+eqn.A_ = -(alpha * data.S + gamma_k * robin * data.M_GAMMA_6);
 
 eqn.N_ = {-robin * data.M_GAMMA_0, ...
           -robin * data.M_GAMMA_1, ...
@@ -105,7 +104,4 @@ eqn.C(4, [47, 55])         = [-1, 1];
 eqn.C(5, [9, 16, 92])      = [-1, -1, 2];
 eqn.C(6, [10, 15, 34, 83]) = [-1, -1, -1, 3];
 
-eqn.haveE = 1;
-
-
-
+eqn.haveE = true;

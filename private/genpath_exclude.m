@@ -1,7 +1,7 @@
 % pathStr = genpath_exclude(basePath,ignoreDirs)
 %
 % Extension of Matlab's "genpath" function, except this will exclude
-% directories (and their sub-tree) given by "ignoreDirs". 
+% directories (and their sub-tree) given by "ignoreDirs".
 %
 %
 %
@@ -19,7 +19,7 @@
 %
 % Outputs:
 %    pathStr: string. semicolon delimited string of paths. (see genpath)
-% 
+%
 % See also genpath
 %
 % ---CVS Keywords----
@@ -37,7 +37,7 @@
 % string as 'excludeDirs' rather than a cell array of strings this
 % function will still work.  (did this by moving the '^' and '$' to
 % surround the entire regexp string, rather than wrapping them
-% around each "excludeDir") 
+% around each "excludeDir")
 %
 % Revision 1.3  2008/11/25 18:43:10  jhopkin
 % added help comments
@@ -46,48 +46,48 @@
 % *** empty log message ***
 %
 
-function p = genpath_exclude(d,excludeDirs)
-	% if the input is a string, then use it as the searchstr
-	if ischar(excludeDirs)
-		excludeStr = excludeDirs;
-	else
-		excludeStr = '';
-		if not(iscellstr(excludeDirs)) %#ok<ISCLSTR>
-			error('excludeDirs input must be a cell-array of strings');
-		end
-		
-		for i = 1:length(excludeDirs)
-			excludeStr = [excludeStr '|^' excludeDirs{i} '$']; %#ok<AGROW>
-		end
-	end
+function p = genpath_exclude(d, excludeDirs)
+opts = struct;
+% if the input is a string, then use it as the searchstr
+if ischar(excludeDirs)
+    excludeStr = excludeDirs;
+else
+    excludeStr = '';
+    if not(iscellstr(excludeDirs)) %#ok<ISCLSTR>
+        mess_err(opts, 'illegal_input', 'excludeDirs input must be a cell-array of strings');
+    end
 
-	
-	% Generate path based on given root directory
-	files = dir(d);
-	if isempty(files)
-	  return
-	end
+    for i = 1:length(excludeDirs)
+        excludeStr = [excludeStr '|^' excludeDirs{i} '$']; %#ok<AGROW>
+    end
+end
 
-	% Add d to the path even if it is empty.
-	p = [d pathsep];
+% Generate path based on given root directory
+files = dir(d);
+if isempty(files)
+    return
+end
 
-	% set logical vector for subdirectory entries in d
-	isdir = logical(cat(1,files.isdir));
-	%
-	% Recursively descend through directories which are neither
-	% private nor "class" directories.
-	%
-	dirs = files(isdir); % select only directory entries from the
-                         % current listing 
+% Add d to the path even if it is empty.
+p = [d pathsep];
 
-	for i=1:length(dirs)
-		dirname = dirs(i).name;
-		%NOTE: regexp ignores '.', '..', '@.*', and 'private'
-        %directories by default. 
-		if not(any(regexp(dirname,['^\.$|^\.\.$|^\@.*|^private$|' ...
-                                excludeStr ],'start'))) 
-            % recursive calling of this function.
-            p = [p genpath_exclude(fullfile(d,dirname),excludeStr)];%#ok<AGROW>
-		end
-	end
+% set logical vector for subdirectory entries in d
+isdir = logical(cat(1, files.isdir));
+%
+% Recursively descend through directories which are neither
+% private nor "class" directories.
+%
+dirs = files(isdir); % select only directory entries from the
+% current listing
+
+for i = 1:length(dirs)
+    dirname = dirs(i).name;
+    % NOTE: regexp ignores '.', '..', '@.*', and 'private'
+    % directories by default.
+    if not(any(regexp(dirname, ['^\.$|^\.\.$|^\@.*|^private$|' ...
+                                excludeStr], 'start')))
+        % recursive calling of this function.
+        p = [p genpath_exclude(fullfile(d, dirname), excludeStr)]; %#ok<AGROW>
+    end
+end
 end

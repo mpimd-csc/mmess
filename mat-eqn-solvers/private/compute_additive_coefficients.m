@@ -9,9 +9,9 @@ function [gamma] = compute_additive_coefficients(order, symmetric)
 %
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -19,25 +19,25 @@ function [gamma] = compute_additive_coefficients(order, symmetric)
 if symmetric
     s = order / 2;
 
-    A = zeros(s,s);
-    A(1,:) = 1;
-    for k = 1:s-1
-        A(k+1, :) = (1:s).^(-2*k);
+    A = zeros(s, s);
+    A(1, :) = 1;
+    for k = 1:s - 1
+        A(k + 1, :) = (1:s).^(-2 * k);
     end
 
-    b = [1/2; zeros(s-1, 1)];
+    b = [1 / 2; zeros(s - 1, 1)];
 
-    gamma = A\b;
+    gamma = A \ b;
 else
     s = order;
 
-    A = zeros(s,s);
-    A(1,:) = 1;
-    for k = 1:s-1
-        A(k+1, :) = (1:s).^(-k);
+    A = zeros(s, s);
+    A(1, :) = 1;
+    for k = 1:s - 1
+        A(k + 1, :) = (1:s).^(-k);
     end
 
-    b = [1; zeros(s-1, 1)];
+    b = [1; zeros(s - 1, 1)];
 
-    gamma = A\b;
+    gamma = A \ b;
 end

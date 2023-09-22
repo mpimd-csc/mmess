@@ -185,11 +185,23 @@
 %  Optional functions that are not present will be linked to
 %  mess_do_nothing by the operatormanager.
 %
+%  Further details on the single sets of usfs can be found via
+%
+%     help mess_usfs_dae_1
+%     help mess_usfs_dae_1_so
+%     help mess_usfs_dae_2
+%     help mess_usfs_default_iter
+%     help mess_usfs_default
+%     help mess_usfs_so_1
+%     help mess_usfs_so_2
+%     help mess_usfs_so_iter
+%     help mess_usfs_state_space_transformed_default
+%
 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

@@ -1,11 +1,12 @@
-function [out, eqn, opts, oper] = mess_exp_action(eqn, opts, oper, h, L, t0)
+function [out, eqn, opts, oper] = ...
+    mess_exp_action(eqn, opts, oper, h, L, t_zero)
 % Computes the matrix exponential action expm(h*(E\A))*L where L is a
 % skinny block matrix.
 %
 % Computes (expm(h*(E'\A'))*L if eqn.type == 'T'
 % Computes (expm(h*(E\A))*L if eqn.type == 'N'
 %
-% If t0 is given as input and eqn.LTV == 1, instead solve the LTV system
+% If t0 is given as input and eqn.LTV == true, instead solve the LTV system
 %   E(t)'\dot{x}(t) = A(t)' x(t) (eqn.type == 'T')
 %   E(t)\dot{x}(t) = A(t) x(t)   (eqn.type == 'N')
 % over the interval [t0, t0 + h].
@@ -28,7 +29,7 @@ function [out, eqn, opts, oper] = mess_exp_action(eqn, opts, oper, h, L, t0)
 %
 %   L         contains block matrix L
 %
-%   t0        contains starting time t0 in the LTV case
+%   t_zero    contains starting time t0 in the LTV case
 %
 % Input fields in opts.exp_action:
 %
@@ -61,28 +62,27 @@ function [out, eqn, opts, oper] = mess_exp_action(eqn, opts, oper, h, L, t0)
 %
 %  out.errest       the final error estimate (residual)
 
-
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
-
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check for matrix exponential actions control structure in options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if not(isfield(opts, 'exp_action')) ...
-        || not(isstruct(opts.exp_action)) ...
-        || not(isfield(opts.exp_action, 'method'))
-    warning('MESS:control_data', ['matrix exponential actions control ' ...
-                                'structure opts.exp_action ' ...
-                                'missing.  Using default Krylov method.']);
-	opts.exp_action.method = 'Krylov';
+if not(isfield(opts, 'exp_action')) || ...
+        not(isstruct(opts.exp_action)) || ...
+        not(isfield(opts.exp_action, 'method'))
+    mess_warn(opts, 'control_data', ...
+              ['matrix exponential actions control ' ...
+               'structure opts.exp_action ' ...
+               'missing.  Using default Krylov method.']);
+    opts.exp_action.method = 'Krylov';
 end
 
 if not(isfield(opts.exp_action, 'tol'))
@@ -91,20 +91,20 @@ end
 
 if strcmp(opts.exp_action.method, 'Krylov')
     if eqn.LTV
-        error('MESS:control_data', ...
-        ['LTV problem specified, but opts.exp_action.method=', ...
-         '''Krylov''. Use option ''LTV'' instead.']);
+        mess_err(opts, 'control_data', ...
+                 ['LTV problem specified, but opts.exp_action.method=', ...
+                  '''Krylov''. Use option ''LTV'' instead.']);
     end
 
-    if not(isfield(opts.exp_action, 'Krylov')) ...
-        || not(isstruct(opts.exp_action.Krylov))
+    if not(isfield(opts.exp_action, 'Krylov')) || ...
+        not(isstruct(opts.exp_action.Krylov))
         opts.exp_action.Krylov = {};
     end
 
     if not(isfield(opts.exp_action.Krylov, 'kabsmax'))
         [n, p] = size(L);
 
-        mmem = 8*4*1024^3; % 4 GB
+        mmem = 8 * 4 * 1024^3; % 4 GB
         kabsmax = mmem / n / p;
     else
         kabsmax = opts.exp_action.Krylov.kabsmax;
@@ -114,39 +114,37 @@ elseif strcmp(opts.exp_action.method, 'adaptiveSDIRK')
     % No extra parameters for this method. Tolerance
     % is set globally in opts.exp_action.tol
     if eqn.LTV
-        error('MESS:control_data', ...
-        ['LTV problem specified, but opts.exp_action.method=', ...
-         '''adaptiveSDIRK''. Use option ''LTV'' instead.']);
+        mess_err(opts, 'control_data', ...
+                 ['LTV problem specified, but opts.exp_action.method=', ...
+                  '''adaptiveSDIRK''. Use option ''LTV'' instead.']);
     end
 
     if not(eqn.LTV)
         % Assume time interval [0, h] for backwards compatibility
         if nargin < 6
-            t0 = 0;
+            t_zero = 0;
         end
     end
-
 
 elseif strcmp(opts.exp_action.method, 'LTV')
     % Like the previous method, this one also needs no extra parameters
     if not(eqn.LTV)
-        error('MESS:control_data', ...
-            'opts.exp_action.method = ''LTV'' but eqn.LTV = 0.');
+        mess_err(opts, 'control_data', ...
+                 'opts.exp_action.method = ''LTV'' but eqn.LTV = false.');
     end
 
     if nargin < 6  % No t0 given
-        error('MESS:control_data', ...
-            ['LTV problem specified, but no initial time set for call ' ...
-             'to mess_exp_action']);
+        mess_err(opts, 'control_data', ...
+                 ['LTV problem specified, but no initial time set for ' ...
+                  'call to mess_exp_action']);
     end
 
-
 else
-    error('MESS:control_data', ['Chosen method for matrix exponential ' ...
-        'actions: ', opts.exp_action.method, ' is not supported']);
+    mess_err(opts, 'control_data', ...
+             ['Chosen method for matrix exponential ' ...
+              'actions: ', opts.exp_action.method, ' is not supported']);
 
 end
-
 
 switch opts.exp_action.method
 
@@ -155,15 +153,15 @@ switch opts.exp_action.method
         normL = norm(L);
         tol = opts.exp_action.tol;
 
-        Afun = @(x) -h*oper.sol_E(eqn, ...
-                                  opts, ...
-                                  eqn.type, ...
-                                  oper.mul_A(eqn, ...
-                                             opts, ...
-                                             eqn.type, ...
-                                             x, ...
-                                             'N'), ...
-                                  'N');
+        Afun = @(x) -h * oper.sol_E(eqn, ...
+                                    opts, ...
+                                    eqn.type, ...
+                                    oper.mul_A(eqn, ...
+                                               opts, ...
+                                               eqn.type, ...
+                                               x, ...
+                                               'N'), ...
+                                    'N');
 
         kmin = 1;
         kmax = 2; % Do two initial blocks before estimating the error
@@ -175,29 +173,30 @@ switch opts.exp_action.method
         while not(converged)
 
             for k = kmin:kmax
-                Uk = Vk(:, (k-1)*p+1:k*p);
+                Uk = Vk(:, (k - 1) * p + 1:k * p);
 
                 Wk = Afun(Uk);
 
                 for i = 1:k % Orthogonalize
-                    Ui = Vk(:, (i-1)*p+1:i*p);
-                    Hik = Ui'*Wk;
-                    Wk = Wk - Ui*Hik;
-                    Hk((i-1)*p+1:i*p, (k-1)*p+1:k*p) = Hik;
+                    Ui = Vk(:, (i - 1) * p + 1:i * p);
+                    Hik = Ui' * Wk;
+                    Wk = Wk - Ui * Hik;
+                    Hk((i - 1) * p + 1:i * p, (k - 1) * p + 1:k * p) = Hik;
                 end
 
-                [Ukp1, Hkp1] = qr(Wk,0);
+                [Ukp1, Hkp1] = qr(Wk, 0);
 
                 if k == kmax
                     % Compute error estimate
-                    E1 = eye(k*p,k*p); E1 = E1(:, 1:p);
-                    Hkt = [-Hk, E1; zeros(p, (k+1)*p)];
+                    E1 = eye(k * p, k * p);
+                    E1 = E1(:, 1:p);
+                    Hkt = [-Hk, E1; zeros(p, (k + 1) * p)];
 
                     eHt = expm(Hkt);
-                    phiHkE1 = eHt(1:k*p, k*p+1:(k+1)*p);
+                    phiHkE1 = eHt(1:k * p, k * p + 1:(k + 1) * p);
 
-                    errest = normL*norm(Hkp1) * ...
-                             norm(phiHkE1((k-1)*p+1:k*p, :));
+                    errest = normL * norm(Hkp1) * ...
+                             norm(phiHkE1((k - 1) * p + 1:k * p, :));
 
                     if errest < tol
                         out.converged = true;
@@ -205,14 +204,14 @@ switch opts.exp_action.method
                         % The below essentially does eHk = expm(-Hk) and
                         % Z =  Vk*expm(-Hk)*(Vk'*L), but in a more
                         % efficient way
-                        eHk = eHt(1:k*p, 1:k*p);
-                        out.Z = Vk*(eHk(:, 1:p)*R);
+                        eHk = eHt(1:k * p, 1:k * p);
+                        out.Z = Vk * (eHk(:, 1:p) * R);
                         return
                     end
                 end
 
-                Vk(:, k*p+1:(k+1)*p) = Ukp1;
-                Hk(k*p+1:(k+1)*p, (k-1)*p+1:k*p) = Hkp1;
+                Vk(:, k * p + 1:(k + 1) * p) = Ukp1;
+                Hk(k * p + 1:(k + 1) * p, (k - 1) * p + 1:k * p) = Hkp1;
 
             end
 
@@ -223,9 +222,9 @@ switch opts.exp_action.method
                 out.Z = NaN; % TODO: improve error handling, see #312
                 out.converged = false;
                 out.errest = Inf;
-                warning('MESS:exp_action', ...
-                        ['Krylov method for matrix exponential action ' ...
-                         'did NOT converge!']);
+                mess_warn(opts, 'exp_action', ...
+                          ['Krylov method for matrix exponential ' ...
+                           'action did NOT converge!']);
                 return
             end
 
@@ -233,7 +232,7 @@ switch opts.exp_action.method
 
     case 'adaptiveSDIRK'
         [out, eqn, opts, oper] = ...
-            adaptive_SDIRK43(eqn, opts, oper, h, L, t0);
+            adaptive_SDIRK43(eqn, opts, oper, h, L, t_zero);
 
     case 'LTV'
         % Temporarily change the matrix updating function to evaluate at
@@ -243,9 +242,10 @@ switch opts.exp_action.method
 
         opts.splitting.eval_matrix_functions = @(eqn, opts, oper, s) ...
             opts.splitting.eval_matrix_functions_temp(eqn, opts, oper, ...
-                                                      t0 + h - s);
+                                                      t_zero + h - s);
 
-        [out, eqn, opts, oper] = adaptive_SDIRK43(eqn, opts, oper, h, L,0);
+        [out, eqn, opts, oper] = adaptive_SDIRK43(eqn, opts, oper, ...
+                                                  h, L, 0);
 
         % Restore the matrix updating function
         opts.splitting.eval_matrix_functions = ...

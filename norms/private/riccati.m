@@ -1,4 +1,4 @@
-function y=riccati(Z,x,eqn,oper,opts,D)
+function y = riccati(Z, x, eqn, oper, opts, D)
 % Computes matrix vector product with the Riccati operator.
 %  y = A^T*ZZ^T*x + ZZ^T*Ax + C^T*Cx - ZZ^T*BB^T*ZZ^T*x  or
 %  y = A^T*ZZ^T*Ex + C^T*Cx + E^T*ZZ^T*Ax - BB^T*ZZ^Tx
@@ -13,7 +13,7 @@ function y=riccati(Z,x,eqn,oper,opts,D)
 %                  A, E
 %  opts    structure contains parameters for the algorithm
 %
-%  D       solution factor D for LDL^T formulation in case opts.LDL_T=1
+%  D       solution factor D for LDL^T formulation in case opts.LDL_T = true
 %
 % Output:
 %  y        result of matrix vector product
@@ -24,37 +24,40 @@ function y=riccati(Z,x,eqn,oper,opts,D)
 %
 % or
 %
-% y = A'*Z*D*Z'*E*x + C'*eqn.S*C*x
+% y = A'*Z*D*Z'*E*x + C'*eqn.T*C*x
 %   + E'*(Z*D*Z'*A*x - B*B'*Z*D*Z'*x)
 %
 % uses operator functions mul_E, mul_A, mul_ApE (inside BDF methods)
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
-
 %% Check input
 if (nargin < 6) && opts.LDL_T
-    error('for the LDL^T version the information to build D must be passed');
+    mess_err(opts, 'error_arguments', ...
+             'for the LDL^T version the information to build D must be passed');
 end
 
-if not(isfield(opts,'bdf')), opts.bdf=[]; end
+if not(isfield(opts, 'bdf'))
+    opts.bdf = [];
+end
 
 if isstruct(opts.bdf) && isfield(opts.bdf, 'tau') && isfield(opts.bdf, 'beta')
-    bdf = 1;
-    pc = -1.0 / (2.0 * opts.bdf.tau * opts.bdf.beta);
+    bdf = true;
+    tau_beta = opts.bdf.tau * opts.bdf.beta;
+    pc = -1.0 / (2.0 * tau_beta);
 else
-    bdf = 0;
+    bdf = false;
 end
 
 if isempty(D) && opts.LDL_T
-    error('MESS:riccati:LDL^T formulation needs D to get passed.');
+    mess_err(opts, 'riccati', ...
+             'LDL^T formulation needs D to get passed.');
 end
 
 %% Compute MVP
@@ -62,15 +65,17 @@ end
 if eqn.haveE
     if opts.LDL_T
         if eqn.type == 'T'
-            z = Z*mess_LDL_mul_D(eqn, D, Z'*(oper.mul_E(eqn, opts,'N',x,'N')));
+            z = Z * mess_LDL_mul_D(eqn, D, Z' * ...
+                                   oper.mul_E(eqn, opts, 'N', x, 'N'));
         else
-            z = Z*mess_LDL_mul_D(eqn, D, Z'*(oper.mul_E(eqn, opts,'T',x,'N')));
+            z = Z * mess_LDL_mul_D(eqn, D, Z' * ...
+                                   oper.mul_E(eqn, opts, 'T', x, 'N'));
         end
     else
         if eqn.type == 'T'
-            z = Z * (Z' * (oper.mul_E(eqn, opts,'N',x,'N')));
+            z = Z * (Z' * (oper.mul_E(eqn, opts, 'N', x, 'N')));
         else
-            z = Z * (Z' * (oper.mul_E(eqn, opts,'T',x,'N')));
+            z = Z * (Z' * (oper.mul_E(eqn, opts, 'T', x, 'N')));
         end
     end
 else
@@ -85,65 +90,73 @@ end
 % and     y2 = X*(A*x - B*B'*z) or y2 =  X*(A'*x - C'*C*z)
 if bdf
 
-    taubeta = opts.bdf.tau * opts.bdf.beta;
-
     if eqn.type == 'T'
-        y1 = taubeta * oper.mul_ApE(eqn, opts,'T',pc, 'T', z,'N') ...
-             + eqn.pC' * (eqn.S * (eqn.pC * x));
+        y1 = tau_beta * oper.mul_ApE(eqn, opts, 'T', pc, 'T', z, 'N') + ...
+             eqn.pC' * (eqn.Q * (eqn.pC * x));
 
-        y2 = Z * mess_LDL_mul_D(eqn, D, Z' * (oper.mul_ApE(eqn, opts,'N',pc,'N',x,'N') ...
-             - seqn.B * (eqn.B' * z)) * taubeta);
+        y2 = Z * mess_LDL_mul_D(eqn, D, ...
+                                Z' * (oper.mul_ApE(eqn, opts, 'N', pc, ...
+                                                   'N', x, 'N') - ...
+                                      eqn.B * (eqn.B' * z)) * tau_beta);
     else
-        y1 = taubeta * oper.mul_ApE(eqn, opts,'N',pc, 'N', z,'N') ...
-             + eqn.pB * (eqn.S * (eqn.pB' * x));
+        y1 = tau_beta * oper.mul_ApE(eqn, opts, 'N', pc, 'N', z, 'N') + ...
+             eqn.pB * (eqn.R * (eqn.pB' * x));
 
-        y2 = Z * mess_LDL_mul_D(eqn, D, Z' * (oper.mul_ApE(eqn, opts,'T',pc,'T',x,'N') ...
-             - eqn.C' * (eqn.C * z)) * taubeta);
+        y2 = Z * mess_LDL_mul_D(eqn, D, Z' * ...
+                                (oper.mul_ApE(eqn, opts, 'T', pc, ...
+                                              'T', x, 'N') - ...
+                                 eqn.C' * (eqn.C * z)) * tau_beta);
     end
 
 elseif eqn.haveUV && eqn.sizeUV1
 
     if eqn.type == 'T'
-        y1 = oper.mul_A( eqn, opts, 'T', z, 'N' ) ...
-             + eqn.pV(:,1:eqn.sizeUV1) * (eqn.U(:,1:eqn.sizeUV1)' * z) ...
-             + eqn.pC' * (eqn.pC * x);
+        y1 = oper.mul_A(eqn, opts, 'T', z, 'N') +  ...
+             eqn.pV(:, 1:eqn.sizeUV1) * (eqn.U(:, 1:eqn.sizeUV1)' * z) + ...
+             eqn.pC' * (eqn.pC * x);
 
-        y2 = Z * (Z'*(oper.mul_A( eqn, opts, 'N', x, 'N' ) ...
-             + eqn.U(:,1:eqn.sizeUV1) * (eqn.V(:,1:eqn.sizeUV1)' * x) ...
-             - eqn.B * (eqn.B' * z)));
+        y2 = Z * (Z' * (oper.mul_A(eqn, opts, 'N', x, 'N') + ...
+                        eqn.U(:, 1:eqn.sizeUV1) * ...
+                        (eqn.V(:, 1:eqn.sizeUV1)' * x) - ...
+                        eqn.B * (eqn.B' * z)));
     else
-        y1 = oper.mul_A( eqn, opts, 'N', z, 'N' ) ...
-             + eqn.pU(:,1:eqn.sizeUV1) * (eqn.V(:,1:eqn.sizeUV1)' * z) ...
-             + eqn.pB * (eqn.pB' * x);
+        y1 = oper.mul_A(eqn, opts, 'N', z, 'N') + ...
+             eqn.pU(:, 1:eqn.sizeUV1) * (eqn.V(:, 1:eqn.sizeUV1)' * z) + ...
+             eqn.pB * (eqn.pB' * x);
 
-        y2 = Z * (Z'*(oper.mul_A( eqn, opts, 'T', x, 'N' ) ...
-             + eqn.V(:,1:eqn.sizeUV1) * (eqn.U(:,1:eqn.sizeUV1)' * x) ...
-             - eqn.C' * (eqn.C * z)));
+        y2 = Z * (Z' * (oper.mul_A(eqn, opts, 'T', x, 'N') + ...
+                        eqn.V(:, 1:eqn.sizeUV1) * ...
+                        (eqn.U(:, 1:eqn.sizeUV1)' * x) - ...
+                        eqn.C' * (eqn.C * z)));
     end
 else
     if opts.LDL_T
         if eqn.type == 'T'
-            y1 = oper.mul_A(eqn, opts,'T',z,'N') ...
-                 + eqn.pC' * (eqn.S * (eqn.pC * x));
+            y1 = oper.mul_A(eqn, opts, 'T', z, 'N') + ...
+                 eqn.pC' * (eqn.Q * (eqn.pC * x));
 
-            y2 = Z * mess_LDL_mul_D(eqn, D, Z' * (oper.mul_A(eqn, opts,'N',x,'N') ...
-                 - eqn.B * (eqn.B' * z)));
+            y2 = Z * mess_LDL_mul_D(eqn, D, Z' * ...
+                                    (oper.mul_A(eqn, opts, 'N', x, 'N') - ...
+                                     eqn.B * (eqn.R \ (eqn.B' * z))));
         else
-            y1 = oper.mul_A(eqn, opts,'N',z,'N') ...
-                 + eqn.pB * (eqn.S * (eqn.pB' * x));
+            y1 = oper.mul_A(eqn, opts, 'N', z, 'N') + ...
+                 eqn.pB * (eqn.R * (eqn.pB' * x));
 
-            y2 = Z * mess_LDL_mul_D(eqn, D, Z' * (oper.mul_A(eqn, opts,'T',x,'N') ...
-                 - eqn.C' * (eqn.C * z)));
+            y2 = Z * mess_LDL_mul_D(eqn, D, Z' * ...
+                                    (oper.mul_A(eqn, opts, 'T', x, 'N') - ...
+                                     eqn.C' * (eqn.Q \ (eqn.C * z))));
         end
     else
         if eqn.type == 'T'
-            y1 = oper.mul_A(eqn, opts,'T',z,'N') + eqn.pC'*(eqn.pC*x);
+            y1 = oper.mul_A(eqn, opts, 'T', z, 'N') + eqn.pC' * (eqn.pC * x);
 
-            y2 = Z*(Z'*(oper.mul_A(eqn, opts,'N',x,'N') - eqn.B*(eqn.B'*z)));
+            y2 = Z * (Z' * (oper.mul_A(eqn, opts, 'N', x, 'N') - ...
+                            eqn.B * (eqn.B' * z)));
         else
-            y1 = oper.mul_A(eqn, opts,'N',z,'N') + eqn.pB*(eqn.pB'*x);
+            y1 = oper.mul_A(eqn, opts, 'N', z, 'N') + eqn.pB * (eqn.pB' * x);
 
-            y2 = Z*(Z'*(oper.mul_A(eqn, opts,'T',x,'N') - eqn.C'*(eqn.C*z)));
+            y2 = Z * (Z' * (oper.mul_A(eqn, opts, 'T', x, 'N') - ...
+                            eqn.C' * (eqn.C * z)));
         end
     end
 end
@@ -153,9 +166,9 @@ end
 %     or the same with E=I
 if eqn.haveE
     if eqn.type == 'T'
-        y = y1 + oper.mul_E(eqn, opts,'T',y2,'N');
+        y = y1 + oper.mul_E(eqn, opts, 'T', y2, 'N');
     else
-        y = y1 + oper.mul_E(eqn, opts,'N',y2,'N');
+        y = y1 + oper.mul_E(eqn, opts, 'N', y2, 'N');
     end
 else
     y = y1 + y2;

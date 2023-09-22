@@ -39,7 +39,7 @@ recommend removing it first.
 
 This is the Octave package file intended for use with the Octave
 package manager pkg. On the Octave prompt, change to the folder where
-the download is located and run `pkg install mess-2.2.tar.gz`.
+the download is located and run `pkg install mess-3.0.tar.gz`.
 
 Since this package depends on the `control` package for the solution
 of small dense Lyapunov and Riccati equations, make sure to have that

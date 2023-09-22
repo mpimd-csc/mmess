@@ -47,20 +47,19 @@ function [result, eqn, opts, oper] = ...
 % result (true if 'E_' is in structure eqn and a numeric and quadratic field).
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
-%start checking
+% start checking
 na = nargin;
 if na <= 3
-    error( ...
-        'MESS:control_data', ...
-        'Number of input Arguments are at least 3');
+    mess_err(opts, ...
+             'control_data', ...
+             'Number of input Arguments are at least 3');
 
 elseif na == 4
     switch flag1
@@ -69,9 +68,9 @@ elseif na == 4
         case {'E', 'e'}
             [eqn, result] = checkE(eqn);
         otherwise
-            error( ...
-                'MESS:control_data', ...
-                'flag1 has to be ''A'' or ''E''');
+            mess_err(opts, ...
+                     'control_data', ...
+                     'flag1 has to be ''A'' or ''E''');
     end
 
 elseif na == 5
@@ -83,12 +82,12 @@ elseif na == 5
                     [eqn, resultA] = checkA(eqn);
                     result = result && resultA;
                 case {'E', 'e'}
-                    [eqn, resultE]= checkE(eqn);
+                    [eqn, resultE] = checkE(eqn);
                     result = result && resultE;
                 otherwise
-                    error( ...
-                        'MESS:control_data', ...
-                        'flag2 has to be ''A'' or ''E''');
+                    mess_err(opts, ...
+                             'control_data', ...
+                             'flag2 has to be ''A'' or ''E''');
             end
         case {'E', 'e'}
             [eqn, result] = checkE(eqn);
@@ -97,17 +96,17 @@ elseif na == 5
                     [eqn, resultA] = checkA(eqn);
                     result = result && resultA;
                 case {'E', 'e'}
-                    [eqn, resultE]= checkE(eqn);
+                    [eqn, resultE] = checkE(eqn);
                     result = result && resultE;
                 otherwise
-                    error( ...
-                        'MESS:control_data', ...
-                        'flag2 has to be ''A'' or ''E''');
+                    mess_err(opts, ...
+                             'control_data', ...
+                             'flag2 has to be ''A'' or ''E''');
             end
         otherwise
-            error( ...
-                'MESS:control_data', ...
-                'flag1 has to be ''A'' or ''E''');
+            mess_err(opts, ...
+                     'control_data', ...
+                     'flag1 has to be ''A'' or ''E''');
     end
 end
 
@@ -126,12 +125,18 @@ end
 
 %% Check data for E_.
 function [eqn, result] = checkE(eqn)
-if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
+if not(isfield(eqn, 'haveE'))
+    eqn.haveE = false;
+end
 
 if not(eqn.haveE)
-    result = 1;
-    eqn.E_= speye(size(eqn.A_, 1)); % Make sure we have an identity for
-                                    % computations in ApE functions.
+    result = true;
+    eqn.I_ = speye(size(eqn.A_, 1)); % Make sure we have an identity for
+    % computations in ApE functions.
+    %  ?   %%%% Davide: why eqn.I_ instead of eqn.E_?
+    %  ?   eqn.E_= speye(size(eqn.A_, 1)); % Make sure we have an identity for
+    %  ?                                   % computations in ApE functions.
+    %  ?   %%%%
 else
     result = isfield(eqn, 'E_');
 

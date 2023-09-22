@@ -20,27 +20,28 @@ function [eqn, K0p, K0d] = mess_get_NSE(Re, level)
 %  K0d     initial stabilizing feedback for the dual system
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
-
+opts = struct;
 switch Re
-    case {300,400,500}
+    case {300, 400, 500}
     otherwise
-        error('parameter ''Re'' must be 300, 400, or 500.');
+        mess_err(opts, 'illegal_input', ...
+                 'parameter ''Re'' must be 300, 400, or 500.');
 end
 base_file = sprintf('mat_nse_re_%i.mat', Re);
 full_file = [fileparts(mfilename('fullpath')), filesep, base_file];
 try
-    load(full_file,'mat');
+    load(full_file, 'mat');
 catch
-    fprintf(['The file mat_nse_re_%i.mat, is used for the first time.',...
-        'It is available as a separate download (270MB).\n\n'], Re);
+    mess_fprintf(opts, ['The file mat_nse_re_%i.mat, is used for the first time.', ...
+                        'It is available as a separate download (270MB).\n\n'], Re);
 
-    reply = input('Do you want to download it now? Y/N [Y]:','s');
+    reply = input('Do you want to download it now? Y/N [Y]:', 's');
     if isempty(reply)
         reply = 'Y';
     end
@@ -48,26 +49,24 @@ catch
         case 'Y'
             url = 'https://csc.mpi-magdeburg.mpg.de/';
             folder = 'mpcsc/software/mess/mmess/models/NSE/';
-            if exist('websave','file')
-                websave(full_file, [url, folder, base_file]);
-            else
-                urlwrite([url, folder, base_file], full_file); %#ok<URLWR>
-            end
+            mess_websave(full_file, [url, folder, base_file]);
+
         case 'N'
-            error(['The download is required for NSE example. ',...
-                'Consider switching to the simple Stokes model.']);
+            mess_err(opts, 'check_data', ...
+                     ['The download is required for NSE example. ', ...
+                      'Consider switching to the simple Stokes model.']);
         otherwise
-            error('Please answer Y or N.');
+            mess_err(opts, 'illegal_input', 'Please answer Y or N.');
     end
-    load(full_file,'mat');
+    load(full_file, 'mat');
 end
 
 eqn.A_ = mat.mat_v.fullA{level};
 eqn.E_ = mat.mat_v.E{level};
-eqn.haveE = 1;
+eqn.haveE = true;
 eqn.B = mat.mat_v.B{level};
 eqn.C = mat.mat_v.C{level};
-eqn.st = mat.mat_mg.nv(level);
+eqn.manifold_dim = mat.mat_mg.nv(level);
 
 K0p = mat.mat_v.Feed_0{level}';
 K0d = mat.mat_v.Feed_1{level}';

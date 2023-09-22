@@ -1,4 +1,4 @@
-function X = sol_E_dae_1(eqn, opts, opE, B, opB) %#ok<INUSL>
+function X = sol_E_dae_1(eqn, opts, opE, B, opB)
 %% function sol_E_dae_1 solves opE(E)*X = opB(B) resp. performs X=opE(E)\opB(B)
 %
 % Input:
@@ -25,38 +25,41 @@ function X = sol_E_dae_1(eqn, opts, opE, B, opB) %#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 %% check input Parameters
-if (not(ischar(opE)) || not(ischar(opB)))
-    error('MESS:error_arguments', 'opE or opB is not a char');
+if not(ischar(opE)) || not(ischar(opB))
+    mess_err(opts, 'error_arguments', 'opE or opB is not a char');
 end
 
-opE = upper(opE); opB = upper(opB);
-if(not((opE == 'N' || opE == 'T')))
-    error('MESS:error_arguments','opE is not ''N'' or ''T''');
+opE = upper(opE);
+opB = upper(opB);
+if not(opE == 'N' || opE == 'T')
+    mess_err(opts, 'error_arguments', 'opE is not ''N'' or ''T''');
 end
 
-if(not((opB == 'N' || opB == 'T')))
-    error('MESS:error_arguments','opB is not ''N'' or ''T''');
+if not(opB == 'N' || opB == 'T')
+    mess_err(opts, 'error_arguments', 'opB is not ''N'' or ''T''');
 end
 
 if (not(isnumeric(B))) || (not(ismatrix(B)))
-    error('MESS:error_arguments','B has to ba a matrix');
+    mess_err(opts, 'error_arguments', 'B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if(not(isfield(eqn, 'E_'))) || not(isnumeric(eqn.E_))
-    error('MESS:error_arguments', 'field eqn.E_ is not defined');
+if (not(isfield(eqn, 'E_'))) || not(isnumeric(eqn.E_))
+    mess_err(opts, 'error_arguments', 'field eqn.E_ is not defined');
 end
-if not(isfield(eqn, 'st'))    || not(isnumeric(eqn.st))
-    error('MESS:st',...
-    'Missing or Corrupted st field detected in equation structure.');
+if not(isfield(eqn, 'manifold_dim'))    || not(isnumeric(eqn.manifold_dim))
+    mess_err(opts, 'error_arguments', ...
+             ['Missing or Corrupted manifold_dim field detected in ' ...
+              'equation structure.']);
 end
-st = eqn.st;
+
+one = 1:eqn.manifold_dim;
 
 %% solve
 switch opE
@@ -64,37 +67,41 @@ switch opE
     case 'N'
         switch opB
 
-            %implement solve A_*X=B
+            % implement solve A_*X=B
             case 'N'
-                if(st ~= size(B, 1))
-                    error('MESS:error_arguments','number of rows of A_ differs with rows of B');
+                if not(eqn.manifold_dim == size(B, 1))
+                    mess_err(opts, 'error_arguments', ...
+                             'number of rows of A_ differs with rows of B');
                 end
-                X = eqn.E_(1 : st, 1 : st) \ B;
+                X = eqn.E_(one, one) \ B;
 
-            %implement solve A_*X=B'
+                % implement solve A_*X=B'
             case 'T'
-                if(st ~= size(B, 2))
-                    error('MESS:error_arguments','number of rows of A_ differs with cols of B');
+                if not(eqn.manifold_dim == size(B, 2))
+                    mess_err(opts, 'error_arguments', ...
+                             'number of rows of A_ differs with cols of B');
                 end
-                X = eqn.E_(1 : st, 1 : st) \ B';
+                X = eqn.E_(one, one) \ B';
         end
 
     case 'T'
         switch opB
 
-            %implement solve A_'*X=B
+            % implement solve A_'*X=B
             case 'N'
-                if(st ~= size(B, 1))
-                    error('MESS:error_arguments','number of cols of A_ differs with rows of B');
+                if not(eqn.manifold_dim == size(B, 1))
+                    mess_err(opts, 'error_arguments', ...
+                             'number of cols of A_ differs with rows of B');
                 end
-                X = eqn.E_(1 : st, 1 : st)' \ B;
+                X = eqn.E_(one, one)' \ B;
 
-            %implement solve A_'*X=B'
+                % implement solve A_'*X=B'
             case 'T'
-                if(st ~= size(B, 2))
-                    error('MESS:error_arguments','number of cols of A_ differs with cols of B');
+                if not(eqn.manifold_dim == size(B, 2))
+                    mess_err(opts, 'error_arguments', ...
+                             'number of cols of A_ differs with cols of B');
                 end
-                X = eqn.E_(1 : st, 1 : st)' \ B';
+                X = eqn.E_(one, one)' \ B';
         end
 
 end

@@ -1,5 +1,5 @@
-function [R,iter] = lyap_sgn_fac(A,C,E)
-%LYAP_SGN_FAC
+function [R, iter] = lyap_sgn_fac(A, C, E)
+% LYAP_SGN_FAC
 %
 % Solve the stable Lyapunov equation
 %
@@ -30,82 +30,88 @@ function [R,iter] = lyap_sgn_fac(A,C,E)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
+opts = struct;
 
-
-n = size(A,1);
+n = size(A, 1);
 
 R = C;
 
 if (nargin < 3) || isempty(E)
-    desc = 0;
+    desc = false;
     E    = eye(n);
     Enrm = 1;
+
 else
-    desc = 1;
-    Enrm = norm(E,'fro');
+    desc = true;
+    Enrm = norm(E, 'fro');
+
 end
 
-Err = norm(A + E,'fro');
+maxstep = 100;
 
-% the following are parameters that could be used as input arguments in a pro version
-maxstep = 50;
-onemore = 0;
-tol  = sqrt(n*eps)*Enrm;
-rtol = 1e-8;
+Err = norm(A + E, 'fro');
+
+extra_steps = 0;
+tol  = sqrt(n * eps) * Enrm;
+rtol = 1e-10;
 
 % further variables for convergence check
 iter = 0;
 convergence = Err <= tol;
-In = eye(size(A,1));
+In = eye(size(A, 1));
 
-while (iter < maxstep) && ((not(convergence)) || (convergence && (onemore < 2)))
+while (iter < maxstep) && ...
+        (not(convergence) || (convergence && (extra_steps < 2)))
 
-    [AL,AU,p] = lu(A,'vector');
+    [AL, AU, p] = lu(A, 'vector');
     p(p) = 1:length(p);
-    AL = AL( p , : );
+    AL = AL(p, :);
 
-    Y = AU\(AL\In);
+    Y = AU \ (AL \ In);
 
     if desc
-        YE = Y*E;
-        Y  = E*YE;
+        YE = Y * E;
+        Y  = E * YE;
     end
 
     if Err > 0.1
-        d = sqrt(norm(A,'fro')/norm(Y,'fro'));
+        d = sqrt(norm(A, 'fro') / norm(Y, 'fro'));
     else
         d = 1;
     end
 
-    A = (A/d + d*Y)/2;
+    A = (A / d + d * Y) / 2;
 
     if desc
-        R = [R; d*R*YE]/sqrt(2.0*d);
+        R = [R; d * R * YE] / sqrt(2.0 * d);
     else
-        R = [R; d*R*Y]/sqrt(2.0*d);
+        R = [R; d * R * Y] / sqrt(2.0 * d);
     end
 
-    [~,R,p] = qr(full(R),0);
-    r = sum(abs(diag(R)) > rtol*abs(R(1,1)));
-    rc = size(R,2);
-    q  = zeros(1,rc);
-    for k=1:rc
-        q(k) = find(p==k);
+    [~, R, p] = qr(full(R), 0);
+    r = sum(abs(diag(R)) > rtol * abs(R(1, 1)));
+    rc = size(R, 2);
+    q  = zeros(1, rc);
+    for k = 1:rc
+        q(k) = find(p == k);
     end
-    R = R(1:r,q);
+    R = R(1:r, q);
 
-    Err  = norm(A + E,'fro');
+    Err  = norm(A + E, 'fro');
     iter = iter + 1;
     convergence = Err <= tol;
-    if convergence,  onemore = onemore + 1;  end
+    if convergence
+        extra_steps = extra_steps + 1;
+    end
 end
 
-R = (R/E)/sqrt(2.0);
+R = (R / E) / sqrt(2.0);
 
 if (iter == maxstep) && (Err > tol)
-     warning('MESS:lyap_sgn_fac: No convergence in %d iterations.\n', maxstep);
+    mess_warn(opts, 'lyap_sgn_fac', ...
+              ' No convergence in %d iterations.\n', maxstep);
 end

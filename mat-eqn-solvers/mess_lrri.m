@@ -48,17 +48,17 @@ function [out, eqn, opts, oper] = mess_lrri(eqn, opts, oper)
 %               determining whether (N) or (T) is solved
 %               (optional, default 'N')
 %
-%   eqn.haveE   possible  values: 0, 1, false, true
-%               if haveE = 0: matrix E in eqn.E_ is assumed to be identity
-%               (optional, default 0)
+%   eqn.haveE   possible  values: false, true
+%               if haveE = false: matrix E in eqn.E_ is assumed to be identity
+%               (optional, default false)
 %
-%   eqn.haveUV  possible  values: 0, 1, false, true
-%               if haveUV = 1: U = [U1, U2] and V = [V1, V2]
+%   eqn.haveUV  possible  values: false, true
+%               if haveUV = true: U = [U1, U2] and V = [V1, V2]
 %               if K or DeltaK are accumulated during the iteration they
 %               use only U2 and V2. U1 and V1 can be used for an external
 %               rank-k update of the operator.
 %               The size of U1 and V1 can be given via eqn.sizeUV1.
-%               (optional, default: 0)
+%               (optional, default: false)
 %
 %   eqn.sizeUV1 possible values: nonnegative integer
 %               if a stabilizing feedback is given via U = [U1, U2] and
@@ -120,31 +120,31 @@ function [out, eqn, opts, oper] = mess_lrri(eqn, opts, oper)
 %                           maximum Riccati iteration number
 %                           (optional, default: 10)
 %
-%   opts.ri.info            possible  values: 0, 1, false, true
+%   opts.ri.info            possible  values: 0, 1
 %                           turn on (1) or off (0) the status output in
 %                           every Riccati iteration step
 %                           (optional, default: 0)
 %
-%   opts.ri.store_lqg       possible values: 0, 1, false, true
+%   opts.ri.store_lqg       possible values: false, true
 %                           if turned on (1) the solution of the LQG
 %                           Riccati equation is stored in out.Z_LQG
 %                           and the corresponding feedback in out.K_LQG
-%                           (optional, default: 0)
+%                           (optional, default: false)
 %
-%   opts.ri.store_solfac    possible values: 0, 1, false, true
+%   opts.ri.store_solfac    possible values: false, true
 %                           if turned on (1) the solution factors
 %                           computed by the Riccati equation solvers
 %                           are stored in the out.nm and out.radi
 %                           structures, otherwise only the information
 %                           about the iteration are stored
-%                           (optional, default: 0)
+%                           (optional, default: false)
 %
 %   opts.ri.trunc_tol       possible values: scalar > 0
 %                           tolerance for rank truncation of the
 %                           low-rank solutions (aka column compression)
 %                           (optional, default: eps*n)
 %
-%   opts.ri.trunc_info      possible values: 0, 1, false, true
+%   opts.ri.trunc_info      possible values: 0, 1
 %                           verbose mode for column compression
 %                           (optional, default: 0)
 %
@@ -156,25 +156,25 @@ function [out, eqn, opts, oper] = mess_lrri(eqn, opts, oper)
 %
 % Output fields in struct out:
 %
-%   out.Z           low rank solution factor, the solution is X = Z*Z'
+%   out.Z           low-rank solution factor, the solution is X = Z*Z'
 %
 %   out.K           stabilizing feedback matrix
 %
-%   out.Z_LQG       low rank solution factor of the corresponding LQG
+%   out.Z_LQG       low-rank solution factor of the corresponding LQG
 %                   problem
-%                   (opts.ri.store_lqg = 1)
+%                   (opts.ri.store_lqg = true)
 %
 %   out.K_LQG       stabilizing feedback matrix of the corresponding LQG
 %                   problem
-%                   (opts.ri.store_lqg = 1)
+%                   (opts.ri.store_lqg = true)
 %
 %   out.niter       number of Riccati iteration steps
 %
 %   out.res         array of relative Riccati iteration residual norms
-%                   (opts.ri.res_tol ~= 0)
+%                   (opts.ri.res_tol nonzero)
 %
 %   out.rc          array of relative Riccati iteration change norms
-%                   (opts.ri.rel_diff_tol ~= 0)
+%                   (opts.ri.rel_diff_tol nonzero)
 %
 %   out.res0        norm of the normalization residual term
 %
@@ -186,70 +186,83 @@ function [out, eqn, opts, oper] = mess_lrri(eqn, opts, oper)
 %   uses operator functions init and mul_E, mul_E_pre, mul_E_post
 %   and further indirectly in the inner Riccati solver
 %
+% References:
+% [1] P. Benner, J. Heiland, and S. W. R. Werner, A low-rank solution
+%     method for Riccati equations with indefinite quadratic terms,
+%     Numer. Algorithms, 92(2):1083-1103, 2023.
+%     https://doi.org/10.1007/s11075-022-01331-w.
+%
 %   See also mess_lrnm, mess_lradi, mess_para,
 %   mess_galerkin_projection_acceleration, operatormanager.
 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
-
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check system data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if not(isfield(eqn, 'haveE')) || isempty(eqn.haveE)
-    eqn.haveE = 0;
+    eqn.haveE = false;
 end
 
 % Initialize function operator.
 [result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A', 'E');
 
 if not(result)
-    error('MESS:control_data', ...
-          'system data is not completely defined or corrupted' );
+    mess_err(opts, 'control_data', ...
+             'system data is not completely defined or corrupted');
 end
 
 % Check type of equation.
 if not(isfield(eqn, 'type'))
     eqn.type = 'N';
-    warning('MESS:control_data',['Unable to determine type of equation.'...
-                                 'Falling back to type ''N''']);
-elseif (eqn.type ~= 'N') && (eqn.type ~= 'T')
-    error('MESS:equation_type', ...
-          'Equation type must be either ''T'' or ''N''');
+    mess_warn(opts, 'control_data', ['Unable to determine type of equation.'...
+                                     'Falling back to type ''N''']);
+elseif not(eqn.type == 'N') && not(eqn.type == 'T')
+    mess_err(opts, 'equation_type', ...
+             'Equation type must be either ''T'' or ''N''');
 end
 
 % make sure the corresponding matrices from quadratic term are well
 % defined and the first right hand side is dense so that the resulting
 % factor is densely stored.
 if not(isfield(eqn, 'B1')) || not(isnumeric(eqn.B1))
-    error('MESS:control_data', 'eqn.B1 is not defined or corrupted');
+    mess_err(opts, 'control_data', 'eqn.B1 is not defined or corrupted');
 end
 
 if not(isfield(eqn, 'C1')) || not(isnumeric(eqn.C1))
-    error( 'MESS:control_data', 'eqn.C1 is not defined or corrupted');
+    mess_err(opts, 'control_data', 'eqn.C1 is not defined or corrupted');
 end
 
-if issparse(eqn.B1), eqn.B1 = full(eqn.B1); end
-if issparse(eqn.C1), eqn.C1 = full(eqn.C1); end
+if issparse(eqn.B1)
+    eqn.B1 = full(eqn.B1);
+end
+if issparse(eqn.C1)
+    eqn.C1 = full(eqn.C1);
+end
 
 if eqn.type == 'T'
     if not(isfield(eqn, 'B2')) || not(isnumeric(eqn.B2))
-        error('MESS:control_data', 'eqn.B2 is not defined or corrupted');
+        mess_err(opts, 'control_data', 'eqn.B2 is not defined or corrupted');
     end
 
-    if issparse(eqn.B2), eqn.B2 = full(eqn.B2); end
+    if issparse(eqn.B2)
+        eqn.B2 = full(eqn.B2);
+    end
 else
     if not(isfield(eqn, 'C2')) || not(isnumeric(eqn.C2))
-        error('MESS:control_data', 'eqn.C2 is not defined or corrupted');
+        mess_err(opts, 'control_data', 'eqn.C2 is not defined or corrupted');
     end
 
-    if issparse(eqn.C2), eqn.C2 = full(eqn.C2); end
+    if issparse(eqn.C2)
+        eqn.C2 = full(eqn.C2);
+    end
 end
 
 %%
@@ -257,7 +270,7 @@ end
 % Rank-k update system data.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if not(isfield(eqn, 'haveUV')) || isempty(eqn.haveUV) || not(eqn.haveUV)
-    eqn.haveUV  = 0;
+    eqn.haveUV  = false;
     eqn.sizeUV1 = 0;
     eqn.U       = [];
     eqn.V       = [];
@@ -265,12 +278,16 @@ else
     if isnumeric(eqn.U) && isnumeric(eqn.V) && ...
        (size(eqn.U, 1) == size(eqn.V, 1)) && (size(eqn.U, 2) == size(eqn.V, 2))
 
-        if issparse(eqn.V), eqn.V = full(eqn.V); end
-        if issparse(eqn.U), eqn.U = full(eqn.U); end
+        if issparse(eqn.V)
+            eqn.V = full(eqn.V);
+        end
+        if issparse(eqn.U)
+            eqn.U = full(eqn.U);
+        end
     else
-        error('MESS:control_data', ...
-              ['Inappropriate data of low rank updated operator', ...
-               ' (eqn.U and eqn.V)']);
+        mess_err(opts, 'control_data', ...
+                 ['Inappropriate data of low-rank updated operator', ...
+                  ' (eqn.U and eqn.V)']);
     end
 end
 
@@ -279,14 +296,15 @@ if eqn.haveUV
     if not(isfield(eqn, 'sizeUV1')) || isempty(eqn.sizeUV1)
         eqn.sizeUV1 = size(eqn.U, 2);
     else
-        assert(isnumeric(eqn.sizeUV1) && (eqn.sizeUV1 <= size(eqn.U, 2)), ...
-               'MESS:control_data',['Inappropriate size of low rank updated' ...
-               ' operator (eqn.U and eqn.V)']);
+        mess_assert(opts, ...
+                    isnumeric(eqn.sizeUV1) && (eqn.sizeUV1 <= size(eqn.U, 2)), ...
+                    'control_data', ...
+                    ['Inappropriate size of low-rank updated' ...
+                     ' operator (eqn.U and eqn.V)']);
     end
 end
 
 init_sizeUV1 = eqn.sizeUV1;
-
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -296,154 +314,154 @@ if eqn.haveE
     [eqn, opts, oper] = oper.mul_E_pre(eqn, opts, oper);
 end
 
-
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check for Riccati Iteration control structure in options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if not(isfield(opts, 'ri')) || not(isstruct(opts.ri))
-    error('MESS:control_data', ['No ri control data found in ', ...
-        'options structure.']);
+    mess_err(opts, 'control_data', ['No ri control data found in ', ...
+                                    'options structure.']);
 end
 
 if not(isfield(opts.ri, 'maxiter')) || not(isnumeric(opts.ri.maxiter))
-    warning('MESS:control_data', ...
-            ['Missing or corrupted maxiter field. ', ...
-             'Switching to default opts.ri.maxiter = 10.']);
+    mess_warn(opts, 'control_data', ...
+              ['Missing or corrupted maxiter field. ', ...
+               'Switching to default opts.ri.maxiter = 10.']);
     opts.ri.maxiter = 10;
 end
 
 if not(isfield(opts.ri, 'res_tol')) || not(isnumeric(opts.ri.res_tol))
-    warning('MESS:control_data', ...
-            ['Missing or corrupted res_tol field. ', ...
-             'Switching to default opts.ri.res_tol = 0.']);
+    mess_warn(opts, 'control_data', ...
+              ['Missing or corrupted res_tol field. ', ...
+               'Switching to default opts.ri.res_tol = 0.']);
     opts.ri.res_tol = 0;
 end
 
 if not(isfield(opts.ri, 'rel_diff_tol')) || not(isnumeric(opts.ri.rel_diff_tol))
-    warning('MESS:control_data', ...
-            ['Missing or corrupted rel_diff_tol field. ', ...
-             'Switching to default opts.ri.rel_diff_tol = 0.']);
+    mess_warn(opts, 'control_data', ...
+              ['Missing or corrupted rel_diff_tol field. ', ...
+               'Switching to default opts.ri.rel_diff_tol = 0.']);
     opts.ri.rel_diff_tol = 0;
 end
 
 if not(isfield(opts.ri, 'compres_tol')) || not(isnumeric(opts.ri.compres_tol))
-    warning('MESS:control_data', ...
-            ['Missing or corrupted compres_tol field. ', ...
-             'Switching to default opts.ri.compres_tol = 0.']);
+    mess_warn(opts, 'control_data', ...
+              ['Missing or corrupted compres_tol field. ', ...
+               'Switching to default opts.ri.compres_tol = 0.']);
     opts.ri.compres_tol = 0;
 end
 
 if not(isfield(opts.ri, 'riccati_solver')) || isempty(opts.ri.riccati_solver)
-    warning('MESS:control_data', ...
-            ['Missing or corrupted riccati_solver field. ', ...
-             'Switching to default opts.ri.riccati_solver = ''radi''.']);
+    mess_warn(opts, 'control_data', ...
+              ['Missing or corrupted riccati_solver field. ', ...
+               'Switching to default opts.ri.riccati_solver = ''radi''.']);
 
     opts.ri.riccati_solver    = 'radi';
     riccati_solver            = @mess_lrradi;
-    opts.radi.compute_sol_fac = 1;
+    opts.radi.compute_sol_fac = true;
 elseif strcmpi(opts.ri.riccati_solver, 'radi')
     riccati_solver            = @mess_lrradi;
-    opts.radi.compute_sol_fac = 1;
+    opts.radi.compute_sol_fac = true;
 elseif strcmpi(opts.ri.riccati_solver, 'newton')
     riccati_solver           = @mess_lrnm;
-    opts.adi.compute_sol_fac = 1;
+    opts.adi.compute_sol_fac = true;
 else
-    error('MESS:notimplemented', ...
-          'The requested Riccati solver is not implemented.');
+    mess_err(opts, 'notimplemented', ...
+             'The requested Riccati solver is not implemented.');
 end
 
 if not(isfield(opts.ri, 'lqg_solver')) || isempty(opts.ri.lqg_solver)
     lqg_solver = riccati_solver;
 elseif strcmpi(opts.ri.lqg_solver, 'radi')
     lqg_solver                = @mess_lrradi;
-    opts.radi.compute_sol_fac = 1;
+    opts.radi.compute_sol_fac = true;
 elseif strcmpi(opts.ri.lqg_solver, 'newton')
     lqg_solver               = @mess_lrnm;
-    opts.adi.compute_sol_fac = 1;
+    opts.adi.compute_sol_fac = true;
 else
-    error('MESS:notimplemented', ...
-          'The requested Riccati solver is not implemented.');
+    mess_err(opts, 'notimplemented', ...
+             'The requested Riccati solver is not implemented.');
 end
 
 if not(isfield(opts.ri, 'info'))
     opts.ri.info = 0;
 else
     if not(isnumeric(opts.ri.info)) && not(islogical(opts.ri.info))
-        error('MESS:control_data', ...
-              'opts.ri.info parameter must be logical or numeric.');
+        mess_err(opts, 'control_data', ...
+                 'opts.ri.info parameter must be logical or numeric.');
     end
 end
 
 if not(isfield(opts.ri, 'store_lqg')) || isempty(opts.ri.store_lqg)
-    opts.ri.store_lqg = 0;
+    opts.ri.store_lqg = false;
 else
-    if not(isnumeric(opts.ri.store_lqg)) && not(islogical(opts.ri.store_lqg))
-        error('MESS:control_data', ...
-              'opts.ri.store_lqg parameter must be logical or numeric.');
+    if not(islogical(opts.ri.store_lqg))
+        mess_err(opts, 'control_data', ...
+                 'opts.ri.store_lqg parameter must be logical or numeric.');
     end
 end
 
 if not(isfield(opts.ri, 'store_solfac')) || isempty(opts.ri.store_solfac)
-    opts.ri.store_solfac = 0;
+    opts.ri.store_solfac = false;
 else
-    if not(isnumeric(opts.ri.store_solfac)) && not(islogical(opts.ri.store_solfac))
-        error('MESS:control_data', ...
-              'opts.ri.store_solfac parameter must be logical or numeric.');
+    if not(islogical(opts.ri.store_solfac))
+        mess_err(opts, 'control_data', ...
+                 'opts.ri.store_solfac parameter must be logical or numeric.');
     end
 end
 
 % Check for residual norm.
 if not(isfield(opts, 'norm')) || (not(strcmp(opts.norm, 'fro')) && ...
-   (not(isnumeric(opts.norm)) || opts.norm ~= 2))
+                                  (not(isnumeric(opts.norm)) || not(opts.norm == 2)))
 
-    warning('MESS:control_data', ...
-            ['Missing or Corrupted opts.norm field.', ...
-             'Switching to default: ''fro''']);
+    mess_warn(opts, 'control_data', ...
+              ['Missing or Corrupted opts.norm field.', ...
+               'Switching to default: ''fro''']);
     opts.norm = 'fro';
 end
 
 % Check for incompatible shift selection.
-ham_shifts = 0;
+ham_shifts = false;
 if strcmpi(func2str(riccati_solver), 'radi') && ...
    strcmpi(func2str(lqg_solver), 'newton') && ...
    isfield(opts, 'shifts') && isfield(opts.shifts, 'method') && ...
    strcmpi(opts.shifts.method, 'gen-ham-opti')
 
-    warning('MESS:control_data', ...
-            ['The chosen shift method is not usable in the LQG step. ', ...
-             'The shift method will be changed for this step to ', ...
-             '''projection'' and for the inner iteration back to its ', ...
-             'original state.']);
+    mess_warn(opts, 'control_data', ...
+              ['The chosen shift method is not usable in the LQG step. ', ...
+               'The shift method will be changed for this step to ', ...
+               '''projection'' and for the inner iteration back to its ', ...
+               'original state.']);
 
-    ham_shifts         = 1;
+    ham_shifts         = true;
     opts.shifts.method = 'projection';
 end
 
-if not(isfield(opts.ri,'trunc_tol')),  ...
-    opts.ri.trunc_tol = eps * oper.size(eqn, opts); end
-if not(isfield(opts.ri, 'trunc_info')), opts.ri.trunc_info = 0; end
-
+if not(isfield(opts.ri, 'trunc_tol'))
+    opts.ri.trunc_tol = eps * oper.size(eqn, opts);
+end
+if not(isfield(opts.ri, 'trunc_info'))
+    opts.ri.trunc_info = 0;
+end
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % List all currently unsupported options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if isfield(opts, 'LDL_T') && opts.LDL_T
-    error('MESS:notimplemented', ...
-          'The LDL_T factorization type is not supported in this function.');
+    mess_err(opts, 'notimplemented', ...
+             'The LDL_T factorization type is not supported in this function.');
 end
 
 opts.LDL_T = false; % We need this to apply oper.init_res later.
 
 if isfield(opts, 'bdf') && not(isempty(opts.bdf))
-    error( 'MESS:control_data', 'Options bdf not supported.');
+    mess_err(opts, 'control_data', 'Options bdf not supported.');
 end
 
 if isfield(opts, 'rosenbrock') && not(isempty(opts.rosenbrock))
-    error( 'MESS:control_data', 'Options rosenbrock not supported.');
+    mess_err(opts, 'control_data', 'Options rosenbrock not supported.');
 end
-
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -473,7 +491,6 @@ if opts.ri.rel_diff_tol
     normZ = 0;
 end
 
-
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ITERATION PHASE 1: Solve the LQG problem
@@ -501,9 +518,15 @@ if not(isfield(opts.ri, 'Z0')) || isempty(opts.ri.Z0)
     % Store information about Riccati equation solver.
     tmp = out_riccati;
     if not(opts.ri.store_solfac)
-        if isfield(tmp, 'Z'), tmp = rmfield(tmp, 'Z'); end
-        if isfield(tmp, 'K'), tmp = rmfield(tmp, 'K'); end
-        if isfield(tmp, 'res_fact'), tmp = rmfield(tmp, 'res_fact'); end
+        if isfield(tmp, 'Z')
+            tmp = rmfield(tmp, 'Z');
+        end
+        if isfield(tmp, 'K')
+            tmp = rmfield(tmp, 'K');
+        end
+        if isfield(tmp, 'res_fact')
+            tmp = rmfield(tmp, 'res_fact');
+        end
     end
 
     switch func2str(lqg_solver)
@@ -531,41 +554,41 @@ else
 end
 
 % Remove initial feedback for Newton method.
-isnmK0 = 0;
+isnmK0 = false;
 
 if isfield(opts, 'nm') && isfield(opts.nm, 'K0')
-    isnmK0  = 1;
+    isnmK0  = true;
     nmK0    = opts.nm.K0;
     opts.nm = rmfield(opts.nm, 'K0');
 end
 
 % Remove initial matrices for RADI method.
-isradiZ0 = 0;
-isradiY0 = 0;
-isradiK0 = 0;
-isradiW0 = 0;
+isradiZ0 = false;
+isradiY0 = false;
+isradiK0 = false;
+isradiW0 = false;
 
 if isfield(opts, 'radi')
     if isfield(opts, 'radi') && isfield(opts.radi, 'Z0')
-        isradiZ0  = 1;
+        isradiZ0  = true;
         radiZ0    = opts.radi.Z0;
         opts.radi = rmfield(opts.radi, 'Z0');
     end
 
     if isfield(opts.radi, 'Y0')
-        isradiY0  = 1;
+        isradiY0  = true;
         radiY0    = opts.radi.Y0;
         opts.radi = rmfield(opts.radi, 'Y0');
     end
 
     if isfield(opts.radi, 'K0')
-        isradiK0  = 1;
+        isradiK0  = true;
         radiK0    = opts.radi.K0;
         opts.radi = rmfield(opts.radi, 'K0');
     end
 
     if isfield(opts.radi, 'W0')
-        isradiW0  = 1;
+        isradiW0  = true;
         radiW0    = opts.radi.W0;
         opts.radi = rmfield(opts.radi, 'W0');
     end
@@ -582,10 +605,10 @@ if isfield(opts, 'shifts') && isfield(opts.shifts, 'method') && ...
             k = ceil(opts.shifts.history / size(W, 2));
             opts.shifts.history = k * size(eqn.B1, 2);
 
-            warning('MESS:control_data', ...
-                    ['Size of the residual changed after LQG problem. ', ...
-                     'The parameter opts.shifts.history is reset to %d.'], ...
-                    opts.shifts.history);
+            mess_warn(opts, 'control_data', ...
+                      ['Size of the residual changed after LQG problem. ', ...
+                       'The parameter opts.shifts.history is reset to %d.'], ...
+                      opts.shifts.history);
         end
     else
         if mod(opts.shifts.history, size(eqn.C1, 1))
@@ -593,10 +616,10 @@ if isfield(opts, 'shifts') && isfield(opts.shifts, 'method') && ...
             k = ceil(opts.shifts.history / size(W, 2));
             opts.shifts.history = k * size(eqn.C1, 1);
 
-            warning('MESS:control_data', ...
-                    ['Size of the residual changed after LQG problem. ', ...
-                     'The parameter opts.shifts.history is reset to %d.'], ...
-                    opts.shifts.history);
+            mess_warn(opts, 'control_data', ...
+                      ['Size of the residual changed after LQG problem. ', ...
+                       'The parameter opts.shifts.history is reset to %d.'], ...
+                      opts.shifts.history);
         end
     end
 end
@@ -616,9 +639,8 @@ else
     eqn.V   = [eqn.V(:, 1:eqn.sizeUV1), eqn.C1', -eqn.C2'];
 end
 
-eqn.haveUV  = 1;
+eqn.haveUV  = true;
 eqn.sizeUV1 = size(eqn.V, 2);
-
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -632,21 +654,21 @@ for k = 1:opts.ri.maxiter
                                     opts.ri.trunc_tol, opts.ri.trunc_info);
 
     else
-        Z(:, end+1:end+size(out_riccati.Z, 2)) = out_riccati.Z;
+        Z(:, end + 1:end + size(out_riccati.Z, 2)) = out_riccati.Z;
     end
 
     % Update the constant term and error variables.
     if eqn.type == 'T'
         if eqn.haveE
-            eqn.C = (oper.mul_E( eqn, opts, 'T', out_riccati.Z, 'N' ) ...
-                    * (out_riccati.Z' * eqn.B1))';
+            eqn.C = (oper.mul_E(eqn, opts, 'T', out_riccati.Z, 'N') * ...
+                     (out_riccati.Z' * eqn.B1))';
         else
             eqn.C = (eqn.B1' * out_riccati.Z) * out_riccati.Z';
         end
     else
         if eqn.haveE
-            eqn.B = oper.mul_E(eqn, opts, 'N', out_riccati.Z, 'N') ...
-                    * (eqn.C1 * out_riccati.Z)';
+            eqn.B = oper.mul_E(eqn, opts, 'N', out_riccati.Z, 'N') * ...
+                    (eqn.C1 * out_riccati.Z)';
         else
             eqn.B = out_riccati.Z * (eqn.C1 * out_riccati.Z)';
         end
@@ -655,17 +677,19 @@ for k = 1:opts.ri.maxiter
     % Set the next rank-k update
     if eqn.type == 'T'
         if eqn.haveE
-            eqn.V(:, end-m12+1:end) = oper.mul_E(eqn, opts, 'T', Z, 'N') ...
-                                      * (Z' * [eqn.B1, eqn.B2]);
+            eqn.V(:, end - m12 + 1:end) = ...
+                oper.mul_E(eqn, opts, 'T', Z, 'N') * ...
+                (Z' * [eqn.B1, eqn.B2]);
         else
-            eqn.V(:, end-m12+1:end) = Z * (Z' * [eqn.B1, eqn.B2]);
+            eqn.V(:, end - m12 + 1:end) = Z * (Z' * [eqn.B1, eqn.B2]);
         end
     else
         if eqn.haveE
-            eqn.U(:, end-m12+1:end) = oper.mul_E(eqn, opts, 'N', Z, 'N') ...
-                                      * (Z' * [eqn.C1', eqn.C2']);
+            eqn.U(:, end - m12 + 1:end) = ...
+                oper.mul_E(eqn, opts, 'N', Z, 'N') * ...
+                (Z' * [eqn.C1', eqn.C2']);
         else
-            eqn.U(:, end-m12+1:end) = Z * (Z' * [eqn.C1', eqn.C2']);
+            eqn.U(:, end - m12 + 1:end) = Z * (Z' * [eqn.C1', eqn.C2']);
         end
     end
 
@@ -687,23 +711,28 @@ for k = 1:opts.ri.maxiter
     % Print status information.
     if opts.ri.info
         if opts.ri.rel_diff_tol && opts.ri.res_tol
-            fprintf(1, ['RI step: %4d normalized residual: %e ' ...
-                        'relative change in Z: %e\n'], ...
-                    k, res(k), rc(k));
+            mess_fprintf(opts, ...
+                         ['RI step: %4d normalized residual: %e ' ...
+                          'relative change in Z: %e\n'], ...
+                         k, res(k), rc(k));
         elseif opts.ri.res_tol
-            fprintf(1, 'RI step: %4d normalized residual: %e\n', ...
-                    k, res(k));
+            mess_fprintf(opts, ...
+                         'RI step: %4d normalized residual: %e\n', ...
+                         k, res(k));
         elseif opts.ri.rel_diff_tol
-            fprintf(1, 'RI step: %4d relative change in Z: %e\n', ...
-                    k, rc(k));
+            mess_fprintf(opts, ...
+                         'RI step: %4d relative change in Z: %e\n', ...
+                         k, rc(k));
         end
 
         if isfield(out_riccati, 'adi')
-            fprintf(1, '               number of Newton steps: %4d\n\n', ...
-                    out_riccati.niter);
+            mess_fprintf(opts, ...
+                         '               number of Newton steps: %4d\n\n', ...
+                         out_riccati.niter);
         elseif isfield(out_riccati, 'niter')
-            fprintf(1, '               number of RADI steps: %4d\n\n', ...
-                    out_riccati.niter);
+            mess_fprintf(opts, ...
+                         '               number of RADI steps: %4d\n\n', ...
+                         out_riccati.niter);
         end
     end
 
@@ -712,7 +741,7 @@ for k = 1:opts.ri.maxiter
        (opts.ri.rel_diff_tol && (rc(k) < opts.ri.rel_diff_tol)) || ...
        (k >= opts.ri.maxiter)
 
-        break;
+        break
     end
 
     % Solve the next residual equation.
@@ -722,19 +751,24 @@ for k = 1:opts.ri.maxiter
     tmp = out_riccati;
 
     if not(opts.ri.store_solfac)
-        if isfield(tmp, 'Z'), tmp = rmfield(tmp, 'Z'); end
-        if isfield(tmp, 'K'), tmp = rmfield(tmp, 'K'); end
-        if isfield(tmp, 'res_fact'), tmp = rmfield(tmp, 'res_fact'); end
+        if isfield(tmp, 'Z')
+            tmp = rmfield(tmp, 'Z');
+        end
+        if isfield(tmp, 'K')
+            tmp = rmfield(tmp, 'K');
+        end
+        if isfield(tmp, 'res_fact')
+            tmp = rmfield(tmp, 'res_fact');
+        end
     end
 
     switch func2str(riccati_solver)
         case 'mess_lrradi'
-            out.radi(k+1) = tmp;
+            out.radi(k + 1) = tmp;
         case 'mess_lrnm'
-            out.nm(k+1) = tmp;
+            out.nm(k + 1) = tmp;
     end
 end
-
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -745,9 +779,9 @@ out.Z = Z;
 out.niter = k;
 
 if eqn.type == 'T'
-    out.K = eqn.V(:, end-m12+1:end)';
+    out.K = eqn.V(:, end - m12 + 1:end)';
 else
-    out.K = eqn.U(:, end-m12+1:end)';
+    out.K = eqn.U(:, end - m12 + 1:end)';
 end
 
 if opts.ri.res_tol
@@ -763,9 +797,9 @@ out.res0 = res0;
 if (out.niter == opts.ri.maxiter) && ...
    (opts.ri.res_tol && not(out.res(end) < opts.ri.res_tol))
 
-    warning('MESS:RI:convergence', ...
-            ['Riccati iteration reached maximum iteration number.',...
-             ' Results may be inaccurate.']);
+    mess_warn(opts, 'convergence', ...
+              ['Riccati iteration reached maximum iteration number.', ...
+               ' Results may be inaccurate.']);
 end
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -783,7 +817,7 @@ if isempty(eqn.V) || isempty(eqn.U)
     % Enforce empty matrices and parameters.
     eqn.U       = [];
     eqn.V       = [];
-    eqn.haveUV  = 0;
+    eqn.haveUV  = false;
     eqn.sizeUV1 = 0;
 end
 
@@ -792,11 +826,21 @@ eqn = rmfield(eqn, 'B');
 eqn = rmfield(eqn, 'C');
 
 % Rebuild initial values in option struct.
-if isnmK0, opts.nm.K0 = nmK0; end
-if isradiZ0, opts.radi.Z0 = radiZ0; end
-if isradiY0, opts.radi.Y0 = radiY0; end
-if isradiK0, opts.radi.K0 = radiK0; end
-if isradiW0, opts.radi.W0 = radiW0; end
+if isnmK0
+    opts.nm.K0 = nmK0;
+end
+if isradiZ0
+    opts.radi.Z0 = radiZ0;
+end
+if isradiY0
+    opts.radi.Y0 = radiY0;
+end
+if isradiK0
+    opts.radi.K0 = radiK0;
+end
+if isradiW0
+    opts.radi.W0 = radiW0;
+end
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

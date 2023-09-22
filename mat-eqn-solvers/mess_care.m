@@ -25,28 +25,28 @@ function [Z, D, K] = mess_care(varargin)
 %   [Z, ~] = mess_care(A, B, C, [], E)
 %
 %
-%   [Z, D, K] = mess_care(A, B, C, S) solves the Riccati matrix equation
+%   [Z, D, K] = mess_care(A, B, C, Q) solves the Riccati matrix equation
 %       in ZDZ^T formulation:
 %
-%        A'*Z*D*Z' + Z*D*Z'*A - Z*D*Z'*B*B'*Z*D*Z' + C'*S*C = 0
+%        A'*Z*D*Z' + Z*D*Z'*A - Z*D*Z'*B*B'*Z*D*Z' + C'*Q*C = 0
 %
 %        K is the feedback matrix K = B'*Z*D*Z'
 %        To omit the computation of Z and D use:
-%   K = mess_care(A, B, C, S)
+%   K = mess_care(A, B, C, Q)
 %        To get only the solution factors Z and D as output use:
-%   [Z, D] = mess_care(A, B, C, S)
+%   [Z, D] = mess_care(A, B, C, Q)
 %
 %
-%   [Z, D, K] = mess_care(A, B, C, S, E) solves the generalized Riccati
+%   [Z, D, K] = mess_care(A, B, C, Q, E) solves the generalized Riccati
 %       equation in ZDZ^T formulation:
 %
-%        A'*Z*D*Z'*E + E'*Z*D*Z'*A - E'*Z*D*Z'*B*B'*Z*D*Z'*E + C'*S*C = 0
+%        A'*Z*D*Z'*E + E'*Z*D*Z'*A - E'*Z*D*Z'*B*B'*Z*D*Z'*E + C'*Q*C = 0
 %
 %        K is the feedback matrix K = B'*Z*D*Z'*E
 %        To omit the computation of Z and D use:
-%   K = mess_care(A, B, C, S, E)
+%   K = mess_care(A, B, C, Q, E)
 %        To get only the solution factor Z as output use:
-%   [Z, D] = mess_care(A, B, C, S, E)
+%   [Z, D] = mess_care(A, B, C, Q, E)
 %
 %   If S is empty, matrices A,B and E can be given as Z = mess_lyap(sys)
 %   with sys = sparss(A, B , C_ ,D , E) a continuous-time first-order sparse
@@ -59,14 +59,14 @@ function [Z, D, K] = mess_care(varargin)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
 %% Usfs
-oper = operatormanager('default');
+opts = struct;
+[oper, opts] = operatormanager(opts, 'default');
 
 %% Options
 ni = nargin;
@@ -74,47 +74,48 @@ no = nargout;
 
 %% Equation type
 if (ni == 1) && isa(varargin{1}, 'sparss')
-    [eqn, oper] = mess_wrap_sparss(varargin{1});
+    [eqn, opts, oper] = mess_wrap_sparss(varargin{1}, opts);
     eqn.type = 'T';
-    if(exist('eqn.D', 'var'))
-        warning('MESS:ignored',...
-                'D is supposed to be empty. Data is ignored.');
+    if exist('eqn.D', 'var')
+        mess_warn(opts, 'ignored', ...
+                  'D is supposed to be empty. Data is ignored.');
     end
-    S = [];
+    Q = [];
 else
     eqn.type = 'T';
     if ni < 4
-        S = [];
+        Q = [];
     else
-        S = varargin{4};
+        Q = varargin{4};
     end
-    if isempty(S) % Z*Z' case.
+    if isempty(Q) % Z*Z' case.
         eqn.A_ = varargin{1};
         eqn.B  = varargin{2};
         eqn.C  = varargin{3};
 
         if ni == 3
-            eqn.haveE = 0;
+            eqn.haveE = false;
         elseif ni == 5
-            eqn.haveE = 1;
+            eqn.haveE = true;
             eqn.E_ = varargin{5};
         else
-            error('MESS:notimplemented', 'Wrong number of input arguments');
+            mess_err(opts, 'notimplemented', 'Wrong number of input arguments');
         end
     else % Z*D*Z' case.
-        opts.LDL_T = 1;
+        opts.LDL_T = true;
         eqn.A_ = varargin{1};
         eqn.B = varargin{2};
         eqn.C = varargin{3};
-        eqn.S = varargin{4};
+        eqn.Q = varargin{4};
+        eqn.R = eye(size(eqn.B, 2));
 
         if ni == 4
-            eqn.haveE = 0;
+            eqn.haveE = false;
         elseif ni == 5
-            eqn.haveE = 1;
+            eqn.haveE = true;
             eqn.E_ = varargin{5};
         else
-            error('MESS:notimplemented', 'Feature not yet implemented!');
+            mess_err(opts, 'notimplemented', 'Feature not yet implemented!');
         end
     end
 end
@@ -143,26 +144,26 @@ switch no
 
     case 1
         % Compute only K.
-        opts.radi.compute_sol_fac = 0;
-        opts.radi.get_ZZt         = 0;
+        opts.radi.compute_sol_fac = false;
+        opts.radi.get_ZZt         = false;
     case 2
         % Compute K and Z in Z*Z' format.
-        opts.radi.compute_sol_fac = 1;
-        opts.radi.get_ZZt         = 1;
+        opts.radi.compute_sol_fac = true;
+        opts.radi.get_ZZt         = true;
     otherwise
         % Compute K, Z and D in Z*D*Z' format.
-        opts.radi.compute_sol_fac = 1;
-        opts.radi.get_ZZt         = 0;
+        opts.radi.compute_sol_fac = true;
+        opts.radi.get_ZZt         = false;
 end
 
 %% Solve Equation
 out = mess_lrradi(eqn, opts, oper);
 
 if out.res(end) > opts.radi.res_tol
-    warning('MESS:convergence', ...
-            ['Convergence of solution only up to relative residual of %e!\n' ...
-             'Check mess_lrnm and mess_lrradi for customizable solvers.'], ...
-            out.res(end));
+    mess_warn(opts, 'convergence', ...
+              ['Convergence of solution only up to relative residual of %e!\n' ...
+               'Check mess_lrnm and mess_lrradi for customizable solvers.'], ...
+              out.res(end));
 end
 
 %% Prepare output
@@ -170,10 +171,10 @@ if no >= 2
     Z = out.Z;
 end
 
-if (not(isempty(S))) && (no >= 2) % Z*D*Z' case.
+if (not(isempty(Q))) && (no >= 2) % Z*D*Z' case.
     D = out.D;
     if no == 3
-       K = out.K;
+        K = out.K;
     end
 elseif no == 2 % Z*Z' case and K.
     D = out.K;

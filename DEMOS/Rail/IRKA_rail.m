@@ -1,4 +1,4 @@
-function [Er,Ar,Br,Cr] = IRKA_rail(k,r,istest)
+function [Er, Ar, Br, Cr] = IRKA_rail(k, r, istest)
 % Computes a locally H2-optimal reduced order model of order r for
 % the selective cooling of Steel profiles application described in
 % [1,2,3] via the tangential IRKA method.
@@ -28,7 +28,7 @@ function [Er,Ar,Br,Cr] = IRKA_rail(k,r,istest)
 % [2] P. Benner, J. Saak, A semi-discretized heat transfer model for
 %     optimal cooling of steel profiles, in: P. Benner, V. Mehrmann, D.
 %     Sorensen (Eds.), Dimension Reduction of Large-Scale Systems, Vol. 45
-%     of Lect. Notes Comput. Sci. Eng., Springer-Verlag, Berlin/Heidelberg,
+%     of Lecture Notes in Computational Science and Engineering, Springer-Verlag, Berlin/Heidelberg,
 %     Germany, 2005, pp. 353–356. https://doi.org/10.1007/3-540-27909-1_19
 %
 % [3] J. Saak, Efficient numerical solution of large scale algebraic matrix
@@ -42,62 +42,72 @@ function [Er,Ar,Br,Cr] = IRKA_rail(k,r,istest)
 %     https://doi.org/10.1137/060666123
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 %% Load matrix data
-if nargin<1
-    k=2;
+if nargin < 1
+    k = 2;
 end
 eqn = mess_get_linear_rail(k);
 
 %% register corresponding usfs
-oper = operatormanager('default');
+opts = struct();
+[oper, opts] = operatormanager(opts, 'default');
 
 %% collect IRKA parameters
-if nargin<2
+if nargin < 2
+
     opts.irka.r = 20;
+
 else
+
     opts.irka.r = r;
+
 end
 
 if nargin < 3
-    istest = 0;
+    istest = false;
 end
-opts.irka.maxiter =100;
+
+opts.irka.maxiter   = 100;
 opts.irka.shift_tol = 1e-3;
-opts.irka.h2_tol = 1e-6;
+opts.irka.h2_tol    = 1e-6;
+
 if istest
+
     opts.irka.info = 1;
+
 else
+
     opts.irka.info = 3;
+
 end
+
 opts.irka.init = 'logspace';
 
 %% Run IRKA
 
-[Er,Ar,Br,Cr] = mess_tangential_irka(eqn, opts, oper);
+[Er, Ar, Br, Cr, ~, outinfo] = mess_tangential_irka(eqn, opts, oper);
 
-if istest
-    [~, ID] = lastwarn;
-    lastwarn('');
-    if strcmp(ID,'MESS:IRKA:convergence')
-        error('IRKA converged unexpectedly slow');
-    end
+if istest && isequal(outinfo.term_flag, 'maxiter')
+    mess_err(opts, 'convergence', 'IRKA converged unexpectedly slow');
 end
+%% In case this is a CI test and the sparss class is available (recent MATLAB)
+%  try the same again with that.
+if istest && exist('sparss', 'class')
 
-if exist('sparss','class')
     sys = sparss(eqn.A_, eqn.B, eqn.C, [], eqn.E_);
-    [Er,Ar,Br,Cr] = mess_tangential_irka(sys,opts);
-    if istest
-    [~, ID] = lastwarn;
-    lastwarn('');
-        if strcmp(ID,'MESS:IRKA:convergence')
-            error('IRKA converged unexpectedly slow');
-        end
+
+    [Er, Ar, Br, Cr, ~, outinfo] = mess_tangential_irka(sys, opts);
+
+    if istest && isequal(outinfo.term_flag, 'maxiter')
+
+        mess_err(opts, 'convergence', 'IRKA converged unexpectedly slow');
+
     end
 end

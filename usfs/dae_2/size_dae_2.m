@@ -1,4 +1,4 @@
-function n = size_dae_2(eqn, opts, oper)%#ok<INUSD>
+function n = size_dae_2(eqn, opts, oper) %#ok<INUSD>
 % function n = size_dae_2(eqn, opts, oper)
 %
 % This function returns the number of rows of the implicitly projected A
@@ -20,15 +20,16 @@ function n = size_dae_2(eqn, opts, oper)%#ok<INUSD>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-if not(isfield(eqn, 'st'))    || not(isnumeric(eqn.st))
-    error('MESS:st',...
-    'Missing or Corrupted st field detected in equation structure.');
+if not(isfield(eqn, 'manifold_dim'))    || not(isnumeric(eqn.manifold_dim))
+    mess_err(opts, 'error_arguments', ...
+             ['Missing or corrupted manifold_dim field detected in ' ...
+              'equation structure.']);
 end
-n = eqn.st;
+n = eqn.manifold_dim;
 
 end

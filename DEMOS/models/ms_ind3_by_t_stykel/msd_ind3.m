@@ -1,4 +1,4 @@
-function [E, A, B, C, M, D, K, G, Pl, Pr] = msd_ind3(g, mas, k1, k2, d1, d2)
+function [E, A, B, C, M, D, K, G, Pl, Pr] = msd_ind3(g, mas, k1, k2, d1, d2, opts)
 %
 % Damped mass-spring system with a holonomic constraint
 %
@@ -78,88 +78,117 @@ function [E, A, B, C, M, D, K, G, Pl, Pr] = msd_ind3(g, mas, k1, k2, d1, d2)
 %
 % ----------------------------------------------------------------------
 % T.Stykel, TU Berlin, 9.06.2006
+if nargin < 7
+    opts = struct();
+end
 
-n = 2*g+1;         % state space dimension
+n = 2 * g + 1;         % state space dimension
 
 % Input parameters are not completely checked
-if size(mas,1) < size(mas,2), mas = mas'; end
-if size(k1,1)  < size(k1,2),  k1  = k1'; end
-if size(k2,1)  < size(k2,2),  k2  = k2'; end
-if size(d1,1)  < size(d1,2),  d1  = d1'; end
-if size(d2,1)  < size(d2,2),  d2  = d2'; end
+if size(mas, 1) < size(mas, 2)
+    mas = mas';
+end
+if size(k1, 1)  < size(k1, 2)
+    k1  = k1';
+end
+if size(k2, 1)  < size(k2, 2)
+    k2  = k2';
+end
+if size(d1, 1)  < size(d1, 2)
+    d1  = d1';
+end
+if size(d2, 1)  < size(d2, 2)
+    d2  = d2';
+end
 
 % Example from [1]
-if isempty(mas), mas = 100*ones(g,1); end
-if isempty(k1), k1  = 2*ones(g-1,1); end
-if isempty(k2), k2  = 2*ones(g,1); k2(1) = 4; k2(g) = 4; end
-if isempty(d1), d1  = 5*ones(g-1,1); end
-if isempty(d2), d2  = 5*ones(g,1); d2(1) = 10;d2(g) = 10;end
+if isempty(mas)
+    mas = 100 * ones(g, 1);
+end
+if isempty(k1)
+    k1  = 2 * ones(g - 1, 1);
+end
+if isempty(k2)
+    k2  = 2 * ones(g, 1);
+    k2(1) = 4;
+    k2(g) = 4;
+end
+if isempty(d1)
+    d1  = 5 * ones(g - 1, 1);
+end
+if isempty(d2)
+    d2  = 5 * ones(g, 1);
+    d2(1) = 10;
+    d2(g) = 10;
+end
 
 % matrix M
-M = spdiags(mas,0,g,g);
+M = spdiags(mas, 0, g, g);
 
 % matrix K
-K = spdiags(k1,-1,g,g);
-K=K+K'-spdiags([0; k1]+k2+[k1; 0],0,g,g);
+K = spdiags(k1, -1, g, g);
+K = K + K' - spdiags([0; k1] + k2 + [k1; 0], 0, g, g);
 
 % matrix D
-D = spdiags(d1,-1,g,g);
-D = D+D'-spdiags([0; d1]+d2+[d1; 0],0,g,g);
+D = spdiags(d1, -1, g, g);
+D = D + D' - spdiags([0; d1] + d2 + [d1; 0], 0, g, g);
 
 % matrix G
-G = zeros(1,g);
-G(1)=1;
-G(end)=-1;
+G = zeros(1, g);
+G(1) = 1;
+G(end) = -1;
 
 % matrix E
-E=sparse(n,n);
-E(1:g,1:g)=speye(g);
-E(g+1:2*g,g+1:2*g) = M;
+E = sparse(n, n);
+E(1:g, 1:g) = speye(g);
+E(g + 1:2 * g, g + 1:2 * g) = M;
 
 % matrix A
-A=sparse(n,n);
-A(1:g,g+1:2*g)=speye(g);
-A(g+1:2*g,1:g)=K;
-A(g+1:2*g,g+1:2*g)=D;
-A(2*g+1:end,1:g)=G;
-A(g+1:2*g,2*g+1:end)=-G';
+A = sparse(n, n);
+A(1:g, g + 1:2 * g) = speye(g);
+A(g + 1:2 * g, 1:g) = K;
+A(g + 1:2 * g, g + 1:2 * g) = D;
+A(2 * g + 1:end, 1:g) = G;
+A(g + 1:2 * g, 2 * g + 1:end) = -G';
 
 % matrix B
-B=sparse(n,1);
-B(g+1,1)=1;
+B = sparse(n, 1);
+B(g + 1, 1) = 1;
 
 % matrix C
-C=sparse(3,n);
-C(1,1)=1;
-C(2,2)=1;
-C(3,g-1)=1;
+C = sparse(3, n);
+C(1, 1) = 1;
+C(2, 2) = 1;
+C(3, g - 1) = 1;
 
-m=size(B,2); p=size(C,1);
-disp('Problem dimensions:');
+m = size(B, 2);
+p = size(C, 1);
+mess_fprintf(opts, 'Problem dimensions:');
 % nf and ninf are the dimensions of the deflating subspaces of s*E-A
 % corresponding to the finite and infinite eigenvalues, n=nf+ninf
-disp(['n = ',int2str(n),', nf = ', int2str(n-3), ', ninf = ', int2str(3)]);
-disp(['m = ',int2str(m),',  p = ',int2str(p)]);
+mess_fprintf(opts, ['n = ', int2str(n), ', nf = ', int2str(n - 3), ', ninf = ', int2str(3)]);
+mess_fprintf(opts, ['m = ', int2str(m), ',  p = ', int2str(p)]);
 
-iM=spdiags(1./mas,0,g,g);  %speye(g)/mas;
-G=sparse(1,g);
-G(1,1)=1; G(1,g)=-1;
-GG=iM*G'/(G*iM*G');
-Pi=speye(g)-GG*G;
+iM = spdiags(1 ./ mas, 0, g, g);  % speye(g)/mas;
+G = sparse(1, g);
+G(1, 1) = 1;
+G(1, g) = -1;
+GG = iM * G' / (G * iM * G');
+Pi = speye(g) - GG * G;
 
 % projector Pl
-Pl = sparse(n,n);
-Pl(1:g,1:g) = Pi;
-Pl(1:g,2*g+1:2*g+1) = -Pi*iM*D*GG;
-Pl(g+1:2*g,1:g)     = -M*Pi*iM*D*(GG*G);
-Pl(g+1:2*g,g+1:2*g) =  M*Pi*iM;
-Pl(g+1:2*g,2*g+1)   = -M*Pi*iM*(K+D*Pi*iM*D)*GG;
+Pl = sparse(n, n);
+Pl(1:g, 1:g) = Pi;
+Pl(1:g, 2 * g + 1:2 * g + 1) = -Pi * iM * D * GG;
+Pl(g + 1:2 * g, 1:g)     = -M * Pi * iM * D * (GG * G);
+Pl(g + 1:2 * g, g + 1:2 * g) =  M * Pi * iM;
+Pl(g + 1:2 * g, 2 * g + 1)   = -M * Pi * iM * (K + D * Pi * iM * D) * GG;
 
 % projector Pr
-Pr = sparse(n,n);
-Pr(1:g,1:g)         =  Pi;
-Pr(g+1:2*g,1:g)     = -Pi*iM*D*GG*G;
-Pr(g+1:2*g,g+1:2*g) =  Pi;
-GG = G/(G*iM*G');
-Pr(2*g+1,1:g)       =  GG*iM*(K*Pi-D*Pi*iM*D*iM*G'*GG);
-Pr(2*g+1,g+1:2*g)   =  GG*iM*D*Pi;
+Pr = sparse(n, n);
+Pr(1:g, 1:g)         =  Pi;
+Pr(g + 1:2 * g, 1:g)     = -Pi * iM * D * GG * G;
+Pr(g + 1:2 * g, g + 1:2 * g) =  Pi;
+GG = G / (G * iM * G');
+Pr(2 * g + 1, 1:g)       =  GG * iM * (K * Pi - D * Pi * iM * D * iM * G' * GG);
+Pr(2 * g + 1, g + 1:2 * g)   =  GG * iM * D * Pi;

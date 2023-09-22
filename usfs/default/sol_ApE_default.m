@@ -1,4 +1,4 @@
-function X=sol_ApE_default(eqn, opts,opA,p,opE,C,opC)%#ok<INUSL>
+function X = sol_ApE_default(eqn, opts, opA, p, opE, C, opC)
 % function X=sol_ApE_default(eqn, opts,opA,p,opE,C,opC)
 %
 % This function returns X = (A_ + p*E_)\C, where matrices A_ and E_
@@ -30,57 +30,55 @@ function X=sol_ApE_default(eqn, opts,opA,p,opE,C,opC)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
-
 %% check input parameters
 if not(ischar(opA)) || not(ischar(opE)) || not(ischar(opC))
-    error('MESS:error_arguments', 'opA, opE or opC is not a char');
+    mess_err(opts, 'error_arguments', 'opA, opE or opC is not a char');
 end
 
 opA = upper(opA);
 opE = upper(opE);
 opC = upper(opC);
 
-if not((opA=='N' || opA=='T'))
-    error('MESS:error_arguments', 'opA is not ''N'' or ''T''');
+if not(opA == 'N' || opA == 'T')
+    mess_err(opts, 'error_arguments', 'opA is not ''N'' or ''T''');
 end
 
-if not((opE=='N' || opE=='T'))
-    error('MESS:error_arguments', 'opE is not ''N'' or ''T''');
+if not(opE == 'N' || opE == 'T')
+    mess_err(opts, 'error_arguments', 'opE is not ''N'' or ''T''');
 end
 
-if not((opC=='N' || opC=='T'))
-    error('MESS:error_arguments', 'opC is not ''N'' or ''T''');
+if not(opC == 'N' || opC == 'T')
+    mess_err(opts, 'error_arguments', 'opC is not ''N'' or ''T''');
 end
 
 if not(isnumeric(p)) || not(length(p) == 1)
-    error('MESS:error_arguments', 'p is not numeric');
+    mess_err(opts, 'error_arguments', 'p is not numeric');
 end
 
 if not(isnumeric(C)) || not(ismatrix(C))
-    error('MESS:error_arguments', 'C has to ba a matrix');
+    mess_err(opts, 'error_arguments', 'C has to ba a matrix');
 end
 
 %% check data in eqn structure
-if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
-if eqn.haveE ==1
-    if not(isfield(eqn,'E_')) || not(isfield(eqn,'A_'))
-        error('MESS:error_arguments', 'field eqn.E_ or eqn.A_ is not defined');
+if not(isfield(eqn, 'haveE'))
+    eqn.haveE = false;
+end
+if eqn.haveE
+    if not(isfield(eqn, 'E_')) || not(isfield(eqn, 'A_'))
+        mess_err(opts, 'error_arguments', 'field eqn.E_ or eqn.A_ is not defined');
     end
 else
-    if not(isfield(eqn,'A_'))
-        error('MESS:error_arguments', 'field eqn.A_ is not defined');
+    if not(isfield(eqn, 'A_'))
+        mess_err(opts, 'error_arguments', 'field eqn.A_ is not defined');
     end
 end
 
 [rowA, colA] = size(eqn.A_);
-
-
 
 switch opA
 
@@ -92,25 +90,25 @@ switch opA
 
                 switch opC
 
-                    %implement solve (A_+p*E_)*X=C
+                    % implement solve (A_+p*E_)*X=C
                     case 'N'
 
                         if not(rowA == size(C, 1))
-                            error('MESS:error_arguments',['number ' ...
-                                                'of rows of A differs ' ...
-                                                'with number of rows of C']);
+                            mess_err(opts, 'error_arguments', ['number ' ...
+                                                               'of rows of A differs ' ...
+                                                               'with number of rows of C']);
                         end
 
                         X = (eqn.A_ + p * eqn.E_) \ C;
 
-                    %implement solve (A_ + p * E_) * X = C'
+                        % implement solve (A_ + p * E_) * X = C'
                     case 'T'
 
-                        if not(rowA ==size(C, 2))
-                            error('MESS:error_arguments',['number ' ...
-                                                'of rows of A differs ' ...
-                                                'with number of ' ...
-                                                'columns of C']);
+                        if not(rowA == size(C, 2))
+                            mess_err(opts, 'error_arguments', ['number ' ...
+                                                               'of rows of A differs ' ...
+                                                               'with number of ' ...
+                                                               'columns of C']);
                         end
 
                         X = (eqn.A_ + p * eqn.E_) \ C';
@@ -121,25 +119,25 @@ switch opA
 
                 switch opC
 
-                    %implement solve (A_ + p * E_') * X = C
+                    % implement solve (A_ + p * E_') * X = C
                     case 'N'
 
-                        if not(rowA == size(C,1))
-                            error('MESS:error_arguments',['number ' ...
-                                                'of rows of A differs ' ...
-                                                'with number of rows of C']);
+                        if not(rowA == size(C, 1))
+                            mess_err(opts, 'error_arguments', ['number ' ...
+                                                               'of rows of A differs ' ...
+                                                               'with number of rows of C']);
                         end
 
                         X = (eqn.A_ + p * eqn.E_') \ C;
 
-                    %implement solve (A_ + p * E_') * X = C'
+                        % implement solve (A_ + p * E_') * X = C'
                     case 'T'
 
                         if not(rowA == size(C, 2))
-                            error('MESS:error_arguments',['number ' ...
-                                                'of rows of A differs ' ...
-                                                'with number of ' ...
-                                                'columns of C']);
+                            mess_err(opts, 'error_arguments', ['number ' ...
+                                                               'of rows of A differs ' ...
+                                                               'with number of ' ...
+                                                               'columns of C']);
                         end
 
                         X = (eqn.A_ + p * eqn.E_') \ C';
@@ -156,26 +154,26 @@ switch opA
 
                 switch opC
 
-                    %implement solve (A_' + p * E_) * X = C
+                    % implement solve (A_' + p * E_) * X = C
                     case 'N'
 
-                        if not(colA == size(C,1))
-                            error('MESS:error_arguments',['number ' ...
-                                                'of columns of A ' ...
-                                                'differs with number ' ...
-                                                'of rows of C']);
+                        if not(colA == size(C, 1))
+                            mess_err(opts, 'error_arguments', ['number ' ...
+                                                               'of columns of A ' ...
+                                                               'differs with number ' ...
+                                                               'of rows of C']);
                         end
 
                         X = (eqn.A_' + p * eqn.E_) \ C;
 
-                    %implement solve (A_' + p * E_) * X = C'
+                        % implement solve (A_' + p * E_) * X = C'
                     case 'T'
 
                         if not(colA == size(C, 2))
-                            error('MESS:error_arguments',['number ' ...
-                                                'of columns of A ' ...
-                                                'differs with number ' ...
-                                                'of columns of C']);
+                            mess_err(opts, 'error_arguments', ['number ' ...
+                                                               'of columns of A ' ...
+                                                               'differs with number ' ...
+                                                               'of columns of C']);
                         end
 
                         X = (eqn.A_' + p * eqn.E_) \ C';
@@ -186,26 +184,26 @@ switch opA
 
                 switch opC
 
-                    %implement solve (A_' + p * E_') * X = C
+                    % implement solve (A_' + p * E_') * X = C
                     case 'N'
 
                         if not(colA == size(C, 1))
-                            error('MESS:error_arguments',['number ' ...
-                                                'of columns of A ' ...
-                                                'differs with number ' ...
-                                                'of rows of C']);
+                            mess_err(opts, 'error_arguments', ['number ' ...
+                                                               'of columns of A ' ...
+                                                               'differs with number ' ...
+                                                               'of rows of C']);
                         end
 
                         X = (eqn.A_' + p * eqn.E_') \ C;
 
-                    %implement solve (A_' + p * E_') * X = C'
+                        % implement solve (A_' + p * E_') * X = C'
                     case 'T'
 
-                        if not(colA == size(C,2))
-                            error('MESS:error_arguments',['number ' ...
-                                                'of columns of A ' ...
-                                                'differs with number ' ...
-                                                'of columns of C']);
+                        if not(colA == size(C, 2))
+                            mess_err(opts, 'error_arguments', ['number ' ...
+                                                               'of columns of A ' ...
+                                                               'differs with number ' ...
+                                                               'of columns of C']);
                         end
 
                         X = (eqn.A_' + p * eqn.E_') \ C';

@@ -1,4 +1,4 @@
-function n = size_dae_2_so(eqn, opts, oper)%#ok<INUSD>
+function n = size_dae_2_so(eqn, opts, oper) %#ok<INUSD>
 % function n = size_dae_2_so(eqn, opts, oper)
 %
 % This function returns the number of rows of the implicitly projected A
@@ -20,11 +20,10 @@ function n = size_dae_2_so(eqn, opts, oper)%#ok<INUSD>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
-n= 2*size(eqn.M_,1);
+n = 2 * size(eqn.M_, 1);
 end

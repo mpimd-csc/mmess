@@ -1,104 +1,81 @@
 function C = mul_E_state_space_transformed_default(eqn, opts, opE, B, opB)
 %% function C = mul_E_state_space_transformed_default(eqn,opts,opE,B,opB)
 %
-% This function returns C = E_*B, where matrix E_ given by structure eqn
-% and input matrix B could be transposed.
-% Matrix E_ is assumed to be quadratic.
+% This function returns C = B, input matrix B could be transposed.
+% Matrix E_ may exist in the eqn structure, but is ignored since the
+% transformed system is assumed to be in standard state space form, i.e.
+% the transformed E is the identity.
 %
 % Inputs
 %   eqn             struct contains data for equations
 %
 %   opts            struct contains parameters for the algorithm
 %
-%   opE             character specifying the shape of E_
-%                       opE = 'N' performs E_*opB(B)
-%                       opE = 'T' performs E_'*opB(B)
+%   opE             character specifying the transposition of the
+%                   transformed E.
+%                   unused since the transformed E acts as an identity.
+%                   (still needs to be provided for consistency)
 %
 %   B               m-x-p matrix
 %
 %   opB             character specifying the shape of B
-%                       opB = 'N' performs opE(E_)*B
-%                       opB = 'T' performs opE(E_)*B'
+%                       opB = 'N' sets C=B
+%                       opB = 'T' sets C=B'
 %
 % Output
-%   C = opE(E_)*opB(B)
+%   C = opB(B)
 %
-% This function uses another default function size_default(eqn, opts) to
-% obtain the number of rows of matrix E_ in structure eqn.
+% This function uses another user supplied function
+% (size_state_space_transformed_default(eqn, opts) to obtain the number of
+% rows of the transformed E matrix.
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
 %% Check input parameters.
-assert(ischar(opE) && ischar(opB), ...
-    'MESS:error_arguments', ...
-    'opE or opB is not a char');
+mess_assert(opts, ischar(opE) && ischar(opB), ...
+            'error_arguments', ...
+            'opE or opB is not a char');
 
 opE = upper(opE);
 opB = upper(opB);
 
-assert((opE == 'N') || (opE == 'T'), ...
-    'MESS:error_arguments', ...
-    'opE is not ''N'' or ''T''');
+mess_assert(opts, (opE == 'N') || (opE == 'T'), ...
+            'error_arguments', ...
+            'opE is not ''N'' or ''T''');
 
-assert((opB == 'N') || (opB == 'T'), ...
-    'MESS:error_arguments', ...
-    'opB is not ''N'' or ''T''');
+mess_assert(opts, (opB == 'N') || (opB == 'T'), ...
+            'error_arguments', ...
+            'opB is not ''N'' or ''T''');
 
-assert(isnumeric(B) && ismatrix(B), ...
-    'MESS:error_arguments', ...
-    'B has to ba a matrix');
+mess_assert(opts, isnumeric(B) && ismatrix(B), ...
+            'error_arguments', ...
+            'B has to ba a matrix');
 
 %% Check data in eqn structure.
-assert(isfield(eqn,'E_'), ...
-    'MESS:error_arguments', ...
-    'field eqn.E_ is not defined');
 
-rowE = size_default(eqn, opts);
+rowE = size_state_space_transformed_default(eqn, opts);
 colE = rowE;
 
 %% Perform multiplication.
-switch opE
-    case 'N'
-        switch opB
-            case 'N' % Implement operation E_*B.
-                assert(colE == size(B, 1), ...
-                    'MESS:error_arguments', ...
+switch opB
+    case 'N' % Implement operation E_*B.
+        mess_assert(opts, colE == size(B, 1), ...
+                    'error_arguments', ...
                     ['number of columns of E_ differs with ' ...
-                    'number of rows of B']);
-                C = eqn.E_ * B;
+                     'number of rows of B']);
+        C = B;
 
-            case 'T' % Implement operation E_*B'.
-                assert(colE == size(B, 2), ...
-                    'MESS:error_arguments', ...
+    case 'T' % Implement operation E_*B'.
+        mess_assert(opts, colE == size(B, 2), ...
+                    'error_arguments', ...
                     ['number of columns of E_ differs with ' ...
-                    'number of columns of B']);
-                C = eqn.E_ * B';
-        end
-
-    case 'T'
-        switch opB
-            case 'N' % Implement operation E_'*B.
-                assert(rowE == size(B, 1), ...
-                    'MESS:error_arguments', ...
-                    ['number of rows of E_ differs with ' ...
-                    'number rows of B']);
-                C = eqn.E_' * B;
-
-            case 'T' % Implement operation E_'*B'.
-                assert(rowE == size(B, 2), ...
-                    'MESS:error_arguments', ...
-                    ['number of rows of E_ differs with ' ...
-                    'number of columns of B']);
-                C = eqn.E_' * B';
-        end
-
-end
+                     'number of columns of B']);
+        C = B';
 
 end

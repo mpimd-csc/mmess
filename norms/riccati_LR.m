@@ -1,25 +1,27 @@
-function [ res ] = riccati_LR(W, DeltaK, opts, S, S_K )
-%RICCATI_LR Norm of the Riccati residual
-%   Using low rank formulation
+function [res] = riccati_LR(W, DeltaK, opts, S, S_K)
+% RICCATI_LR Norm of the Riccati residual
+%   Using low-rank formulation
 %   R(X) = U * D * U^T
-%   Since U^T * U * D is not symmetric ||U * D * U^T|| ~= ||U^T * U * D||
-%   But the non-zero eigenvalues of (U * D * U^T) and (U^T * U * D) are
-%   equal.
+%   Since U^T * U * D is not symmetric ||U * D * U^T|| is not the
+%   same as ||U^T * U * D||, but the non-zero eigenvalues of (U * D
+%   * U^T) and (U^T * U * D) are equal.
 
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 %% Check input data
 
-if not(isfield(opts,'bdf')), opts.bdf=[]; end
+if not(isfield(opts, 'bdf'))
+    opts.bdf = [];
+end
 
-if isstruct(opts.bdf) && isfield(opts.bdf, 'tau') ...
-        && isfield(opts.bdf, 'beta') && isempty(S_K)
+if isstruct(opts.bdf) && isfield(opts.bdf, 'tau') && ...
+        isfield(opts.bdf, 'beta') && isempty(S_K)
 
     DeltaK = DeltaK * sqrt(opts.bdf.tau * opts.bdf.beta);
     % DeltaK needs to be scaled with tb to compute the residual norm of the
@@ -28,33 +30,28 @@ if isstruct(opts.bdf) && isfield(opts.bdf, 'tau') ...
     % W; the scaling with tb is done in mess_lrnm already.
 end
 
+U = [W, DeltaK];
 
-%% Compute norm
-
-if opts.norm == 2 % 2-norm
-    if opts.LDL_T
-        if isempty(S_K)
-            res = max(abs(eig([W, DeltaK]' * [W * S, -DeltaK])));
-        else
-            res = max(abs(eig([W, DeltaK]' * [W * S, -DeltaK * S_K])));
-        end
+if opts.LDL_T
+    if isempty(S_K)
+        D = blkdiag(S, -eye(size(DeltaK, 2)));
     else
-        res = max(abs(eig([W, DeltaK]' * [W, -DeltaK])));
-    end
-
-elseif strcmpi(opts.norm,'fro') % Frobenius norm
-    if opts.LDL_T
-        if isempty(S_K)
-            res = norm(eig([W, DeltaK]' * [W * S, -DeltaK]), 'fro');
-        else
-            res = norm(eig([W, DeltaK]' * [W * S, -DeltaK * S_K]), 'fro');
-        end
-    else
-        res = norm(eig([W, DeltaK]' * [W, -DeltaK]), 'fro');
+        D = blkdiag(S, -S_K);
     end
 else
-    error('MESS:riccati_LR: Unsupported norm');
+    D = blkdiag(eye(size(W, 2)), ...
+                -eye(size(DeltaK, 2)));
 end
 
+%% Compute norm
+if opts.norm == 2 % 2-norm
+    f = @(x) max(abs(eig(x)));
+elseif strcmpi(opts.norm, 'fro') % Frobenius norm
+    f = @(x) norm(eig(x));
+else
+    mess_err(opts, 'riccati_LR: Unsupported norm');
 end
 
+res = f(U' * U * D);
+
+end

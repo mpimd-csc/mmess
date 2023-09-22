@@ -5,7 +5,7 @@
 %  #                                                                    #
 %  ######################################################################
 %
-%  version 2.2
+%  version 3.0
 %
 %  The M-M.E.S.S. toolbox is intended for the solution of symmetric
 %  linear and quadratic, differential and algebraic matrix
@@ -22,20 +22,31 @@
 %      y(t) = C x(t),
 %
 %  with E invertible, the usfs support certain structured
-%  differential algebraic equation (DAE) systems, first order forms
-%  of second order differential equations and combinations of
+%  differential algebraic equation (DAE) systems, first-order forms
+%  of second-order differential equations and combinations of
 %  both. (See section USFS below)
 %
 %  Features:
 %   * large-scale algebraic Lyapunov equations
-%     (mess_lyap, mess_lradi)
+%     (mess_lyap, mess_lradi, mess_KSM)
+%   * large-scale algebraic Lyapunov-plus-positive equations
+%     (mess_lyapunov_bilinear)
 %   * large-scale algebraic Riccati equations
-%     (mess_care, mess_lrnm, mess_lrri, mess_lrradi)
+%     (mess_care, mess_lrnm, mess_lrri, mess_lrradi, mess_KSM)
 %   * large-scale differential Riccati equations
 %     (mess_bdf_dre, mess_rosenbrock_dre, mess_splitting_dre)
 %   * model order reduction
 %     (mess_balanced_truncation, mess_square_root_method,
 %      mess_tangential_IRKA)
+%
+%  Moreover a first solver for certain, so called sparse-dense Sylvester
+%  equations has been added in mess_sylvester_sparse_dense and
+%  Lyapunov-plus-positive equations related to bilinear control systems
+%      .
+%    E x(t) = A x(t) + sum_k N_k u_k x + B u(t),               (2)
+%      y(t) = C x(t),
+%
+%  are supported.
 %
 %  ######################################################################
 %  #                                                                    #
@@ -57,7 +68,8 @@
 %
 %    Z = mess_lyap(A, B, [], [], E)
 %
-%  for the first equation above.
+%  for the first equation above. Alternatively, these equations can be
+%  solved by mess_KSM for classic first-order systems.
 %
 %  2.) continuous time algebraic Riccati equations
 %
@@ -82,7 +94,8 @@
 %  mess_lrnm, as well as the RADI iteration in mess_lrradi. While mess_lrnm
 %  can compute the solution in the above formats and supports computing the
 %  feedback K without ever forming Z, mess_lrradi computes the solution as
-%  L inv(D) L'.
+%  L inv(D) L'. Alternatively, these equations can be solved by mess_KSM
+%  for classic first-order systems.
 %
 %  3.) Riccati equations with indefinite quadratic terms
 %
@@ -117,6 +130,24 @@
 %  (1) is linear time-invariant) as well as the non-autonomous case (i.e.
 %  (1) is a linear time-varying system).
 %
+%  5.) sparse-dense Sylvester equations
+%
+%   A * X * F + E * X * H = -M
+%
+%  where A, E are the large and sparse matrices from (1) and F, H are
+%  usually small to moderate size dense matrices, such that M and X are
+%  tall rectangular.
+%
+%  6.) algebraic Lyapunov-plus-positive equations
+%
+%   A*P*E' + E*P*A' + Sum_N_k*P*N_k' + B*B' = 0       (N)
+%   A'*Q*E + E'*Q*A + Sum_N_k'*Q*N_k + C'*C = 0       (T)
+%
+%  where in addition to the usual coefficients the sparse and square matrices
+%  N_k (number of columns in B many in (N) or rows in C many in (T)) enter
+%  the problem. Currently this equation is only supported by the default
+%  usfs.
+%
 %  ######################################################################
 %  #                                                                    #
 %  #  supported model reduction methods                                 #
@@ -130,25 +161,29 @@
 %  same form can be computed by
 %
 %  [Er, Ar, Br, Cr, outinfo] =
-%     mess_balanced_truncation(E, A, B, C, max_order, trunc_tol)
+%     mess_balanced_truncation(E, A, B, C, [], opts)
 %
 %  or
 %
 %  [Er, Ar, Br, Cr, S, b, c, V, W] = mess_tangential_irka(E, A, B, C, opts)
 %
-%  where max_order, trunc_tol are the maximum desired  reduced order and
-%  the truncation tolerance for the BT error bound, while opts needs to
-%  contain a substructure irka with members r, maxiter, shift_tol, h2_tol
-%  for the reduced order, them maximum allowed IRKA steps, the tolerance
+%  where opts.bt.max_order, opts.bt. trunc_tol set the maximum desired
+%  reduced order and the truncation tolerance for the BT error bound, while
+%  opts.irka.r, opts.irka.maxiter, opts.irka.shift_tol, opts.irka.h2_tol
+%  stand for the reduced order, them maximum allowed IRKA steps, the tolerance
 %  for the relative change of shifts stopping criterion and the relative
-%  change of the H2 system norm for two subsequent admissible iterates.
+%  change of the H2 system norm for subsequent admissible iterates in IRKA.
 %
 %  Several demonstration functions in the DEMOS sub-folders show how BT can
 %  be performed for other system structures implemented by the USFS below.
 %
-%  Furthermore, several helper tasks are implemented in
-%  mess_squareroot_method, mess_sigma_plot and
-%  mess_Frobenius_TF_error_plot.
+%  Furthermore, helper tasks are implemented in
+%  mess_square_root_method, mess_tf_plot. Note that with release 3.0 these
+%  functions have been deprecated and will not be maintained or developed
+%  any longer. Instead the development is shifted to the MORLAB package
+%  that will use M-M.E.S.S. as the solver backend for the required matrix
+%  equations for model order reduction of sparse systems starting from
+%  version 6.0.
 %
 %  ######################################################################
 %  #                                                                    #
@@ -162,13 +197,18 @@
 %  following describes the sets of function handles shipped with M-M.E.S.S.
 %  and what types of systems they implement.
 %
-%  1.) generalized first order systems (1): "default"
-%    The default set of of function handles. These function handles
+%  1.) generalized first order systems (1): "default", "default_iter",
+%      "state_space_transformed_default"
+%    The default set of of function handles is "default". These function handles
 %    directly act on the matrices E, A given in (1) using them to
 %    explicitly represent the actions. That means multiplications directly
 %    use A* and E* (or their transposes if requested) and linear solves are
 %    implemented via A\, E\ (A + p*E)\. Again with transposes where
-%    requested.
+%    requested. For the "default_iter" set all \ calls are replaced by
+%    configurable iterative linear solvers. The
+%    "state_space_transformed_default" set uses \ but transforms the system
+%    to standard statespace form (E=I) for compatibility with the standard
+%    Krylov projection method formulations.
 %
 %  2.) second order: "so_1", "so_2"
 %    These sets of function handles work with second order dynamical
@@ -219,6 +259,19 @@
 %    implicitly compute on the hidden manifold, without forming the
 %    projected coefficients, but only projecting certain data and avoiding
 %    the doubling of dimensions with the analogous techniques as in 2.).
+%
+% For further details see also:
+%
+%    help mess_usfs
+%    help mess_usfs_dae_1
+%    help mess_usfs_dae_1_so
+%    help mess_usfs_dae_2
+%    help mess_usfs_default_iter
+%    help mess_usfs_default
+%    help mess_usfs_so_1
+%    help mess_usfs_so_2
+%    help mess_usfs_so_iter
+%    help mess_usfs_state_space_transformed_default
 %
 %  ######################################################################
 %  #                                                                    #
@@ -282,6 +335,56 @@
 %
 %  ######################################################################
 %  #                                                                    #
+%  #  Logging                                                           #
+%  #                                                                    #
+%  ######################################################################
+%
+%  The M-M.E.S.S. routines support a custom logging mechanism. This allows
+%  the user to select the output of the routines to be rerouted to files,
+%  the command window or both. As an effect, mess no longer uses the
+%  standard warnings and errors, but the following custom functions:
+%
+%  mess_log_initialize
+%  ----
+%  initializes the logging with user set parameters
+%
+%  mess_log_finalize
+%  ----
+%  ends logging and properly closes all related files
+%
+%  mess_fprintf
+%  ----
+%  prints the given string to desired output,
+%  accepts sprintf like syntax
+%
+%  mess_err
+%  ----
+%  issuing errors to the desired output
+%
+%  mess_warn
+%  ----
+%  issuing warnings to the desired output
+%
+%  mess_assert
+%  ----
+%  assertions sending error messages to the desired output
+%
+%  mess_log_plot
+%  ----
+%  saves figures in the set format and includes them into the
+%  log document if specified
+%
+%  mess_log_matrix
+%  ----
+%  saves the given variable to a .mat file and issues a notification
+%  in the logging output
+%
+%  For more insight on the logging output, refer to DEMOS/logging.m for a
+%  demo program
+%
+%
+%  ######################################################################
+%  #                                                                    #
 %  #  Citation                                                          #
 %  #                                                                    #
 %  ######################################################################
@@ -311,7 +414,7 @@
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %

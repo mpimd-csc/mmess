@@ -3,12 +3,24 @@ function [out, eqn, opts, oper] = mess_lrnm(eqn, opts, oper)
 %
 % Solve continuous-time Riccati equations with sparse coefficients with
 % Newton's method (NM)
-%   eqn.type = 'N' -> A*Z*Z'*E' + E*Z*Z'*A' - E*Z*Z'*C'*C*Z*Z'*E' + B*B' = 0 (N)
-%   eqn.type = 'T' -> A'*Z*Z'*E + E'*Z*Z'*A - E'*Z*Z'*B*B'*Z*Z'*E + C'*C = 0 (T)
+%
+%   eqn.type = 'N'
+%     A*X*E' + E*X*A' - E*X*C'*C*X*E' + B*B' = 0
+%   or
+%     A*X*E' + E*X*A' - E*X*C'*Q\C*X*E' + B*R*B' = 0
+%
+%   eqn.type = 'T'
+%     A'*X*E + E'*X*A - E'*X*B*B'*X*E + C'*C = 0
+%   or
+%     A'*X*E + E'*X*A - E'*X*B*R\B'*X*E + C'*Q*C = 0
 %
 %
 % Matrix A can have the form A = Ã + U*V' if U (eqn.U) and V (eqn.V) are
 % provided U and V are dense (n x m3) matrices and should satisfy m3 << n
+%
+%
+% The solution is approximated as X = Z*Z', or if opts.LDL_T is true as
+% X = L*D*L'
 %
 % Input/Output
 %   eqn         struct contains data for equations
@@ -26,12 +38,10 @@ function [out, eqn, opts, oper] = mess_lrnm(eqn, opts, oper)
 %
 %   eqn.C       dense (m2 x n) matrix C
 %
-%   eqn.G       dense (n x m1) matrix G
-%               if present it is used instead of B as RHS
-%               (required for LDL^T formulation otherwise optional)
+%   eqn.R       dense symmetric and invertible (m1 x m1) matrix
+%               (required for LDL^T formulation)
 %
-%   eqn.S       dense (m1 x m1) matrix (N) or (m2 x m2) matrix (T)
-%               expected to be symmetric
+%   eqn.Q       dense symmetric (m2 x m2) matrix
 %               (required for LDL^T formulation)
 %
 %   eqn.U       dense (n x m3) matrix U
@@ -40,21 +50,21 @@ function [out, eqn, opts, oper] = mess_lrnm(eqn, opts, oper)
 %   eqn.V       dense (n x m3) matrix V
 %               (required if eqn.U is present)
 %
-%   eqn.type    possible  values: 'N', 'T'
+%   eqn.type    possible values: 'N', 'T'
 %               determining whether (N) or (T) is solved
 %               (optional)
 %
-%   eqn.haveE   possible  values: 0, 1, false, true
-%               if haveE = 0: matrix E in eqn.E_ is assumed to be identity
+%   eqn.haveE   possible values: false, true
+%               if haveE == false: matrix E is assumed to be identity
 %               (optional)
 %
-%   eqn.haveUV  possible  values: 0, 1, false, true
-%               if haveUV = 1: U = [U1, U2] and V = [V1, V2]
+%   eqn.haveUV  possible values: false, true
+%               if haveUV = true: U = [U1, U2] and V = [V1, V2]
 %               if K or DeltaK are accumulated during the iteration they
 %               use only U2 and V2. U1 and V1 can be used for an external
 %               rank-k update of the operator.
 %               The size of U1 and V1 can be given via eqn.sizeUV1.
-%               (optional, default: 0)
+%               (optional, default: false)
 %
 %   eqn.sizeUV1 possible values: nonnegative integer
 %               if a stabilizing feedback is given via U = [U1, U2] and
@@ -64,17 +74,17 @@ function [out, eqn, opts, oper] = mess_lrnm(eqn, opts, oper)
 %
 %   Depending on the operator chosen by the operatormanager, additional
 %   fields may be needed. For the "default", e.g., eqn.A_ and eqn.E_ hold
-%   the A and E matrices. For the second order types these are given
+%   the A and E matrices. For the second order ode types these are given
 %   implicitly by the M, D, K matrices stored in eqn.M_, eqn.E_ and eqn.K_,
 %   respectively.
 %
 % Input fields in struct opts:
-%   opts.LDL_T                  possible  values: 0, 1, false, true
+%   opts.LDL_T                  possible values: false, true
 %                               use LDL^T formulation for the RHS and
 %                               solution
-%                               (optional, default: 0)
+%                               (optional, default: false)
 %
-%   opts.norm                   possible  values: 2, 'fro'
+%   opts.norm                   possible values: 2, 'fro'
 %                               use 2-norm (2) or Frobenius norm ('fro') to
 %                               compute residual and relative change norms
 %                               in case projection is used
@@ -91,13 +101,13 @@ function [out, eqn, opts, oper] = mess_lrnm(eqn, opts, oper)
 %                               maximum NM iteration number
 %                               (optional, default: 20)
 %
-%   opts.nm.res_tol             possible  values: scalar >= 0
+%   opts.nm.res_tol             possible values: scalar >= 0
 %                               stopping tolerance for the relative NM
 %                               residual norm; if res_tol = 0 the relative
 %                               residual norm is not evaluated
 %                               (optional, default: 0)
 %
-%   opts.nm.rel_diff_tol        possible  values: scalar >= 0
+%   opts.nm.rel_diff_tol        possible values: scalar >= 0
 %                               stopping tolerance for the relative
 %                               change of the NM solution Z;
 %                               if res_tol = 0 the relative
@@ -109,27 +119,27 @@ function [out, eqn, opts, oper] = mess_lrnm(eqn, opts, oper)
 %                               low-rank solutions (aka column compression)
 %                               (optional, default: eps*n)
 %
-%   opts.nm.trunc_info          possible values: 0, 1, false, true
+%   opts.nm.trunc_info          possible values: 0, 1
 %                               verbose mode for column compression
 %                               (optional, default: 0)
 %
-%   opts.nm.info                possible  values: 0, 1, false, true
+%   opts.nm.info                possible  values: 0, 1
 %                               turn on (1) or off (0) the status output in
 %                               every NM iteration step
 %                               (optional, default: 0)
 %
-%   opts.nm.accumulateRes       possible  values: 0, 1, false, true
+%   opts.nm.accumulateRes       possible  values: false, true
 %                               accumulate the relative NM residual norm
 %                               during the inner ADI iteration
-%                               (optional, default: 0)
+%                               (optional, default: false)
 %
-%   opts.nm.linesearch          possible  values: 0, 1, false, true
-%                               if tuned of (0) NM makes full steps; if
-%                               turned on (1) a step size 0<=lambda<=2 is
+%   opts.nm.linesearch          possible  values: false, true
+%                               if turned of (false) NM makes full steps; if
+%                               turned on (true) a step size 0<=lambda<=2 is
 %                               computed
-%                               (optional, default: 0)
+%                               (optional, default: false)
 %
-%   opts.nm.inexact             possible  values: 0, false, 'linear',
+%   opts.nm.inexact             possible  values: false, 'linear',
 %                               'superlinear', 'quadratic'
 %                               the inner ADI uses an adaptive relative ADI
 %                               residual norm; with
@@ -139,19 +149,19 @@ function [out, eqn, opts, oper] = mess_lrnm(eqn, opts, oper)
 %                               'linear': tau * ||R||,
 %                               'superlinear':  ||R|| / (j^3 + 1),
 %                               'quadratic': tau / sqrt(||R||)
-%                               (optional, default: 0)
+%                               (optional, default: false)
 %
-%   opts.nm.store_solfac        possible values: 0, 1, false, true
-%                               if turned on (1) the solution factors
+%   opts.nm.store_solfac        possible values: false, true
+%                               if turned on (true) the solution factors
 %                               computed by the adi are stored in the
 %                               out.adi structure
-%                               (optional, default 0)
+%                               (optional, default false)
 %
-%   opts.nm.store_debug         possible values: 0, 1, false, true
-%                               if turned on (1) the residual factors and
+%   opts.nm.store_debug         possible values: false, true
+%                               if turned on (true) the residual factors and
 %                               feedback updates from the adi are stored
 %                               in the out.adi structure
-%                               (optional, default 0)
+%                               (optional, default false)
 %
 %   opts.nm.tau                 possible  values: scalar >= 0
 %                               factor for inexact inner ADI iteration
@@ -159,7 +169,7 @@ function [out, eqn, opts, oper] = mess_lrnm(eqn, opts, oper)
 %                               (optional, default: 1)
 %
 %   opts.nm.projection.freq     possible  values: integer >= 0
-%                               frequency of the usage of galerkin
+%                               frequency of the usage of Galerkin
 %                               projection acceleration in NM
 %                               (optional, default: 0)
 %
@@ -188,26 +198,29 @@ function [out, eqn, opts, oper] = mess_lrnm(eqn, opts, oper)
 % and a 'MESS:control_data' warning is printed. to turn theses warnings off
 % use: warning('OFF', 'MESS:control_data')
 %
-% For LDL^T formulation use opts.LDL_T = 1:
-%     RHS of Lyapunov Eq. has form G * S * G'
+% For LDL^T formulation use opts.LDL_T = true:
+%     RHS of Lyapunov Eq. has form W * T * W'
 %     Solution Lyapunov Eq. has form L * D * L'
-%     with D Kronecker product of adiout.D and S
 %     L is stored in Z if computed (opts.adi.compute_sol_fac)
-%     S (eqn.S) needs to be given
+%     T (eqn.T in the ADI for the per Newton step Lyapunov equations) is built
+%     from Q and R.
 %
 % Output fields in struct out:
-%   out.Z               low rank solution factor
+%   out.Z               low-rank solution factor
 %
 %   out.adi             struct with the output of the all ADI iterations
 %
 %   out.niter           number of NM iterations
 %
-%   out.K               feedback matrix 
-%                       (T): K = B' ZZ' E 
+%   out.K               feedback matrix
+%                       (T): K = B' ZZ' E
 %                       (N): K = C ZZ' E
+%                       or
+%                       (T): K = R \ B' ZDZ' E
+%                       (N): K = Q \ C ZDZ' E
 %
 %   out.D               solution factor for LDL^T formulation
-%                       (opts.LDL_T = 1)
+%                       (opts.LDL_T = true)
 %
 %   out.res             array of relative NM residual norms
 %
@@ -229,168 +242,182 @@ function [out, eqn, opts, oper] = mess_lrnm(eqn, opts, oper)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
-
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check for ADI Control structure in options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if not(isfield(opts,'adi')) || not(isstruct(opts.adi))
-    error('MESS:control_data','ADI control structure opts.ADI missing.');
+if not(isfield(opts, 'adi')) || not(isstruct(opts.adi))
+    mess_err(opts, 'control_data',  ...
+             'ADI control structure opts.ADI missing.');
 end % Single fields are checked below or inside mess_lradi
 
-if not(isfield(opts.adi,'compute_sol_fac')), opts.adi.compute_sol_fac = 1; end
-if not(isfield(opts.adi,'accumulateK')), opts.adi.accumulateK = 0; end
-if not(isfield(opts.adi,'accumulateDeltaK')), opts.adi.accumulateDeltaK = 0; end
-
-if not(opts.adi.compute_sol_fac || opts.adi.accumulateK || opts.adi.accumulateDeltaK)
-    warning('MESS:control_data', ...
-        ['Either opts.adi.accumulateK or opts.adi.compute_sol_fac or ', ...
-        'opts.adi.accumulateDeltaK must be 1. Switching to default', ...
-        'opts.adi.accumulateDeltaK = 1']);
-    opts.adi.accumulateDeltaK = 1;
+if not(isfield(opts.adi, 'compute_sol_fac'))
+    opts.adi.compute_sol_fac = true;
 end
+if not(isfield(opts.adi, 'accumulateK'))
+    opts.adi.accumulateK = false;
+end
+if not(isfield(opts.adi, 'accumulateDeltaK'))
+    opts.adi.accumulateDeltaK = false;
+end
+
+if not(opts.adi.compute_sol_fac || opts.adi.accumulateK || ...
+       opts.adi.accumulateDeltaK)
+    mess_warn(opts, 'control_data', ...
+              ['Either opts.adi.accumulateK or opts.adi.compute_sol_fac or ', ...
+               'opts.adi.accumulateDeltaK must be true. Switching to default', ...
+               'opts.adi.accumulateDeltaK = true']);
+    opts.adi.accumulateDeltaK = true;
+end
+
+%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Initialize usfs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if not(isfield(eqn, 'haveE'))
+    eqn.haveE = false;
+end
+
+[result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A', 'E');
+
+if not(result)
+    mess_err(opts, 'control_data', ...
+             'system data is not completely defined or corrupted');
+end
+
+[eqn, opts, oper] = oper.mul_E_pre(eqn, opts, oper);
+
+[eqn, opts, oper] = oper.init_res_pre(eqn, opts, oper);
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check for shift parameter structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if not(isfield(opts,'shifts')) || not(isstruct(opts.shifts))
-    warning('MESS:control_data',...
-            ['shift parameter control structure missing.', ...
-             'Switching to default num_desired = 25, num_Ritz = 50, ' ...
-             'num_hRitz = 25.']);
+if not(isfield(opts, 'shifts')) || not(isstruct(opts.shifts))
+    mess_warn(opts, 'control_data', ...
+              ['shift parameter control structure missing.', ...
+               'Switching to default num_desired = 25, num_Ritz = 50, ' ...
+               'num_hRitz = 25.']);
     opts.shifts.num_desired = 25;
     opts.shifts.num_Ritz = 50;
     opts.shifts.num_hRitz = 25;
-    opts.shifts.method='heur';
-    opts.shifts.period=1;
+    opts.shifts.method = 'heur';
+    opts.shifts.period = 1;
 
 else
-    if not(isfield(opts.shifts,'num_desired')) ||...
+    if not(isfield(opts.shifts, 'num_desired')) || ...
        not(isnumeric(opts.shifts.num_desired))
-        warning('MESS:control_data', ...
-                ['Missing or Corrupted opts.shifts.num_desired field.', ...
-                 'Switching to default: 25']);
+        mess_warn(opts, 'control_data', ...
+                  ['Missing or Corrupted opts.shifts.num_desired field.', ...
+                   'Switching to default: 25']);
         opts.shifts.num_desired = 25;
     end
 
-    if not(isfield(opts.shifts,'method'))
+    if not(isfield(opts.shifts, 'method'))
         opts.shifts.method = 'heur';
     end
 
-    if (strcmp(opts.shifts.method,'heur') || ...
-        strcmp(opts.shifts.method,'wachspress')) && ...
-       (not(isfield(opts.shifts,'num_Ritz')) || ...
+    if (strcmp(opts.shifts.method, 'heur') || ...
+        strcmp(opts.shifts.method, 'wachspress')) && ...
+       (not(isfield(opts.shifts, 'num_Ritz')) || ...
         not(isnumeric(opts.shifts.num_Ritz)))
 
-        warning('MESS:control_data', ...
-                ['Missing or Corrupted opts.shifts.num_Ritz field.', ...
-                'Switching to default: 50']);
+        mess_warn(opts, 'control_data', ...
+                  ['Missing or Corrupted opts.shifts.num_Ritz field.', ...
+                   'Switching to default: 50']);
         opts.shifts.num_Ritz = 50;
     end
 
-    if (strcmp(opts.shifts.method,'heur') || ...
-        strcmp(opts.shifts.method,'wachspress')) && ...
-       (not(isfield(opts.shifts,'num_hRitz')) || ...
+    if (strcmp(opts.shifts.method, 'heur') || ...
+        strcmp(opts.shifts.method, 'wachspress')) && ...
+       (not(isfield(opts.shifts, 'num_hRitz')) || ...
         not(isnumeric(opts.shifts.num_hRitz)))
 
-        warning('MESS:control_data',...
-                ['Missing or Corrupted opts.shifts.num_hRitz field.', ...
-                 'Switching to default: 25']);
+        mess_warn(opts, 'control_data', ...
+                  ['Missing or Corrupted opts.shifts.num_hRitz field.', ...
+                   'Switching to default: 25']);
         opts.shifts.num_hRitz = 25;
     end
 
-    if not(isfield(opts.shifts,'period'))
+    if not(isfield(opts.shifts, 'period'))
         opts.shifts.period = 1;
     end
 
-    if not(isfield(opts.shifts,'wachspress'))
+    if not(isfield(opts.shifts, 'wachspress'))
         opts.shifts.wachspress = 'T';
     end
 end
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Check for projection triggers and residual control parameters
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-project = isfield(opts.nm,'projection') && ...
-          isfield(opts.nm.projection,'freq') && ...
-          isnumeric(opts.nm.projection.freq) && ...
-          opts.nm.projection.freq;
-
-if project
-    opts.adi.compute_sol_fac = 1;
-    opts.norm = 2;
-end
-
-% we need to use iterative residual computation. Let's add the
-% corresponding control structure in case it does not already exist.
-if project && not(isfield(opts.nm,'res'))
-    warning('MESS:control_data', ...
-            'Found empty residual control parameters. Falling back to defaults.');
-    opts.nm.res = [];
-end
-
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check for Newton control structure in options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if not(isfield(opts,'nm')) || not(isstruct(opts.nm))
-    error('MESS:control_data','Newton control structure opts.nm missing.');
+if not(isfield(opts, 'nm')) || not(isstruct(opts.nm))
+    mess_err(opts, 'control_data', ...
+             'Newton control structure opts.nm missing.');
 else
-    if not(isfield(opts.nm,'maxiter')) || not(isnumeric(opts.nm.maxiter))
-        warning('MESS:control_data', ...
-                'Missing or corrupted ''maxiter'' field. Switching to default.');
+    if not(isfield(opts.nm, 'maxiter')) || not(isnumeric(opts.nm.maxiter))
+        mess_warn(opts, 'control_data', ...
+                  ['Missing or corrupted ''maxiter'' field. ', ...
+                   'Switching to default.']);
         opts.nm.maxiter = 20;
     end
 
-    if not(isfield(opts.nm,'rel_diff_tol')) || not(isnumeric(opts.nm.rel_diff_tol))
-        warning('MESS:control_data', ...
-                'Missing or corrupted ''rel_diff_tol'' field. Switching to default.');
+    if not(isfield(opts.nm, 'rel_diff_tol')) || ...
+            not(isnumeric(opts.nm.rel_diff_tol))
+        mess_warn(opts, 'control_data', ...
+                  ['Missing or corrupted ''rel_diff_tol'' field. ', ...
+                   'Switching to default.']);
         opts.nm.rel_diff_tol = 0;
     end
 
-    if not(isfield(opts.nm,'res_tol')) || not(isnumeric(opts.nm.res_tol))
-        warning('MESS:control_data', ...
-                'Missing or corrupted ''res_tol'' field. Switching to default.');
-        opts.nm.res_tol = 0;
+    if not(isfield(opts.nm, 'res_tol')) || not(isnumeric(opts.nm.res_tol))
+        mess_warn(opts, 'control_data', ...
+                  ['Missing or corrupted ''res_tol'' field. ', ...
+                   'Switching to default.']);
+        opts.nm.res_tol = false;
     end
 
-    if not(isfield(opts.nm,'accumulateRes')) || not(isnumeric(opts.nm.accumulateRes))
-        warning('MESS:control_data', ...
-                'Missing or corrupted ''accumulateRes'' field. Switching to default.');
-        opts.nm.accumulateRes = 0;
+    if not(isfield(opts.nm, 'accumulateRes')) || ...
+            not(islogical(opts.nm.accumulateRes))
+        mess_warn(opts, 'control_data', ...
+                  ['Missing or corrupted ''accumulateRes'' field. ', ...
+                   'Switching to default.']);
+        opts.nm.accumulateRes = false;
     end
 
     if opts.nm.accumulateRes
         % need DeltaK
-        opts.adi.accumulateDeltaK = 1;
+        opts.adi.accumulateDeltaK = true;
     end
 
-    if not(isfield(opts.nm, 'linesearch')) || not(isnumeric(opts.nm.linesearch))
-        warning('MESS:control_data', ...
-                'Missing or corrupted ''linesearch'' field. Switching to default.');
-        opts.nm.linesearch = 0;
+    if not(isfield(opts.nm, 'linesearch')) || ...
+            not(islogical(opts.nm.linesearch))
+        mess_warn(opts, 'control_data', ...
+                  ['Missing or corrupted ''linesearch'' field. ', ...
+                   'Switching to default.']);
+        opts.nm.linesearch = false;
     end
 
-    if not(isfield(opts.nm, 'store_solfac')) || not(isnumeric(opts.nm.store_solfac))
-        opts.nm.store_solfac = 0;
+    if not(isfield(opts.nm, 'store_solfac')) || ...
+            not(islogical(opts.nm.store_solfac))
+        opts.nm.store_solfac = false;
     end
 
     if not(isfield(opts.nm, 'store_debug')) || ...
-       not(isnumeric(opts.nm.store_debug))
-        opts.nm.store_debug = 0;
+       not(islogical(opts.nm.store_debug))
+        opts.nm.store_debug = false;
     end
 
     if opts.nm.linesearch
         % need DeltaK
-        opts.adi.accumulateDeltaK = 1;
+        opts.adi.accumulateDeltaK = true;
         % need res_tol
         if not(opts.nm.res_tol)
             opts.nm.res_tol = 1e-16;
@@ -398,202 +425,257 @@ else
         alpha = 1e-4;
     end
 
-    if not(isfield(opts.nm,'inexact')),  opts.nm.inexact = false; end
+    if not(isfield(opts.nm, 'inexact'))
+        opts.nm.inexact = false;
+    end
 
     if opts.nm.inexact
-        if not(isfield(opts.nm,'tau')), opts.nm.tau = 1; end
-        if not(isfield(opts.adi,'res_tol')),  opts.adi.res_tol = 1e-16; end
-        opts.nm.accumulateRes = 1;
+        if not(isfield(opts.nm, 'tau'))
+            opts.nm.tau = 1;
+        end
+        if not(isfield(opts.adi, 'res_tol'))
+            opts.adi.res_tol = 1e-16;
+        end
+        opts.nm.accumulateRes = true;
         opts.adi.inexact = true;
-        opts.adi.accumulateDeltaK = 1;
+        opts.adi.accumulateDeltaK = true;
     else
         opts.adi.inexact = false;
     end
 
     if not(isfield(opts, 'norm')) || ...
        (not(strcmp(opts.norm, 'fro')) && ...
-        (not(isnumeric(opts.norm)) ||  opts.norm ~= 2))
+        (not(isnumeric(opts.norm)) ||  not(opts.norm == 2)))
 
-        warning('MESS:control_data', ...
-                'Missing or Corrupted norm field. Switching to default.');
+        mess_warn(opts, 'control_data', ...
+                  ['Missing or Corrupted norm field. ', ...
+                   'Switching to default.']);
         opts.norm = 'fro';
     end
 
-    if not(isfield(opts.nm,'info')) || not(isnumeric(opts.nm.res_tol))
-        warning('MESS:control_data',...
-                'Missing or Corrupted info field. Switching to default.');
+    if not(isfield(opts.nm, 'info')) || not(isnumeric(opts.nm.res_tol))
+        mess_warn(opts, 'control_data', ...
+                  ['Missing or Corrupted info field. ', ...
+                   'Switching to default.']);
         opts.nm.info = 0;
     end
 end
 
-if not(isfield(opts.nm,'trunc_tol'))
+if not(isfield(opts.nm, 'trunc_tol'))
     opts.nm.trunc_tol = eps * oper.size(eqn, opts);
 end
 
-if not(isfield(opts.nm, 'trunc_info')), opts.nm.trunc_info = 0; end
-
+if not(isfield(opts.nm, 'trunc_info'))
+    opts.nm.trunc_info = 0;
+end
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Initialize usfs
+% Check for projection triggers and residual control parameters
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
+project = isfield(opts.nm, 'projection') && ...
+          isfield(opts.nm.projection, 'freq') && ...
+          isnumeric(opts.nm.projection.freq) && ...
+          opts.nm.projection.freq;
 
-[result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A','E');
-
-if not(result)
-    error('MESS:control_data', ...
-          'system data is not completely defined or corrupted');
+if project
+    opts.adi.compute_sol_fac = true;
+    opts.norm = 2;
 end
 
-[eqn,opts,oper] = oper.mul_E_pre(eqn,opts,oper);
+% we need to use iterative residual computation. Let's add the
+% corresponding control structure in case it does not already exist.
+if project && not(isfield(opts.nm, 'res'))
+    mess_warn(opts, 'control_data', ...
+              ['Found empty residual control parameters. ', ...
+               'Falling back to defaults.']);
+    opts.nm.res = [];
+end
 
-[eqn, opts, oper] = oper.init_res_pre(eqn, opts, oper);
-
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check system data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if not(isfield(eqn, 'B')) || not(isnumeric(eqn.B))
-    error('MESS:control_data', 'eqn.B is not defined or corrupted');
+    mess_err(opts, 'control_data', 'eqn.B is not defined or corrupted');
 end
 
 if not(isfield(eqn, 'C')) || not(isnumeric(eqn.C))
-    error('MESS:control_data', 'eqn.C is not defined or corrupted');
+    mess_err(opts, 'control_data', 'eqn.C is not defined or corrupted');
 end
 
 % make sure the first right hand side is dense so that the resulting factor
 % is densely stored.
-if issparse(eqn.C), eqn.C = full(eqn.C); end
-if issparse(eqn.B), eqn.B = full(eqn.B); end
+if issparse(eqn.C)
+    eqn.C = full(eqn.C);
+end
+if issparse(eqn.B)
+    eqn.B = full(eqn.B);
+end
 
 if not(isfield(eqn, 'type'))
     eqn.type = 'N';
-    warning('MESS:control_data',['Unable to determine type of equation.'...
-            'Falling back to type ''N''']);
-elseif (eqn.type ~= 'N') && (eqn.type ~= 'T')
-    error('MESS:equation_type', 'Equation type must be either ''T'' or ''N''');
+    mess_warn(opts, 'control_data', ...
+              ['Unable to determine type of equation. '...
+               'Falling back to type ''N''']);
+elseif not(eqn.type == 'N') && not(eqn.type == 'T')
+    mess_err(opts, 'equation_type', ...
+             'Equation type must be either ''T'' or ''N''');
 end
 
 if eqn.type == 'T'
-    p = size(eqn.C,1); % number of outputs
-    m = size(eqn.B,2); % number of inputs
+    p = size(eqn.C, 1); % number of outputs
+    m = size(eqn.B, 2); % number of inputs
 else
-    m = size(eqn.C,1); % number of outputs
-    p = size(eqn.B,2); % number of inputs
+    m = size(eqn.C, 1); % number of outputs
+    p = size(eqn.B, 2); % number of inputs
 end
 
 % check whether LDL^T formulation should be used
-if not(isfield(opts, 'LDL_T')), opts.LDL_T = 0; end
+if not(isfield(opts, 'LDL_T'))
+    opts.LDL_T = false;
+end
 
 % check for or set proper right hand side
 if opts.LDL_T
-    % RHS of Lyapunov Eq. has form G * S * G'
+    % RHS of inner Lyapunov Eq. has form G * S * G'
     % Solution Lyapunov Eq. has form L * D * L'
     % with D Kronecker product of adiout.D and S
     % D is not computed explicitly
     % L is stored in Z if computed (opts.adi.compute_sol_fac)
-    % S (eqn.S) need to be given
-    if not(isfield(eqn, 'S')) || not(isnumeric(eqn.S))
-        error('MESS:control_data', 'eqn.S is not defined or corrupted');
-    end
-
-    if isdiag(eqn.S)
-        out.S = eqn.S;
-        eqn.S_diag = diag(eqn.S);
-        eqn.diagonalized_RHS = 0;
-    else
-        % diagonalze S and use U to transform the initial RHS later
-        [eqn.U_diag, eqn.S_diag] = eig(eqn.S);
-        eqn.S_diag = diag(eqn.S_diag);
-        eqn.diagonalized_RHS = 1;
+    % S (eqn.Q or inv(eqn.R)) need to be given
+    if not(isfield(eqn, 'Q')) || not(isnumeric(eqn.Q)) || ...
+            not(isfield(eqn, 'R')) || not(isnumeric(eqn.R))
+        mess_err(opts, 'control_data', ...
+                 'eqn.Q or eqn.R is not defined or corrupted');
     end
 
     if isfield(opts, 'bdf') && isstruct(opts.bdf)
         if not(isfield(opts.bdf, 'tau')) || not(isnumeric(opts.bdf.tau))
-            error('MESS:control_data', 'opts.bdf.tau is not defined or corrupted');
+            mess_err(opts, 'control_data', ...
+                     'opts.bdf.tau is not defined or corrupted');
         end
 
         if not(isfield(opts.bdf, 'beta')) || not(isnumeric(opts.bdf.beta))
-            error('MESS:control_data', 'opts.bdf.beta is not defined or corrupted');
+            mess_err(opts, 'control_data', ...
+                     'opts.bdf.beta is not defined or corrupted');
         end
 
         tau_beta = opts.bdf.tau * opts.bdf.beta;
-        bdf = 1;
+        bdf = true;
     else
-        bdf = 0;
+        bdf = false;
         tau_beta = 1;
     end
 else
-    bdf = 0;
-    eqn.diagonalized_RHS = 0;
+    bdf = false;
+    if not(isfield(eqn, 'Q')) || not(isnumeric(eqn.Q))
+        eqn.Q = eye(size(eqn.C, 1));
+    end
+    if not(isfield(eqn, 'R')) || not(isnumeric(eqn.R))
+        eqn.R = eye(size(eqn.B, 2));
+    end
 end
+%%
+% in order not to overwrite important equation data we send a copy to
+% the inner iteration with the proper augmentation
+adi_eqn = eqn;
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Rank-k update system data.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if not(isfield(eqn, 'haveUV')) || isempty(eqn.haveUV) || not(eqn.haveUV)
-    eqn.haveUV  = 0;
+% subroutines we call rely on haveUV being set, so we add it to both
+if not(isfield(eqn, 'haveUV')) || isempty(eqn.haveUV) || ...
+        not(eqn.haveUV)
+    eqn.haveUV = false;
     eqn.sizeUV1 = 0;
     eqn.U       = [];
     eqn.V       = [];
+end
+
+if not(isfield(adi_eqn, 'haveUV')) || isempty(adi_eqn.haveUV) || ...
+        not(adi_eqn.haveUV)
+    adi_eqn.haveUV = false;
+    adi_eqn.sizeUV1 = 0;
+    adi_eqn.U       = [];
+    adi_eqn.V       = [];
 else
     if opts.LDL_T
-        error('MESS:control_data', ...
-              ['LDL_T formulation is not compatible with ' ...
-               'external eqn.haveUV option.']);
+        mess_err(opts, 'control_data', ...
+                 ['LDL_T formulation is not compatible with ' ...
+                  'external eqn.haveUV option.']);
     end
 
-    if isnumeric(eqn.U) && isnumeric(eqn.V) && ...
-       (size(eqn.U, 1) == size(eqn.V, 1)) && (size(eqn.U, 2) == size(eqn.V, 2))
+    if isnumeric(adi_eqn.U) && isnumeric(adi_eqn.V) && ...
+       (size(adi_eqn.U, 1) == size(adi_eqn.V, 1)) && ...
+       (size(adi_eqn.U, 2) == size(adi_eqn.V, 2))
 
-        if issparse(eqn.V), eqn.V = full(eqn.V); end
-        if issparse(eqn.U), eqn.U = full(eqn.U); end
+        if issparse(adi_eqn.V)
+            adi_eqn.V = full(adi_eqn.V);
+        end
+        if issparse(adi_eqn.U)
+            adi_eqn.U = full(adi_eqn.U);
+        end
     else
-        error('MESS:control_data', ...
-              'Inappropriate data of low rank updated operator (eqn.U and eqn.V)');
+        mess_err(opts, 'control_data', ...
+                 ['Inappropriate data of low-rank updated operator', ...
+                  '(eqn.U and eqn.V)']);
     end
 end
 
 % Check for size of constant term in U and V.
-if eqn.haveUV
-    if not(isfield(eqn, 'sizeUV1')) || isempty(eqn.sizeUV1)
-        eqn.sizeUV1 = size(eqn.U, 2);
+if adi_eqn.haveUV
+    if not(isfield(adi_eqn, 'sizeUV1')) || isempty(adi_eqn.sizeUV1)
+        adi_eqn.sizeUV1 = size(adi_eqn.U, 2);
     else
-        assert(isnumeric(eqn.sizeUV1) && (eqn.sizeUV1 <= size(eqn.U, 2)), ...
-               'MESS:control_data', ...
-               'Inappropriate size of low rank updated operator (eqn.U and eqn.V)');
+        mess_assert(opts, isnumeric(adi_eqn.sizeUV1) && ...
+                    (adi_eqn.sizeUV1 <= size(adi_eqn.U, 2)), ...
+                    'control_data', ...
+                    ['Inappropriate size of low-rank updated operator ', ...
+                     '(eqn.U and eqn.V)']);
     end
 end
 
+% The actual operations in the Lyapunov solver have two low-rank updates:
+%
+%   * the one coming in from A = F + U * V' here
+%   * the one introduced by the Kleinman step using B (or C) and the
+%     feedback matrix
+%
+% We put both into extended U and V in the inner Lyapunov solver and for easier
+% reading we introduce index vectors for those
+UV_cols = 1:adi_eqn.sizeUV1;
+feedb_cols = adi_eqn.sizeUV1 + 1:adi_eqn.sizeUV1 + m;
+
 % Initialize storage for the computed feedback.
 if eqn.type == 'T'
-    eqn.U = [eqn.U(:, 1:eqn.sizeUV1), -eqn.B];
-    eqn.V = [eqn.V(:, 1:eqn.sizeUV1), zeros(size(eqn.B))];
+    adi_eqn.U = [adi_eqn.U(:, UV_cols), -eqn.B];
+    adi_eqn.V = [adi_eqn.V(:, UV_cols), zeros(size(eqn.B))];
 else
-    eqn.U = [eqn.U(:, 1:eqn.sizeUV1), zeros(size(eqn.C,2), size(eqn.C,1))];
-    eqn.V = [eqn.V(:, 1:eqn.sizeUV1), -eqn.C'];
+    adi_eqn.U = [adi_eqn.U(:, UV_cols), zeros(size(eqn.C'))];
+    adi_eqn.V = [adi_eqn.V(:, UV_cols), -eqn.C'];
 end
 
-eqn.haveUV = 1;
+adi_eqn.haveUV = true;
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Check if we have an initial stabilizing feedback.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if isfield(opts.nm,'K0')
+if isfield(opts.nm, 'K0')
     if eqn.type == 'T'
-        eqn.V(:, eqn.sizeUV1+1:eqn.sizeUV1+m) = opts.nm.K0';
+        adi_eqn.V(:, feedb_cols) = opts.nm.K0';
     else
-        eqn.U(:, eqn.sizeUV1+1:eqn.sizeUV1+m) = opts.nm.K0';
+        adi_eqn.U(:, feedb_cols) = opts.nm.K0';
     end
 end
 
 if bdf
     if eqn.type == 'T'
-        eqn.U = (-opts.bdf.tau * opts.bdf.beta) * eqn.B;
+        adi_eqn.U = -tau_beta * eqn.B;
     else
-        eqn.V = (-opts.bdf.tau * opts.bdf.beta) * eqn.C';
+        adi_eqn.V = -tau_beta * eqn.C';
     end
 end
 
@@ -608,55 +690,63 @@ end
 % if changes are made here these have to be repeated at the restart part
 % from line search further below!!!
 if opts.nm.res_tol
-    res = zeros(opts.nm.maxiter,1);
+    res = zeros(opts.nm.maxiter, 1);
 else
     res = [];
 end
 
 if opts.nm.rel_diff_tol
-    rc = zeros(opts.nm.maxiter,1);
+    rc = zeros(opts.nm.maxiter, 1);
 else
     rc = [];
 end
 
-
-% in the LDL_T case we may have diagonalized the kernel matrix of the RHS.
-% If so, we need to initialize the residual with the updated G matrix
 if eqn.type == 'T'
-    if eqn.diagonalized_RHS
-        eqn.G = eqn.C' * eqn.U_diag;
-    else
-        eqn.G = eqn.C';
+
+    adi_eqn.W = eqn.C';
+    if opts.LDL_T
+        adi_eqn.T = adi_eqn.Q;
     end
+
 else
-    if eqn.diagonalized_RHS
-        eqn.G = eqn.B * eqn.U_diag;
-    else
-        eqn.G = eqn.B;
+
+    adi_eqn.W = eqn.B;
+    if opts.LDL_T
+        adi_eqn.T = adi_eqn.R;
     end
+
 end
 
-eqn.G = oper.init_res(eqn, opts, oper, eqn.G);
+% init_res for projection of data. Actual residual computations follows below.
+adi_eqn.W = oper.init_res(adi_eqn, opts, oper, adi_eqn.W);
 
 if opts.LDL_T
-    res0 = riccati_LR(eqn.G, [], opts, diag(eqn.S_diag), []);
-    S = eqn.S_diag;
+
+    res0 = riccati_LR(adi_eqn.W, [], opts, adi_eqn.T, []);
+
     if eqn.type == 'T'
-        eqn.S_diag = [eqn.S_diag; tau_beta * ones(size(eqn.V, 2), 1)];
+
+        adi_eqn.T = blkdiag(eqn.Q, tau_beta * eqn.R);
+
     else
-        eqn.S_diag = [eqn.S_diag; tau_beta * ones(size(eqn.U, 2), 1)];
+
+        adi_eqn.T = blkdiag(eqn.R, tau_beta * eqn.Q);
+
     end
+
 else
-    res0 = norm(eqn.G'*eqn.G, opts.norm);
-    eqn.S_diag = [];
+
+    res0 = norm(adi_eqn.W' * adi_eqn.W, opts.norm);
+    adi_eqn.T = [];
+
 end
 
 opts.nm.res0 = res0;
 
 if eqn.type == 'T'
-    eqn.G = [eqn.G, eqn.V(:, eqn.sizeUV1+1:end)];
+    adi_eqn.W = [adi_eqn.W, adi_eqn.V(:, feedb_cols)];
 else
-    eqn.G = [eqn.G, eqn.U(:, eqn.sizeUV1+1:end)];
+    adi_eqn.W = [adi_eqn.W, adi_eqn.U(:, feedb_cols)];
 end
 
 if opts.adi.inexact
@@ -676,32 +766,26 @@ if opts.adi.inexact
             end
 
         otherwise
-            error('MESS:inexact', ...
-                  ['inexact must be 0, ''linear'', ''superlinear''', ...
-                   ' or ''quadratic''']);
+            mess_err(opts, 'inexact', ...
+                     ['inexact must be false, ''linear'', ''superlinear''', ...
+                      ' or ''quadratic''']);
     end
 
     opts.adi.outer_tol = max(opts.adi.outer_tol, opts.adi.res_tol);
 end
 
 if opts.nm.linesearch
-    linesearch = 0;
-    W_old = eqn.G;
-%    if not(isfield(eqn,'K0')) % FIXME: dead code
-        DeltaK_old = [];
-%     else
-%         %         DeltaK_old = -eqn.V( : , s + 1 : end);
-%         %         careful with haveUV option!
-%         DeltaK_old = [];
-%    end
+    linesearch = false;
+    W_old = adi_eqn.W;
+    DeltaK_old = [];
     if opts.LDL_T
-        S_old = eqn.S_diag;
+        S_old = adi_eqn.T;
     end
 end
 
-restarted = 0;
+restarted = false;
 
-already_restarted = 0;
+already_restarted = false;
 % if changes are made here these have to be repeated at the restart part
 % from line search further below!!!
 
@@ -713,52 +797,66 @@ k = 1;
 
 while k <= opts.nm.maxiter
 
-    projected = 0;
+    projected = false;
 
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % compute new ADI shifts
+    % compute new ADI shifts every "period" steps
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if not(mod(k - 1,opts.shifts.period))
-        opts.shifts.p = mess_para(eqn,opts,oper);
+    if not(mod(k - 1, opts.shifts.period))
+        opts.shifts.p = mess_para(adi_eqn, opts, oper);
     end
 
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % perform the actual step computations
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-    % form right hand side factor
+    % form right hand side factor appending the current feedback
+    % approximant to the factor of the constant term
+    % first p columns of G are always the same and were initialized above
     if eqn.type == 'T'
-        eqn.G(:, p+1:p+m) = eqn.V(:, end-m+1:end);
+        adi_eqn.W(:, p + 1:p + m) = adi_eqn.V(:, feedb_cols);
     else
-        eqn.G(:, p+1:p+m) = eqn.U(:, end-m+1:end);
+        adi_eqn.W(:, p + 1:p + m) = adi_eqn.U(:, feedb_cols);
     end
 
     if opts.LDL_T
         if eqn.type == 'T'
-            eqn.S_diag = [S; tau_beta * ones(size(eqn.V, 2), 1)];
+            adi_eqn.T = blkdiag(eqn.Q, tau_beta * eqn.R);
         else
-            eqn.S_diag = [S; tau_beta * ones(size(eqn.U, 2), 1)];
+            adi_eqn.T = blkdiag(eqn.R, tau_beta * eqn.Q);
         end
     end
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % solve the Lyapunov equation
-    [adiout, eqn, opts, oper] = mess_lradi(eqn, opts, oper);
 
+    [adiout, adi_eqn, opts, oper] = mess_lradi(adi_eqn, opts, oper);
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Store only necessary information about ADI iteration.
     tmp = adiout;
 
     if not(opts.nm.store_solfac)
-        if isfield(tmp, 'Z'), tmp = rmfield(tmp, 'Z'); end
-        if isfield(tmp, 'D'), tmp = rmfield(tmp, 'D'); end
-        if isfield(tmp, 'S'), tmp = rmfield(tmp, 'S'); end
+        if isfield(tmp, 'Z')
+            tmp = rmfield(tmp, 'Z');
+        end
+        if isfield(tmp, 'D')
+            tmp = rmfield(tmp, 'D');
+        end
+
     end
 
     if not(opts.nm.store_debug)
-        if isfield(tmp, 'DeltaK'), tmp = rmfield(tmp, 'DeltaK'); end
-        if isfield(tmp, 'Knew'), tmp = rmfield(tmp, 'Knew'); end
-        if isfield(tmp, 'res_fact'), tmp = rmfield(tmp, 'res_fact'); end
+        if isfield(tmp, 'DeltaK')
+            tmp = rmfield(tmp, 'DeltaK');
+        end
+        if isfield(tmp, 'Knew')
+            tmp = rmfield(tmp, 'Knew');
+        end
+        if isfield(tmp, 'res_fact')
+            tmp = rmfield(tmp, 'res_fact');
+        end
     end
     out.adi(k) = tmp;
 
@@ -769,21 +867,23 @@ while k <= opts.nm.maxiter
     if adiout.restart && opts.nm.inexact(1)
 
         if already_restarted
-            error('MESS:lrnm', ...
-                  'Newton iteration with line search failed to converge.');
+            mess_err(opts, 'lrnm', ...
+                     ['Newton iteration with line search ', ...
+                      'failed to converge.']);
         else
             % restart Newton iteration
-            warning('MESS:lrnm', ...
-                    ['Newton iteration needs to be restarted because ', ...
-                     'of divergence. Continuing with exact ADI iteration.']);
+            mess_warn(opts, 'lrnm', ...
+                      ['Newton iteration needs to be restarted ', ...
+                       'because of divergence. ', ...
+                       'Continuing with exact ADI iteration.']);
             if opts.nm.res_tol
-                res = [res(1 : k - 1); zeros(opts.nm.maxiter,1)];
+                res = [res(1:k - 1); zeros(opts.nm.maxiter, 1)];
             else
                 res = [];
             end
 
             if opts.nm.rel_diff_tol
-                rc = [rc(1 : k - 1); zeros(opts.nm.maxiter,1)];
+                rc = [rc(1:k - 1); zeros(opts.nm.maxiter, 1)];
             else
                 rc = [];
             end
@@ -792,61 +892,63 @@ while k <= opts.nm.maxiter
 
             % Reset U and V to initial state.
             if eqn.type == 'T'
-                eqn.U = [eqn.U(:, 1:eqn.sizeUV1), -eqn.B];
-                eqn.V = [eqn.V(:, 1:eqn.sizeUV1), zeros(size(eqn.B))];
+                adi_eqn.U = [adi_eqn.U(:, UV_cols), -adi_eqn.B];
+                adi_eqn.V = [adi_eqn.V(:, UV_cols), zeros(size(adi_eqn.B))];
             else
-                eqn.U = [eqn.U(:, 1:eqn.sizeUV1), ...
-                    zeros(size(eqn.C,2), size(eqn.C,1))];
-                eqn.V = [eqn.V(:, 1:eqn.sizeUV1), -eqn.C'];
+                adi_eqn.U = [adi_eqn.U(:, UV_cols), zeros(size(adi_eqn.C'))];
+                adi_eqn.V = [eqn.V(:, UV_cols), -adi_eqn.C'];
             end
 
-            eqn.haveUV = 1;
+            adi_eqn.haveUV = true;
 
-            if isfield(opts.nm,'K0')
+            if isfield(opts.nm, 'K0')
                 if eqn.type == 'T'
-                    eqn.V(:, end-m+1:end) = opts.nm.K0';
+                    adi_eqn.V(:, feedb_cols) = opts.nm.K0';
                 else
-                    eqn.U(:, end-m+1:end) = opts.nm.K0';
+                    adi_eqn.U(:, feedb_cols) = opts.nm.K0';
                 end
             end
 
             if bdf
                 if eqn.type == 'T'
-                    eqn.U = (-opts.bdf.tau * opts.bdf.beta) * eqn.B;
+                    adi_eqn.U = -tau_beta * eqn.B;
                 else
-                    eqn.V = (-opts.bdf.tau * opts.bdf.beta) * eqn.C';
+                    adi_eqn.V = -tau_beta * eqn.C';
                 end
             end
 
             if eqn.type == 'T'
-                if eqn.diagonalized_RHS
-                    eqn.G = eqn.C' * eqn.U_diag;
-                else
-                    eqn.G = eqn.C';
+
+                adi_eqn.W = adi_eqn.C';
+                if opts.LDL_T
+                    adi_eqn.T = adi_eqn.Q;
                 end
             else
-                if eqn.diagonalized_RHS
-                    eqn.G = eqn.B * eqn.U_diag;
-                else
-                    eqn.G = eqn.B;
+
+                adi_eqn.W = adi_eqn.B;
+                if opts.LDL_T
+                    adi_eqn.T = adi_eqn.R;
                 end
+
             end
 
-            eqn.G = oper.init_res(eqn, opts, oper, eqn.G);
+            % use init res for projection, no T required also in LDL_T mode
+            adi_eqn.W = oper.init_res(adi_eqn, opts, oper, adi_eqn.W);
 
             if opts.LDL_T
-                eqn.S_diag = S;
-                res0 = riccati_LR(eqn.G, [], opts, diag(eqn.S_diag), []);
+
                 if eqn.type == 'T'
-                    eqn.S_diag = [eqn.S_diag;...
-                                  tau_beta * ones(size(eqn.V, 2), 1)];
+                    res0 = riccati_LR(adi_eqn.W, [], opts, adi_eqn.Q, []);
+                    adi_eqn.T = blkdiag(eqn.Q, tau_beta * eqn.R);
                 else
-                    eqn.S_diag = [eqn.S_diag;...
-                                  tau_beta * ones(size(eqn.U, 2), 1)];
+                    res0 = riccati_LR(adi_eqn.W, [], opts, adi_eqn.R, []);
+                    adi_eqn.T = blkdiag(eqn.R, tau_beta * eqn.Q);
                 end
+
             else
-                res0 = norm(eqn.G'*eqn.G, opts.norm);
-                eqn.S_diag = [];
+
+                res0 = norm(adi_eqn.W' * adi_eqn.W, opts.norm);
+
             end
 
             opts.nm.res0     = res0;
@@ -854,26 +956,20 @@ while k <= opts.nm.maxiter
             opts.adi.inexact = false;
 
             if eqn.type == 'T'
-                eqn.G = [eqn.G, eqn.V(:, eqn.sizeUV1+1:end)];
+                adi_eqn.W = [adi_eqn.W, adi_eqn.V(:, feedb_cols)];
             else
-                eqn.G = [eqn.G, eqn.U(:, eqn.sizeUV1+1:end)];
+                adi_eqn.W = [adi_eqn.W, adi_eqn.U(:, feedb_cols)];
             end
 
             if opts.nm.linesearch
-                linesearch = 0;
-                W_old = eqn.G;
-%               if not(isfield(eqn,'K0')) % FIXME: dead code
-                    DeltaK_old = [];
-%                 else
-%                     %         DeltaK_old = -eqn.V( : , s + 1 : end);
-%                     %         careful with haveUV option!
-%                     DeltaK_old = [];
-%                end
+                linesearch = false;
+                W_old = adi_eqn.W;
+                DeltaK_old = [];
                 if opts.LDL_T
-                    S_old = eqn.S_diag;
+                    S_old = adi_eqn.T;
                 end
             end
-            restarted = 1;
+            restarted = true;
             continue
         end
     end
@@ -882,22 +978,28 @@ while k <= opts.nm.maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Perform projection update if desired
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if project && not(mod(k,opts.nm.projection.freq)) && ...
+    if project && not(mod(k, opts.nm.projection.freq)) && ...
        not(opts.nm.accumulateRes && ...
            (adiout.Riccati_res < opts.nm.res_tol))
 
-        projected = 1;
+        projected = true;
 
-        opts.nm.linesearch = 0; % no line search after projection
+        opts.nm.linesearch = false; % no line search after projection
+
+        opts.nm.projection.Z = adiout.Z;
+        if opts.LDL_T
+            opts.nm.projection.D = adiout.D;
+        end
+
+        [eqn, opts, oper] = ...
+            mess_solve_projected_eqn(eqn, opts, oper, 'GPA', 'CARE');
+
+        adiout.Z = opts.nm.projection.Z;
 
         if opts.LDL_T
-            [adiout.Z, adiout.D, eqn.S_diag] = ...
-                mess_galerkin_projection_acceleration(adiout.Z, ...
-                'CARE' ,eqn, oper, opts, adiout.D);
-        else
-            adiout.Z = mess_galerkin_projection_acceleration(adiout.Z, ...
-                'CARE', eqn, oper, opts);
+            adiout.D = opts.nm.projection.D;
         end
+
     end
 
     %%
@@ -909,13 +1011,13 @@ while k <= opts.nm.maxiter
 
         if not(opts.adi.accumulateDeltaK) || projected
 
-            [adiout, eqn, opts, oper ] = ...
+            [adiout, eqn, opts, oper] = ...
                 mess_accumulateK(eqn, opts, oper, adiout, [], adiout.Z);
         else
             if eqn.type == 'T'
-                adiout.Knew = eqn.V(:, end-m+1:end) + adiout.DeltaK;
+                adiout.Knew = adi_eqn.V(:, feedb_cols) + adiout.DeltaK;
             else
-                adiout.Knew = eqn.U(:, end-m+1:end) + adiout.DeltaK;
+                adiout.Knew = adi_eqn.U(:, feedb_cols) + adiout.DeltaK;
             end
         end
     end
@@ -924,29 +1026,31 @@ while k <= opts.nm.maxiter
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Compute stopping criteria
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if opts.nm.res_tol||opts.nm.rel_diff_tol
+    if opts.nm.res_tol || opts.nm.rel_diff_tol
         if eqn.type == 'T'
-            V1 = adiout.Knew - eqn.V(:, end-m+1:end);
+            V1 = adiout.Knew - adi_eqn.V(:, feedb_cols);
         else
-            V1 = adiout.Knew - eqn.U(:, end-m+1:end);
+            V1 = adiout.Knew - adi_eqn.U(:, feedb_cols);
         end
     end
 
     if opts.nm.res_tol
         if projected
             if opts.LDL_T
-                res(k) = mess_res2_norms(adiout.Z,'riccati',eqn,opts,oper, ...
-                         opts.nm, adiout.D)/res0;
+                res(k) = mess_res2_norms(adiout.Z, 'riccati', ...
+                                         eqn, opts, oper, ...
+                                         opts.nm, adiout.D) / res0;
             else
-                res(k) = mess_res2_norms(adiout.Z,'riccati',eqn,opts,oper, ...
-                         opts.nm,[])/res0;
+                res(k) = mess_res2_norms(adiout.Z, 'riccati', ...
+                                         eqn, opts, oper, ...
+                                         opts.nm, []) / res0;
             end
         else
             if opts.nm.accumulateRes
                 res(k) = adiout.Riccati_res;
             else
-                res(k) = riccati_LR(adiout.res_fact, V1, opts,...
-                         diag(eqn.S_diag), [])/res0;
+                res(k) = riccati_LR(adiout.res_fact, V1, opts, ...
+                                    adi_eqn.T, []) / res0;
             end
         end
     end
@@ -955,30 +1059,45 @@ while k <= opts.nm.maxiter
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         % Check whether line search is necessary
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if ((k == 1) && (res(k) > 1)) || ((k > 1) && (res(k) > res(k - 1))) ...
-           || adiout.linesearch
+        if ((k == 1) && (res(k) > 1)) || ...
+                ((k > 1) && (res(k) > res(k - 1))) || ...
+                adiout.linesearch
 
-            linesearch = 1;
+            linesearch = true;
 
             % Compute Lambda
             if opts.LDL_T
-                lambda = exact_line_search(W_old, DeltaK_old, ...
-                         adiout.res_fact, adiout.DeltaK, eqn.S_diag, S_old);
+                if eqn.type == 'T'
+                    M = eqn.R;
+                else
+                    M = eqn.Q;
+                end
+                lambda = exact_line_search(opts, ...
+                                           W_old, DeltaK_old, ...
+                                           adiout.res_fact, ...
+                                           adiout.DeltaK, ...
+                                           adi_eqn.T, ...
+                                           S_old, ...
+                                           M);
             else
-                lambda = exact_line_search(W_old, DeltaK_old, ...
-                         adiout.res_fact, adiout.DeltaK, [], []);
+                lambda = exact_line_search(opts, W_old, DeltaK_old, ...
+                                           adiout.res_fact, ...
+                                           adiout.DeltaK, [], [], []);
             end
 
             if opts.nm.info
-                fprintf(['\n\t\t Using line search (res: %4d)\n',...
-                         '\t\t lambda: %e\n'], res(k), lambda);
+                mess_fprintf(opts, ...
+                             ['\n\t\t Using line search (res: %4d)\n', ...
+                              '\t\t lambda: %e\n'], res(k), lambda);
             end
 
             % Update K
             if eqn.type == 'T'
-                adiout.Knew = eqn.V(:, end-m+1:end) + lambda * adiout.DeltaK;
+                adiout.Knew = adi_eqn.V(:, feedb_cols) + ...
+                    lambda * adiout.DeltaK;
             else
-                adiout.Knew = eqn.U(:, end-m+1:end) + lambda * adiout.DeltaK;
+                adiout.Knew = adi_eqn.U(:, feedb_cols) + ...
+                    lambda * adiout.DeltaK;
             end
 
             % Update DeltaK and W
@@ -988,7 +1107,7 @@ while k <= opts.nm.maxiter
                 adiout.res_fact = [sqrt(1 - lambda) * W_old, ...
                                    sqrt(lambda) * adiout.res_fact];
                 if opts.LDL_T
-                    S_linesearch = [S_old; eqn.S_diag];
+                    S_linesearch = blkdiag(S_old, adi_eqn.T);
                     S_K = [];
                 end
             else
@@ -999,50 +1118,58 @@ while k <= opts.nm.maxiter
                                  sqrt_lambda * DeltaK_old];
                 adiout.res_fact = [DeltaK_old, sqrt_lambda * W_old, ...
                                    lambda * DeltaK_new];
+
                 if opts.LDL_T
-                    if bdf
-                        S_linesearch = [(opts.bdf.tau * opts.bdf.beta) ...
-                                        * ones(size(DeltaK_old, 2), 1); S_old; ...
-                                        (opts.bdf.tau * opts.bdf.beta) ...
-                                        * ones(size(DeltaK_new, 2), 1)];
-                        S_K = [S_old; eqn.S_diag; ...
-                               (opts.bdf.tau * opts.bdf.beta) ...
-                               * ones(size(DeltaK_old, 2), 1)];
+                    if eqn.type == 'N'
+                        D_K = eqn.Q;
                     else
-                        S_linesearch = [ones(size(DeltaK_old, 2), 1); S_old; ...
-                                        ones(size(DeltaK_new, 2), 1)];
-                        S_K = [S_old; eqn.S_diag; ones(size(DeltaK_old, 2), 1)];
+                        D_K = eqn.R;
                     end
+
+                    if bdf
+                        D_K = tau_beta * D_K;
+                    end
+
+                    S_linesearch = blkdiag(D_K, S_old, D_K);
+                    S_K = blkdiag(S_old, adi_eqn.T, D_K);
+
                 end
             end
 
             if not(opts.LDL_T)
-                S_linesearch = eqn.S_diag;
+                S_linesearch = adi_eqn.T;
                 S_K = [];
             end
 
             % Compute residual norm after line search
             res(k) = riccati_LR(adiout.res_fact, adiout.DeltaK, opts, ...
-                     diag(S_linesearch), diag(S_K)) / res0;
+                                S_linesearch, S_K) / res0;
+            if k == 1
+                bound = (1 - lambda * alpha) * res0;
+            else
+                bound = (1 - lambda * alpha) * res(k - 1);
+            end
 
-            if not(restarted) && ...
-               (((k == 1) && (res(k) >= (1 - lambda * alpha))) || ...
-                ((k > 1) && (res(k) >= (1 - lambda * alpha) * res(k - 1))))
+            if not(restarted) && (res(k) >= bound)
 
                 % No sufficient decrease
-                warning('MESS:lrnm', ...
-                        ['Newton iteration with line search has', ...
-                         ' insufficient decrease. ']);
+                mess_warn(opts, 'lrnm', ...
+                          ['Newton iteration with line search has', ...
+                           ' insufficient decrease in iteration k = %d\n', ...
+                           '(%g >= %g, LDL_T = %d, eqn.type = %s ', ...
+                           'inexact ADI = %s shifts = %s).'], ...
+                          k, res(k), bound, opts.LDL_T, eqn.type, ...
+                          mess_string(opts.adi.inexact), opts.shifts.method);
+
                 if opts.adi.inexact
                     % switch to exact ADI iteration
-                    warning('MESS:lrnm', ...
-                            'Switching to exact ADI iteration.');
-                    opts.adi.inexact = 0;
+                    mess_warn(opts, 'lrnm', ...
+                              'Switching to exact ADI iteration.');
+                    opts.adi.inexact = false;
                 else
-                    % Newton iteration with line search failed to converge, stop
-                    error('MESS:lrnm', ...
-                          ['Newton iteration with line search failed ' ...
-                           'to converge.']);
+                    mess_err(opts, 'lrnm', ...
+                             ['Newton iteration with line search ' ...
+                              'failed to converge.']);
                 end
             end
         end
@@ -1054,28 +1181,25 @@ while k <= opts.nm.maxiter
         if opts.LDL_T
             if linesearch
                 S_old = S_linesearch;
-                % be careful here, adiout.res_fact, adiout.DeltaK don't fit
-                % out.S anymore, till now they are not needed anywhere
-                % together after this point
             else
-                S_old = eqn.S_diag;
+                S_old = adi_eqn.T;
             end
         end
 
-        linesearch = 0;
+        linesearch = false;
     end
 
     if opts.nm.rel_diff_tol
         if opts.adi.accumulateDeltaK
             if projected
                 if eqn.type == 'T'
-                    adiout.DeltaK = adiout.Knew - eqn.V(:, end-m+1:end);
+                    adiout.DeltaK = adiout.Knew - adi_eqn.V(:, feedb_cols);
                 else
-                    adiout.DeltaK = adiout.Knew - eqn.U(:, end-m+1:end);
+                    adiout.DeltaK = adiout.Knew - adi_eqn.U(:, feedb_cols);
                 end
             end
-            rc(k) = norm(adiout.DeltaK, opts.norm) ...
-                    / norm(adiout.Knew, opts.norm);
+            rc(k) = norm(adiout.DeltaK, opts.norm) / ...
+                    norm(adiout.Knew, opts.norm);
         else
             rc(k) = norm(V1, opts.norm);
         end
@@ -1085,41 +1209,44 @@ while k <= opts.nm.maxiter
     % print status information
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if opts.nm.info
-        if opts.nm.rel_diff_tol&&opts.nm.res_tol
-            fprintf(1,['\n NM step: %4d  normalized residual: %e\n' ...
-                       '               relative change in K: %e\n' ...
-                       '               number of ADI steps: %d \n\n'], ...
-                    k,res(k),rc(k),adiout.niter);
+        if opts.nm.rel_diff_tol && opts.nm.res_tol
+            mess_fprintf(opts, ...
+                         ['\n NM step: %4d normalized residual: \t%e\n' ...
+                          '               relative change in K: \t%e\n' ...
+                          '               number of ADI steps: \t%d \n\n'], ...
+                         k, res(k), rc(k), adiout.niter);
         elseif opts.nm.res_tol
-            fprintf(1,['\n NM step: %4d  normalized residual: %e \n\n' ...
-                       '                number of ADI steps: %d \n\n'], ...
-                    k,res(k),adiout.niter);
+            mess_fprintf(opts, ...
+                         ['\n NM step: %4d normalized residual: \t%e \n\n' ...
+                          '                number of ADI steps: \t%d \n\n'], ...
+                         k, res(k), adiout.niter);
         elseif opts.nm.rel_diff_tol
-            fprintf(1,['\n NM step: %4d  relative change in K: %e\n\n' ...
-                       '               number of ADI steps: %d \n\n'], ...
-                    k,rc(k));
+            mess_fprintf(opts, ...
+                         ['\n NM step: %4d relative change in K: \t%e\n\n' ...
+                          '               number of ADI steps: \t%d \n\n'], ...
+                         k, rc(k));
         end
     end
 
     if eqn.type == 'T'
-        eqn.V(:, end-m+1:end) = adiout.Knew;
+        adi_eqn.V(:, feedb_cols) = adiout.Knew;
     else
-        eqn.U(:, end-m+1:end) = adiout.Knew;
+        adi_eqn.U(:, feedb_cols) = adiout.Knew;
     end
 
     k = k + 1;
 
     if restarted
-        already_restarted = 1;
-        restarted = 0;
+        already_restarted = true;
+        restarted = false;
     end
 
     %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     % Evaluate stopping criteria
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if (opts.nm.res_tol && (res(k-1) < opts.nm.res_tol)) || ...
-       (opts.nm.rel_diff_tol && (rc(k-1) < opts.nm.rel_diff_tol))
+    if (opts.nm.res_tol && (res(k - 1) < opts.nm.res_tol)) || ...
+       (opts.nm.rel_diff_tol && (rc(k - 1) < opts.nm.rel_diff_tol))
         break
     end
 
@@ -1132,7 +1259,7 @@ while k <= opts.nm.maxiter
             case 'linear'
                 opts.adi.inexact = res(k - 1) < opts.nm.tau * res(k - 2);
             case 'superlinear'
-                opts.adi.inexact = res(k - 1) < 1 / (k ^ 3 + 1) * res(k - 2);
+                opts.adi.inexact = res(k - 1) < 1 / (k^3 + 1) * res(k - 2);
             case 'quadratic'
                 if res(k - 2) > 1
                     opts.adi.inexact = ...
@@ -1144,7 +1271,8 @@ while k <= opts.nm.maxiter
         end
 
         if opts.adi.inexact
-            warning('MESS:lrnm','Turning inexact ADI iteration back on.');
+            mess_warn(opts, 'lrnm', ...
+                      'Turning inexact ADI iteration back on.');
         end
     end
 
@@ -1153,12 +1281,12 @@ while k <= opts.nm.maxiter
             case 'linear'
                 opts.adi.outer_tol = opts.nm.tau * res(k - 1);
             case 'superlinear'
-                opts.adi.outer_tol = 1 / (k ^ 3 + 1) * res(k - 1);
+                opts.adi.outer_tol = 1 / (k^3 + 1) * res(k - 1);
             case 'quadratic'
                 if res(k - 1) > 1
                     opts.adi.outer_tol = opts.nm.tau / sqrt(res(k - 1));
                 else
-                    opts.adi.outer_tol = opts.nm.tau * res(k - 1) * res(k - 1);
+                    opts.adi.outer_tol = opts.nm.tau * res(k - 1)^2;
                 end
         end
         opts.adi.outer_tol = max(opts.adi.outer_tol, opts.adi.res_tol);
@@ -1172,24 +1300,29 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 out.niter = k - 1;
 if eqn.type == 'T'
-    out.K = eqn.V(:, end-m+1:end)';
+    out.K = adi_eqn.V(:, feedb_cols)';
 else
-    out.K = eqn.U(:, end-m+1:end)';
+    out.K = adi_eqn.U(:, feedb_cols)';
 end
+
 if opts.LDL_T && isfield(adiout, 'Z') && not(isempty(adiout.Z))
     out.D = adiout.D;
     out.Z = adiout.Z;
 else
     if isfield(adiout, 'Z') && not(isempty(adiout.Z))
         out.Z = mess_column_compression(adiout.Z, 'N', [], ...
-                opts.nm.trunc_tol, opts.nm.trunc_info);
+                                        opts.nm.trunc_tol, ...
+                                        opts.nm.trunc_info);
     end
 end
 
-eqn = rmfield(eqn, 'S_diag');
+if opts.nm.res_tol
+    out.res = res(1:out.niter);
+end
 
-if opts.nm.res_tol, out.res = res(1:out.niter); end
-if opts.nm.rel_diff_tol, out.rc = rc(1:out.niter); end
+if opts.nm.rel_diff_tol
+    out.rc = rc(1:out.niter);
+end
 
 % Delete the res0 part from opts for later use of the struct.
 if isfield(opts.nm, 'res0')
@@ -1200,37 +1333,16 @@ elseif exist('res0', 'var')
 end
 
 if out.niter == opts.nm.maxiter
-    warning('MESS:NM:convergence', ...
-            ['LR-NM reached maximum iteration number.', ...
-             'Results may be inaccurate!']);
+    mess_warn(opts, 'convergence', ...
+              ['LR-NM reached maximum iteration number. ', ...
+               'Results may be inaccurate!']);
 end
-
-%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Clean up
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if (size(eqn.V, 2) > eqn.sizeUV1) || (size(eqn.U, 2) > eqn.sizeUV1)
-    % Cut off the stabilizing feedback.
-    eqn.V = eqn.V(:, 1:eqn.sizeUV1);
-    eqn.U = eqn.U(:, 1:eqn.sizeUV1);
-end
-
-if isempty(eqn.V) || isempty(eqn.U)
-    % Enforce empty matrices and parameters.
-    eqn.U       = [];
-    eqn.V       = [];
-    eqn.haveUV  = 0;
-    eqn.sizeUV1 = 0;
-end
-
-% Delete overwritten right hand-side.
-eqn = rmfield(eqn, 'G');
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % finalize usfs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[eqn,opts,oper] = oper.mul_E_post(eqn,opts,oper);
+[eqn, opts, oper] = oper.mul_E_post(eqn, opts, oper);
 
 [eqn, opts, oper] = oper.init_res_post(eqn, opts, oper);

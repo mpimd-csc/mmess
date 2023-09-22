@@ -1,5 +1,5 @@
 function p = mess_projection_shifts(eqn, opts, oper, V, W, p_old)
-%%function p = mess_projection_shifts(eqn, opts, oper, V, W, p_old)
+%% function p = mess_projection_shifts(eqn, opts, oper, V, W, p_old)
 %
 % Internal helper function for usfs and mess_get_projection
 % shifts. Computes new shifts by implicitly or explicitly
@@ -16,42 +16,53 @@ function p = mess_projection_shifts(eqn, opts, oper, V, W, p_old)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
 %% Check data
-if not(isfield(opts,'shifts')) || not(isstruct(opts.shifts))
-    warning('MESS:control_data',['shift parameter control structure missing.', ...
-        'Switching to default num_desired = 25.']);
+if not(isfield(opts, 'shifts')) || not(isstruct(opts.shifts))
+    mess_warn(opts, 'control_data', ...
+              ['shift parameter control structure missing.', ...
+               'Switching to default num_desired = 25.']);
     opts.shifts.num_desired = 25;
 else
-    if not(isfield(opts.shifts,'num_desired')) || ...
+    if not(isfield(opts.shifts, 'num_desired')) || ...
        not(isnumeric(opts.shifts.num_desired))
-        warning('MESS:control_data',...
-            ['Missing or Corrupted opts.shifts.num_desired field.', ...
-            'Switching to default: 25']);
+
+        mess_warn(opts, 'control_data', ...
+                  ['Missing or Corrupted opts.shifts.num_desired field.', ...
+                   'Switching to default: 25']);
         opts.shifts.num_desired = 25;
     end
-    if not(isfield(opts.shifts,'implicitVtAV'))|| isempty(opts.shifts.implicitVtAV)
+    if not(isfield(opts.shifts, 'implicitVtAV')) || ...
+            isempty(opts.shifts.implicitVtAV)
         opts.shifts.implicitVtAV = true;
     end
 end
 
-if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
+if not(isfield(eqn, 'haveE'))
+    eqn.haveE = false;
+end
+
 [result, eqn, opts, oper] = oper.init(eqn, opts, oper, 'A', 'E');
+
 if not(result)
-    error('MESS:control_data', 'system data is not completely defined or corrupted');
+    mess_err(opts, 'control_data', ...
+             'system data is not completely defined or corrupted');
 end
 
 L = length(p_old);
-nV = size(V, 2);
-nW = size(W, 2);
+cols_V = size(V, 2);
+cols_W = size(W, 2);
+
 if L > 0 && any(p_old)
-    if nV / nW ~= L
-        error('MESS:control_data', 'V and W have inconsistent no. of columns');
+
+    if not(cols_V / cols_W == L)
+
+        mess_err(opts, 'control_data', ...
+                 'V and W have inconsistent no. of columns');
     end
 end
 
@@ -60,9 +71,9 @@ if L > 0 && any(p_old)
     T = zeros(L, L);
     K = zeros(1, L);
     D = [];
-    Ir = eye(nW);
+    Ir = eye(cols_W);
     iC = find(imag(p_old));
-    iCh = iC(1 : 2 : end);
+    iCh = iC(1:2:end);
     iR = find(not(imag(p_old)));
     isubdiag = [iR; iCh];
     h = 1;
@@ -81,16 +92,17 @@ if L > 0 && any(p_old) && opts.shifts.implicitVtAV
             D = blkdiag(D, sqrt(-2 * p_old(h)));
             h = h + 1;
         else % complex conjugated pair of shifts
-            rpc=real(p_old(h));
-            ipc=imag(p_old(h));
-            beta=rpc / ipc;
-            T(h : h + 1, h : h + 1) = [3 * rpc, -ipc;
-                                       ipc * (1 + 4 * beta^2), -rpc];
+            rpc = real(p_old(h));
+            ipc = imag(p_old(h));
+            beta = rpc / ipc;
+            T(h:h + 1, h:h + 1) = [3 * rpc, -ipc
+                                   ipc * (1 + 4 * beta^2), -rpc];
             if not(isempty(is))
-                T(h : h+  1, is)=[4 * rpc;
-                                  4 * rpc * beta] * ones(1, length(is));
+                T(h:h +  1, is) = [4 * rpc
+                                   4 * rpc * beta] * ones(1, length(is));
             end
-            D = blkdiag(D, 2 * sqrt(-rpc) * [1,0; beta, sqrt(1 + beta^2)]);
+            D = blkdiag(D, ...
+                        2 * sqrt(-rpc) * [1, 0; beta, sqrt(1 + beta^2)]);
             h = h + 2;
         end
     end
@@ -107,17 +119,16 @@ else  % explicit AV (unless already computed in mess_para)
             else
                 W = W + eqn.U * (eqn.V' * V);
             end
-       end
+        end
     end
 end
 
 %% Compute projection matrices
-[~, s, v] = svd(V' * V);
+[v, s] = eig(V' * V);
 s = diag(s);
-r = sum(s > eps * s(1) * nV);
-st = v( : , 1 : r) * diag(1 ./ s(1 : r).^.5);
+r = (s > eps * s(end) * cols_V);
+st = v(:, r) * diag(1 ./ s(r).^.5);
 U = V * st;
-
 
 %% Project V and compute Ritz values
 if eqn.haveE
@@ -127,7 +138,7 @@ if eqn.haveE
     G = G * st;
     p = eig(H, G);
 else
-    H = U' * (W * K) * st + U'*( V *( S * st ));
+    H = U' * (W * K) * st + U' * (V * (S * st));
     p = eig(H);
 end
 
@@ -135,16 +146,20 @@ end
 
 % remove infinite values
 p = p(isfinite(p));
+
 % remove zeros
 p = p(abs(p) > eps);
-% make all shifts stable
+
+% make all shifts are stable
 p(real(p) > 0) = -p(real(p) > 0);
+
 if not(isempty(p))
-    % remove small imaginary pertubations
+    % remove small imaginary perturbations
     small_imag = find(abs(imag(p)) ./ abs(p) < 1e-12);
     p(small_imag) = real(p(small_imag));
+
     % sort (s.t. compl. pairs are together)
-    p=sort(p);
+    p = sort(p);
     if length(p) > opts.shifts.num_desired
         p = mess_mnmx(p, opts.shifts.num_desired);
     end

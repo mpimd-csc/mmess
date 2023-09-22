@@ -43,7 +43,7 @@ function [Ar, Br, Cr] = bt_mor_FDM_tol(tol, n0, shifts, istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
@@ -51,10 +51,18 @@ function [Ar, Br, Cr] = bt_mor_FDM_tol(tol, n0, shifts, istest)
 %%
 narginchk(0, 4);
 % BT tolerance and maximum order for the ROM
-if nargin < 1, tol = 1e-6; end
-if nargin < 2, n0 = 50; end
-if nargin < 3, shifts = 'heur'; end
-if nargin < 4, istest = 0; end
+if nargin < 1
+    tol = 1e-6;
+end
+if nargin < 2
+    n0 = 50;
+end
+if nargin < 3
+    shifts = 'heur';
+end
+if nargin < 4
+    istest = false;
+end
 
 % ADI tolerance and maximum iteration number
 opts.adi.maxiter = 100;
@@ -65,17 +73,17 @@ opts.norm = 'fro';
 
 %%
 % operations
-oper = operatormanager('default');
+[oper, opts] = operatormanager(opts, 'default');
 
 % Problem data
-eqn.A_ = fdm_2d_matrix(n0, '10*x','100*y','0');
+eqn.A_ = fdm_2d_matrix(n0, '10*x', '100*y', '0');
 eqn.B = fdm_2d_vector(n0, '.1<x<=.3');
 eqn.C = fdm_2d_vector(n0, '.7<x<=.9');
 eqn.C = eqn.C';
-eqn.haveE = 0;
+eqn.haveE = false;
 
 % problem dimension
-n=oper.size(eqn, opts);
+n = oper.size(eqn, opts);
 
 %%
 % Heuristic Parameters via basic Arnoldi or Projection shifts
@@ -94,8 +102,8 @@ switch opts.shifts.method
         opts.shifts.num_desired = 10;
 
     otherwise
-        warning('MESS:Test:invalid_parameter_fallback',...
-            'invalid shift selection, falling back to "heur"');
+        mess_warn(opts, 'invalid_parameter_fallback', ...
+                  'invalid shift selection, falling back to "heur"');
         opts.shifts.num_desired = 25;
         opts.shifts.num_Ritz = 50;
         opts.shifts.num_hRitz = 25;
@@ -108,23 +116,22 @@ eqn.type = 'N';
 t_mess_lradi = tic;
 outB  = mess_lradi(eqn, opts, oper);
 t_elapsed1 = toc(t_mess_lradi);
-fprintf(1,'mess_lradi took %6.2f seconds \n' ,t_elapsed1);
+mess_fprintf(opts, 'mess_lradi took %6.2f seconds \n', t_elapsed1);
 
 if istest
-    if min(outB.res)>=opts.adi.res_tol
-        error('MESS:TEST:accuracy','unexpectedly inaccurate result');
+    if min(outB.res) >= opts.adi.res_tol
+        mess_err(opts, 'TEST:accuracy', 'unexpectedly inaccurate result');
     end
 else
     figure(1);
-    semilogy(outB.res,'LineWidth',3);
+    semilogy(outB.res, 'LineWidth', 3);
     title('A X + X A^T = -BB^T');
     xlabel('number of iterations');
     ylabel('normalized residual norm');
     pause(1);
 end
-
-disp('size outB.Z:');
-disp(size(outB.Z));
+[mZ, nZ] = size(outB.Z);
+mess_fprintf(opts, 'size outB.Z:%d x %d\n\n', mZ, nZ);
 
 %%
 % observability
@@ -132,11 +139,11 @@ eqn.type = 'T';
 t_mess_lradi = tic;
 outC = mess_lradi(eqn, opts, oper);
 t_elapsed2 = toc(t_mess_lradi);
-fprintf(1, 'mess_lradi took %6.2f seconds \n', t_elapsed2);
+mess_fprintf(opts, 'mess_lradi took %6.2f seconds \n', t_elapsed2);
 
 if istest
     if min(outC.res) >= opts.adi.res_tol
-        error('MESS:TEST:accuracy', 'unexpectedly inaccurate result');
+        mess_err(opts, 'TEST:accuracy', 'unexpectedly inaccurate result');
     end
 else
     figure(2);
@@ -146,38 +153,40 @@ else
     ylabel('normalized residual norm');
     pause(1);
 end
-disp('size outC.Z:');
-disp(size(outC.Z));
+[mZ, nZ] = size(outC.Z);
+mess_fprintf(opts, 'size outC.Z:%d x %d\n\n', mZ, nZ);
 
 %%
 opts.srm.tol = tol;
 opts.srm.info = 1;
-[TL, TR, HSV, eqn, opts, ~] = mess_square_root_method(eqn, opts, oper,...
-    outB.Z, outC.Z);
+[TL, TR, HSV, eqn, opts, ~] = mess_square_root_method(eqn, opts, oper, ...
+                                                      outB.Z, outC.Z);
 
 Ar = TL' * (eqn.A_ * TR);
 Br = TL' * eqn.B;
 Cr = eqn.C * TR;
 
-opts.sigma.nsample = 200;  % 200 frequency samples
-opts.sigma.fmin = -3;      % min. frequency 1e-3
-opts.sigma.fmax = 4;       % max. frequency 1e4
+opts.tf_plot.nsample = 200;  % 200 frequency samples
+opts.tf_plot.fmin = -3;      % min. frequency 1e-3
+opts.tf_plot.fmax = 4;       % max. frequency 1e4
 if istest
-    opts.sigma.info = 1;   % no output
+    opts.tf_plot.info = 1;   % no output
 else
-    opts.sigma.info = 2;   % show messages and plots
+    opts.tf_plot.info = 2;   % show messages and plots
 end
+opts.tf_plot.type = 'sigma';
+
 ROM.A = Ar;
 ROM.B = Br;
 ROM.C = Cr;
-ROM.E = eye(size(ROM.A,1));
+ROM.E = eye(size(ROM.A, 1));
 
-out = mess_sigma_plot(eqn, opts, oper, ROM);
+out = mess_tf_plot(eqn, opts, oper, ROM);
 err = out.err;
 
 if istest
-    if max(err)>tol
-        error('MESS:TEST:accuracy', 'unexpectedly inaccurate result');
+    if max(err) > tol
+        mess_err(opts, 'TEST:accuracy', 'unexpectedly inaccurate result');
     end
 else
     figure;

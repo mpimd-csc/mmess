@@ -1,4 +1,4 @@
-function y = lyapunov_QB(Z , x, eqn, oper, opts, ~)
+function y = lyapunov_QB(Z, x, eqn, oper, opts, ~)
 % Computes matrix vector product with the Lyapunov operator.
 %
 % Input:
@@ -21,13 +21,12 @@ function y = lyapunov_QB(Z , x, eqn, oper, opts, ~)
 %  y         result of matrix vector product
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
-
 
 %% Setting eqn.type
 switch eqn.type
@@ -36,7 +35,7 @@ switch eqn.type
     case 'T'
         adjoint = 'N';
     otherwise
-        error('MESS:control_data','eqn.type has to be ''N'' or ''T''');
+        mess_err(opts, 'control_data', 'eqn.type has to be ''N'' or ''T''');
 end
 
 %% Z*(Z'*E)
@@ -58,10 +57,10 @@ colCompress_start = 1;
 colCompress_end = colZ;
 
 % Building [N_1*Z, ..., N_k*Z] with N_k' for type 'T'
-for currentN_k = 1 : numberOf_N_matrices
+for currentN_k = 1:numberOf_N_matrices
 
     bilinearSUM(:, colCompress_start:colCompress_end) = ...
-        oper.mul_N(eqn,opts,eqn.type,Z,'N',currentN_k);
+        oper.mul_N(eqn, opts, eqn.type, Z, 'N', currentN_k);
 
     colCompress_start = colCompress_end + 1;
     colCompress_end = colCompress_end + colZ;
@@ -73,7 +72,7 @@ switch eqn.type
     case 'T'
         y3 = bilinearSUM * (bilinearSUM' * x);
     otherwise
-        error('MESS:control_data','eqn.type has to be ''N'' or ''T''');
+        mess_err(opts, 'control_data', 'eqn.type has to be ''N'' or ''T''');
 end
 
 %% Terms with A
@@ -88,13 +87,11 @@ y = y1 + y2 + y3;
 
 switch eqn.type
     case 'N'
-        y = y + eqn.pB *(eqn.pB' * x);
+        y = y + eqn.pB * (eqn.pB' * x);
     case 'T'
-        y = y + eqn.pC' *(eqn.pC * x);
+        y = y + eqn.pC' * (eqn.pC * x);
     otherwise
-        error('MESS:control_data','eqn.type has to be ''N'' or ''T''');
+        mess_err(opts, 'control_data', 'eqn.type has to be ''N'' or ''T''');
 end
 
 end
-
-

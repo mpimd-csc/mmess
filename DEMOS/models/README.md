@@ -17,7 +17,7 @@ systems used in the demonstration examples.
 **SingleChainMSD**
   A simple scalable mass spring damper system
 
-**TripleCchain**
+**TripleChain**
   The Truhar/Veselic model made from three coupled mass-spring-damper
   chains. Size, i.e. masses per chain, and damper viscosity, as well
   as parameters in the Rayleigh damping used here can be set by the

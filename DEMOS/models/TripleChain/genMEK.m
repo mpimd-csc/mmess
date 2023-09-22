@@ -1,4 +1,4 @@
-function [M,E,K]=genMEK(n)
+function [M, E, K] = genMEK(n)
 %  [M,E,K]=genMEK(n)
 %
 %  Generate system matrices of a mass-spring-damper-system
@@ -24,24 +24,24 @@ function [M,E,K]=genMEK(n)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-M=spdiags(rand(n,1),0,n,n);
-while (any(diag(M)==0))
-  M=spdiags(rand(n,1),0,n,n);
+M = spdiags(rand(n, 1), 0, n, n);
+while any(diag(M) == 0)
+    M = spdiags(rand(n, 1), 0, n, n);
 end
 
-E=spdiags(1e-2*rand(n,1),0,n,n);
-while (any(diag(E)<=0))
-  E=spdiags(rand(n,1),0,n,n);
+E = spdiags(1e-2 * rand(n, 1), 0, n, n);
+while any(diag(E) <= 0)
+    E = spdiags(rand(n, 1), 0, n, n);
 end
 
-%x=rand(n,1);
-x=ones(n,1);
-y=[x(1:n-1)+x(2:n); x(n)];
-z=[x(n); x(1:n-1)];
+% x=rand(n,1);
+x = ones(n, 1);
+y = [x(1:n - 1) + x(2:n); x(n)];
+z = [x(n); x(1:n - 1)];
 
-K= spdiags( [-x y -z], -1:1,n,n);
+K = spdiags([-x y -z], -1:1, n, n);

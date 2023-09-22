@@ -1,5 +1,5 @@
 function [Z, D] = mess_column_compression(Z, opZ, D, tol, info)
-%	Computes a compressed representation of Z (and D).
+%   Computes a compressed representation of Z (and D).
 %
 %    [Z, D] = mess_column_compression(Z, opZ, D, tol, info)
 %
@@ -23,27 +23,27 @@ function [Z, D] = mess_column_compression(Z, opZ, D, tol, info)
 %                     (optional, default 0)
 %
 %   Output
-%       Z             compressed low rank factor
-%       D             compressed low rank factor, empty if D was empty
+%       Z             compressed low-rank factor
+%       D             compressed low-rank factor, empty if D was empty
 %                     on input
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
 %% Check and assign input arguments
+opts = struct;
 if issparse(Z)
     % This is just a safety measure that is hopefully never executed
     Z = full(Z);
 
-    warning('MESS:dense',...
-            ['Converting low rank factor to dense format. ' ...
-             'This should never be necessary.']');
+    mess_warn(opts, 'dense', ...
+              ['Converting low-rank factor to dense format. ' ...
+               'This should never be necessary.']);
 end
 
 if nargin < 2
@@ -57,10 +57,13 @@ else
 end
 
 if (nargin >= 3) && not(isempty(D))
-    assert((norm(D - D', 'fro') < eps) && ...
-           isequal(size(D), [m m]), ...
-           'MESS:data', ...
-           'The D factor has to be symmetric of size %d.', m);
+    symmD = norm(D - D.', 'fro');
+    d = size(D);
+    mess_assert(opts, (symmD < eps) && isequal(d, [m m]), ...
+                'data', ...
+                ['The D factor has to be symmetric of size %d, ', ...
+                 'found size = %d and norm(D - D'') = %e'], ...
+                m, d(1), symmD);
 else
     D = [];
 end
@@ -85,7 +88,7 @@ if isempty(D)
         Z = U * L(:, 1:l);
 
         if info
-            fprintf(1, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 2), tol);
+            mess_fprintf(opts, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 2), tol);
         end
     else
         % Z'*Z case.
@@ -97,7 +100,7 @@ if isempty(D)
         Z = L(1:l, :) * V';
 
         if info
-            fprintf(1, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 1), tol);
+            mess_fprintf(opts, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 1), tol);
         end
     end
 else
@@ -113,7 +116,7 @@ else
         D = diag(S(r));
 
         if info
-            fprintf(1, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 2), tol);
+            mess_fprintf(opts, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 2), tol);
         end
     else
         % Z'*D*Z case.
@@ -127,7 +130,7 @@ else
         D = diag(S(r));
 
         if info
-            fprintf(1, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 1), tol);
+            mess_fprintf(opts, 'cc: %d -> %d  (tol: %e)\n', m, size(Z, 1), tol);
         end
     end
 end

@@ -1,12 +1,12 @@
 # M-M.E.S.S. - The Matrix Equation Sparse Solver Library for MATLAB and Octave
 
 M-M.E.S.S. provides low-rank solvers for large-scale symmetric matrix
-equations with sparse or sparse + low rank coefficients. The main
+equations with sparse or sparse + low-rank coefficients. The main
 focus is on differential and algebraic Riccati equations appearing in
 control and model order reduction, as well as algebraic Lyapunov
 equations for, e.g., balanced truncation.
 
-The underlying dynamical system may be of first or second order and
+The underlying dynamical system may be of first or second order, and
 structured proper differential algebraic equations (DAEs) that allow
 for implicit index reduction are also supported.
 
@@ -31,7 +31,7 @@ standard state space systems, second order systems, structured DAEs of
 index 1 and 2, as well as second order DAEs of index 1, 2 and 3. For
 more information on usfs see `help mess_usfs`.
 
-Copyright 2009-2022
+Copyright 2009-2023
  by Jens Saak, Martin Koehler, Peter Benner (MPI Magdeburg)
 
 The software uses a BSD 2-Clause license. See [LICENSE.md](LICENSE.md)
@@ -99,14 +99,18 @@ See [CITATION.md](CITATION.md) for details about citing the software.
   BT of bilinear systems.
 - **2022 M-M.E.S.S.-2.2** fixes several smaller bugs and adds
   improvements to code style and performance, and improves documentation
+- **M-M.E.S.S.-3.0** adds
+   - Krylov-projection-based solvers
+   - sparse-dense Sylvester equations
 
 ## Roadmap
 
-- **M-M.E.S.S.-3.0**
-  - bilinear control problems
-  - Krylov-projection-based solvers
-  - sparse-dense Sylvester equations
-- **M-M.E.S.S.-4.0**
-  - sparse Sylvester equations
-  - non-symmetric AREs
+- **M-M.E.S.S.-3.x**
+   - bilinear control problems
+   - DAE usfs restructuring
+   - consistency and efficiency improvements
+   - code refactoring to avoid code duplication
 
+- **M-M.E.S.S.-4.0**
+   - sparse Sylvester equations
+   - non-symmetric AREs

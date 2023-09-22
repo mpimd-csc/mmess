@@ -13,13 +13,15 @@ function DEMO_RI_GE_T_N(istest)
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
 %%
-if nargin<1, istest=0; end
+if nargin < 1
+    istest = false;
+end
 
 %% Construction of system data.
 if exist('OCTAVE_VERSION', 'builtin')
@@ -56,12 +58,13 @@ else
     C1 = rand(3, 500);
 end
 
-eqn.haveE = 1;
+eqn.haveE = true;
 
 gam = 5; % Scaling term for disturbances.
 
 %% Set operator.
-oper = operatormanager('default');
+opts = struct();
+[oper, opts] = operatormanager(opts, 'default');
 
 %% Construction of options struct.
 % RADI settings.
@@ -90,41 +93,48 @@ opts.norm           = 2;
 %% Solve the control equation.
 t_solve_eqn = tic;
 eqn.type = 'T';
-eqn.B1   = 1/gam * B1;
+eqn.B1   = 1 / gam * B1;
 eqn.C1   = C1;
 [outControl, eqn, opts, oper] = mess_lrri(eqn, opts, oper);
 t_elapsed1 = toc(t_solve_eqn);
-fprintf(1,'solving the control equation took %6.2f seconds \n' ,t_elapsed1);
+mess_fprintf(opts, ...
+             'solving the control equation took %6.2f seconds \n', t_elapsed1);
 %% Solve the filter equation.
 t_solve_eqn = tic;
 eqn.type = 'N';
 eqn.B1   = B1;
-eqn.C1   = 1/gam * C1;
+eqn.C1   = 1 / gam * C1;
 [outFilter, eqn, opts, ~] = mess_lrri(eqn, opts, oper);
 t_elapsed2 = toc(t_solve_eqn);
-fprintf(1,'solving the filter equation took %6.2f seconds \n' , t_elapsed2);
+mess_fprintf(opts, ...
+             'solving the filter equation took %6.2f seconds \n', t_elapsed2);
 %% Compute real residuals.
-absControl = norm(eqn.A_' * (outControl.Z * outControl.Z') * eqn.E_ ...
-    + eqn.E_' * (outControl.Z * outControl.Z') * eqn.A_ ...
-    + eqn.E_' * (outControl.Z * outControl.Z') * (1/gam^2 * (B1 * B1') ...
-    - eqn.B2 * eqn.B2') * (outControl.Z * outControl.Z') * eqn.E_ ...
-    + C1' * C1, 2);
+absControl = norm(eqn.A_' * (outControl.Z * outControl.Z') * eqn.E_ + ...
+                  eqn.E_' * (outControl.Z * outControl.Z') * eqn.A_ + ...
+                  eqn.E_' * (outControl.Z * outControl.Z') * ...
+                  (1 / gam^2 * (B1 * B1') - eqn.B2 * eqn.B2') * ...
+                  (outControl.Z * outControl.Z') * eqn.E_ + ...
+                  C1' * C1, 2);
 relControl = absControl / norm(C1 * C1', 2);
-fprintf(1, '\nControl -> set tolerance vs. real residual: %e | %e\n', ...
-    opts.ri.res_tol, relControl);
+mess_fprintf(opts, ...
+             '\nControl -> set tolerance vs. real residual: %e | %e\n', ...
+             opts.ri.res_tol, relControl);
 
-absFilter = norm(eqn.A_ * (outFilter.Z * outFilter.Z') * eqn.E_' ...
-    + eqn.E_ * (outFilter.Z * outFilter.Z') * eqn.A_' ...
-    + eqn.E_ * (outFilter.Z * outFilter.Z') * (1/gam^2 * (C1' * C1) ...
-    - eqn.C2' * eqn.C2) * (outFilter.Z * outFilter.Z') * eqn.E_' ...
-    + B1 * B1', 2);
+absFilter = norm(eqn.A_ * (outFilter.Z * outFilter.Z') * eqn.E_' + ...
+                 eqn.E_ * (outFilter.Z * outFilter.Z') * eqn.A_' + ...
+                 eqn.E_ * (outFilter.Z * outFilter.Z') * ...
+                 (1 / gam^2 * (C1' * C1) - eqn.C2' * eqn.C2) * ...
+                 (outFilter.Z * outFilter.Z') * eqn.E_' + ...
+                 B1 * B1', 2);
 relFilter = absFilter / norm(B1' * B1, 2);
-fprintf(1, 'Filter  -> set tolerance vs. real residual: %e | %e\n', ...
-    opts.ri.res_tol, relFilter);
+mess_fprintf(opts, 'Filter  -> set tolerance vs. real residual: %e | %e\n', ...
+             opts.ri.res_tol, relFilter);
 
+% safety factor mostly used for Octave
+safety = 10;
 if istest
-    assert(relControl < opts.ri.res_tol, ...
-        'MESS:TEST:accuracy','unexpectedly inaccurate result');
-    assert(relFilter < opts.ri.res_tol, ...
-        'MESS:TEST:accuracy','unexpectedly inaccurate result');
+    mess_assert(opts, relControl < opts.ri.res_tol * safety, ...
+                'TEST:accuracy', 'unexpectedly inaccurate result');
+    mess_assert(opts, relFilter < opts.ri.res_tol * safety, ...
+                'TEST:accuracy', 'unexpectedly inaccurate result');
 end

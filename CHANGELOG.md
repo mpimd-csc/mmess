@@ -1,5 +1,58 @@
 # CHANGELOG
 
+## version 3.0
+
+### Added
+
+- Sparse-dense Sylvester solver, see `mess_sylvester_sparse_dense`.
+- Krylov subspace projection methods for Lyapunov equations and AREs
+  using extended and rational Krylov subspaces, see `mess_KSM`, as
+  well as demonstration examples in `KSM_FDM`, `KSM_Rail`.
+- A new logging system allowing to print messages to both console
+  and files, and switch between various output file format. See `mess_log_*`.
+- `mess_tf_plot` as unified backend for `mess_sigma_plot`,
+  `mess_Frobenius_TF_errorplot`
+- `mess_version` a function to get the current version of M-M.E.S.S.
+
+### Changed
+
+- `mess_galerkin_projection_acceleration` has been replaced by
+  `mess_solve_projected_eqn`, which now covers both the acceleration
+  case and the case of projected equations in the context of `mess_KSM`.
+- `eqn.st` and `eqn.nd` from DAE usfs are now unified and called
+  `eqn.manifold_dim` everywhere.
+- the LDL^T ADI for Lyapunov now expects W  T  W^T rather than
+  G  S G^T as the constant term. Consequently, `eqn.S` and `eqn.G` are
+  now called `eqn.T` and `eqn.W`.
+- missing demonstration models are now loaded from the web on user
+  request. The first run with a model may, thus, need to be
+  interactive to confirm the download request.
+- usfs have been optimized further to not use unnecessary hidden data.
+- `mess_lrnm`, and `mess_lrradi` now require `eqn.R` and `eqn.Q` to be
+  set in LDL^T mode.
+- `operatormanager` now has a mandatory pass-through argument `opts`
+  for correct logging.
+
+### Fixed
+
+- many functions did not warn users about non-convergence
+- minor bugs in DRE methods were addressed
+- `get_ritz_vals` usfs and `mess_para` behavior has been unified
+- removed dead code in `mess_lrnm`
+- `lyap` in Octave and MATLAB had different behavior which is now
+  properly wrapped to give consistent results
+- BDF methods of higher order now use lower order methods with smaller
+  step sizes for a successive wind-up procedure to guarantee the
+  expected order of convergence.
+- exact line search in `mess_lrnm` now uses a more expensive, yet far
+  more numerically stable way to compute the relevant norms.
+
+### Deprecated
+
+- all functions in the `mor`folder are not going to be maintained in
+  future releases in favor of using M-M.E.S.S. as the sparse solver
+  backend for MORLAB in their version 6.0 and newer.
+
 ## version 2.2
 
 ### Added
@@ -107,8 +160,8 @@
   non-existent ones with a general `mess_do_nothing` function
 - renamed `opts.bdf.stage` to `opts.bdf.step`.
 - CI testing
-  - demos serve as system tests
-  - additional unit tests for the smaller building blocks and backend routines
+   - demos serve as system tests
+   - additional unit tests for the smaller building blocks and backend routines
 
 ### Changed
 
@@ -116,21 +169,21 @@
 - updated minimum required/recommended Matlab and Octave versions
   (see `DEPENDENCIES.md`)
 - unified function interfaces for top level calls
-- unified handling of low rank updated operators. Now always A+UV' is
+- unified handling of low-rank updated operators. Now always A+UV' is
   used. (Note the sign of the update and the transposition in V)
 - major updates in the MOR routines
 - some restructuring in the opts structure.
-  - `opts.adi.shifts` has moved to `opts.shifts` such that also RADI
-    can use it independent of ADI
-  - `opts.norm` now determines the norm for all methods rather than
+   - `opts.adi.shifts` has moved to `opts.shifts` such that also RADI
+     can use it independent of ADI
+   - `opts.norm` now determines the norm for all methods rather than
      having to consistently specify the same norm in each substructure
-  - initial feedbacks for the Riccati solvers are now stored in the
-    `opts` structure for the method rather than `eqn`
+   - initial feedbacks for the Riccati solvers are now stored in the
+     `opts` structure for the method rather than `eqn`
 - The projection shift routine uses the flag `opts.shifts.implicitVtAV`.
   Default is `true`. If set to `false` A*V is computed explicitly.
 - redesign of the demos
-  - turned scripts into actual demo functions
-  - new demos for indefinite AREs and H-infinity control
+   - turned scripts into actual demo functions
+   - new demos for indefinite AREs and H-infinity control
 
 ### Fixed
 
@@ -149,24 +202,26 @@
 
 - Minor consistency and bug fixes and improved integrity of metafiles.
 - CI testing
-  - demos serve as system tests
-  - additional unit tests for the smaller building blocks and backend routines
+   - demos serve as system tests
+   - additional unit tests for the smaller building blocks and backend routines
 
 ## version 1.0
 
 Compared to the predecessor LyaPack a couple of things have changed.
 
 - The user supplied functions are now managed by an operator manager
-- The low rank ADI now has:
-  - optimized treatment of E matrices in generalized equations
-  - more choices for shift selection, including completely automatic
-    generation of shifts
-  - improved stopping criteria based on low rank factors of the current residual
-  - automatic generation of real low rank factors also for complex shifts
+- The low-rank ADI now has:
+   - optimized treatment of E matrices in generalized equations
+   - more choices for shift selection, including completely automatic
+     generation of shifts
+   - improved stopping criteria based on low-rank factors of the
+     current residual
+   - automatic generation of real low-rank factors also for complex shifts
 - The Newton-Kleinman iteration features:
-  - optimized treatment of E matrices in generalized equations
-  - improved stopping criteria based on low rank factors of the current residual
-  - inexact Newton, line search and Galerkin projection acceleration
+   - optimized treatment of E matrices in generalized equations
+   - improved stopping criteria based on low-rank factors of the
+     current residual
+   - inexact Newton, line search and Galerkin projection acceleration
 - Examples have been extended
 - The Riccati iteration for H-infinity Riccati equations was added
 - DSPMR has not yet been ported to the new infrastructure
@@ -174,4 +229,3 @@ Compared to the predecessor LyaPack a couple of things have changed.
   none-DAE systems. Still, DAE versions are included in the
   corresponding DEMOS.
 - A tangential IRKA implementation for non-DAE systems was added
-

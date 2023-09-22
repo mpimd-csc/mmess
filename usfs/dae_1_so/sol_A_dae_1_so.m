@@ -1,6 +1,6 @@
-function X = sol_A_dae_1_so(eqn, opts, opA, B, opB)%#ok<INUSL>
+function X = sol_A_dae_1_so(eqn, opts, opA, B, opB)
 %% function sol_A solves opA(A) * X = opC(B) resp. performs X = opA(A) \ opB(B)
-% for A as in (2) in help mess_usfs_dae1_so 
+% for A as in (2) in help mess_usfs_dae1_so
 %
 %  X = sol_A_dae_1_so(eqn, opts, opA, B, opB)
 %
@@ -32,49 +32,50 @@ function X = sol_A_dae_1_so(eqn, opts, opA, B, opB)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
 %% check input Parameters
-if (not(ischar(opA)) || not(ischar(opB)))
-    error('MESS:error_arguments', 'opA or opB is not a char');
+if not(ischar(opA)) || not(ischar(opB))
+    mess_err(opts, 'error_arguments', 'opA or opB is not a char');
 end
 
-opA = upper(opA); opB = upper(opB);
+opA = upper(opA);
+opB = upper(opB);
 
-if(not((opA == 'N' || opA == 'T')))
-    error('MESS:error_arguments', 'opA is not ''N'' or ''T''');
+if not(opA == 'N' || opA == 'T')
+    mess_err(opts, 'error_arguments', 'opA is not ''N'' or ''T''');
 end
 
-if(not((opB == 'N' || opB == 'T')))
-    error('MESS:error_arguments', 'opB is not ''N'' or ''T''');
+if not(opB == 'N' || opB == 'T')
+    mess_err(opts, 'error_arguments', 'opB is not ''N'' or ''T''');
 end
 if (not(isnumeric(B))) || (not(ismatrix(B)))
-    error('MESS:error_arguments','B has to ba a matrix');
+    mess_err(opts, 'error_arguments', 'B has to ba a matrix');
 end
 
 %% check data in eqn structure
 
-if (not(isfield(eqn,'K_')) || not(isnumeric(eqn.K_)))
-    error('MESS:equation_data',...
-        'Empty or Corrupted field K detected in equation structure.')
+if not(isfield(eqn, 'K_')) || not(isnumeric(eqn.K_))
+    mess_err(opts, 'equation_data', ...
+             'Empty or Corrupted field K detected in equation structure.');
 end
 
-if not(isfield(eqn, 'nd'))    || not(isnumeric(eqn.nd))
-    error('MESS:nd',...
-    'Missing or Corrupted nd field detected in equation structure.');
+if not(isfield(eqn, 'manifold_dim')) || not(isnumeric(eqn.manifold_dim))
+    mess_err(opts, 'equation_data', ...
+             ['Missing or corrupted manifold_dim field detected in ' ...
+              'equation structure.']);
 end
 
 n = size(eqn.K_, 1);
-nd = eqn.nd;
-na = n - nd;
-one = 1 : nd;
-twob = (nd + 1) : (2 * nd);
+manifold_dim = eqn.manifold_dim;
+na = n - manifold_dim;
+one = 1:manifold_dim;
+twob = (manifold_dim + 1):(2 * manifold_dim);
 
-if(opB == 'N')
+if opB == 'N'
     rows = size(B, 1);
     cols = size(B, 2);
 else
@@ -82,9 +83,10 @@ else
     cols = size(B, 1);
 end
 
-if(2 * nd ~= rows)
-    error('MESS:error_arguments', ...
-        'number of rows of B differs from number of cols of A ( 2 * nd)');
+if not(2 * manifold_dim == rows)
+    mess_err(opts, 'error_arguments', ...
+             ['number of rows of B differs from number of cols of A ' ...
+              '(2 * manifold_dim)']);
 end
 %% solve
 
@@ -99,11 +101,11 @@ switch opA
 
             case 'N'
                 X = eqn.K_ \ [B(one, :); zeros(na, cols)];
-                X = [- X(one, :); eqn.M_(one,one) \ B(twob, :) ];
+                X = [-X(one, :); eqn.M_(one, one) \ B(twob, :)];
 
             case 'T'
                 X = eqn.K_ \ [B(:, one)'; zeros(na, cols)];
-                X = [- X(one, :); eqn.M_(one,one) \ B(:, twob)'];
+                X = [-X(one, :); eqn.M_(one, one) \ B(:, twob)'];
         end
 
     case 'T'
@@ -111,11 +113,11 @@ switch opA
 
             case 'N'
                 X = eqn.K_' \ [B(one, :); zeros(na, cols)];
-                X = [- X(one, :); eqn.M_(one,one)' \ B(twob, :) ];
+                X = [-X(one, :); eqn.M_(one, one)' \ B(twob, :)];
 
             case 'T'
                 X = eqn.K_' \ [B(:, one)'; zeros(na, cols)];
-                X = [- X(one, :); eqn.M_(one,one)' \ B(:, twob)'];
+                X = [-X(one, :); eqn.M_(one, one)' \ B(:, twob)'];
 
         end
 

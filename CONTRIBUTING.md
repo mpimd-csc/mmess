@@ -3,7 +3,7 @@
 Please note that this project is released with a Contributor [Code of
 Conduct](CODE_OF_CONDUCT.md). By participating in this project you
 agree to abide by its terms. Note further, that we follow
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](code_of_conduct.md)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-v2.0%20adopted-ff69b4.svg)](CODE_OF_CONDUCT.md)
 and would like to emphasize the following additional examples of
 unacceptable behavior:
 
@@ -22,7 +22,7 @@ GIT history.
 
 ## Attribution
 
-When you have contributed code to M-M.E.S.S. you and the content of
+When you have contributed code to M-M.E.S.S., you and the content of
 your contribution will be mentioned in the project's [contributors
 file](CONTRIBUTORS.md).  Contributions are grouped by release, so if
 you have contributed code to multiple releases, you will be mentioned
@@ -44,15 +44,15 @@ guidelines below:
 **Naming of functions:**
 
 * to avoid shadowing of functions from other toolboxes/packages or
-  the MATLAB core, all M-M.E.S.S. solver functions start with `mess_`
+  the MATLAB/Octave core, all M-M.E.S.S. solver functions start with `mess_`
 * demonstration routines can have names deviating from the above
-  principle but should be descriptive enough such that a basic idea
+  principle, but should be descriptive enough such that a basic idea
   of their contents is evident.
 * user supplied functions need to have a special naming scheme
-  described in the documentation or found in the `operatormanager`
+  described in the documentation and found in the `operatormanager`
   function inside the `usfs` folder
 * Routines that do not obey the above have to be put into a
-  `private` folder.
+  `private` folder, or embedded into their calling functions source file.
 
 **Code Style:**
 
@@ -78,8 +78,8 @@ guidelines below:
   MATLAB's `lyap` and thus intended for matrices.
 * For the same abstraction reason, in core solvers, all operations
   with the system matrices have to be implemented via the `usfs`
-  system and access to `eqn.A_` or `eqn.E_` is prohibited. (see `help
-  mess_usfs` for details on the `usfs` system and philosophy)
+  system and access to, e.g., `eqn.A_` or `eqn.E_` is prohibited.
+  (see `help mess_usfs` for details on the `usfs` system and philosophy)
 * The options structure `opts` should contain a separate
   substructure for each algorithm/solver-function and options are
   only allowed on the top level when they are absolutely necessary
@@ -89,7 +89,7 @@ guidelines below:
   the shape of the factorization computed, or the norm that should
   consistently be used for measuring progress are allowed on the top
   level.
-* Avoid code duplication. If code blocks or variations thereof need to
+* Avoid code duplication. If code blocks, or variations thereof, need to
   be repeated, consider to put them into a function and call it
   where necessary. If a helper function lacks functionality consider
   extending rather than doubling it.
@@ -97,6 +97,24 @@ guidelines below:
   `% comment` rather than `%comment`.
 * We use blanks around operators and after commas in argument lists,
   e.g. `y = a * x + b;` and not `y=a*x+b;`
+* Transposes, denoted by `'`, only occur on capital letters.
+  (this is currently required by our spellcheckers and may be dropped
+   in the future)
+
+**Warnings, Errors and Logging:**
+
+* We provide or own logging mechanisms. We, therefore, do not call
+  `error`, or `warning` directly, but via `mess_err` and `mess_warn`
+  found in the `logger` folder.
+* `mess_log_matrix` additionally allows to write matrices to `.mat`
+  files.
+* `mess_log_plot` can store the figures in image files.
+* All M-M.E.S.S. code must use these and demonstration examples have
+  to initialize and finalize the logger via `mess_log_initialize`,
+  `mess_log_finalize`.
+* It is mandatory to use `mess_fprintf` rather than `fprintf` or
+  `disp`.
+* CI tests in `_tests` can be an exception from this rule.
 
 ## Maintainability
 
@@ -108,25 +126,31 @@ follow these guidelines:
 * Work on a single issue per merge request or branch.
 * branch and merge often, since long living branches tend to become
   messy to handle and synchronize with the master.
-* Try to 'rebase' your work onto the master before merging or
-  requesting a merge, if possible
+* Try to 'rebase' your work onto the main branch before merging or
+  requesting a merge, if possible.
 
 ## Test Framework
 
 We use an extensive test system on our continuous integration (CI)
 server to ensure that new features do not break old functionality and
 all features work in both MATLAB and GNU Octave, both with and without
-toolboxes/packages installed. Currently CI time is limited to 2 hours
+toolboxes/packages installed. Currently CI time is limited to 6 hours
 and all tests should be finished in that time.
 
-We distinguish between so called unit tests and system tests. Here,
-unit tests are testing the smallest possible building blocks. As a
+We distinguish between so called unit tests, system tests, and extended tests.
+Here, unit tests are testing the smallest possible building blocks. As a
 rule of thumb, a routine that does not call external functions, or
 only private functions is a candidate for a unit test.
 
 Larger routines that run a hierarchy of other stuff, such as our
 demonstrator functions in the `DEMOS` folder should be used to perform
-the much bigger system tests.
+the bigger system tests.
+
+If runtimes become an issue, consider moving system tests to the extended
+tests category. While unit and system tests are executed on every push that
+affects them and included in our weekly pipelines, extended tests
+(that run exceptionally long) are executed only in our monthly extended
+pipelines.
 
 * All files in `DEMOS` should be accompanied by a system test
   calling them on an, ideally, small example. (See comment about the
@@ -134,4 +158,4 @@ the much bigger system tests.
 * All `usfs` sets should be checked by unit tests. Use non-symmetric
   systems and system matrices where possible!
 * Consider to provide a unit test for every helper routine in your
-  method.
+  code.

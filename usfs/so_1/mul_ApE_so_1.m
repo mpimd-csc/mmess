@@ -1,4 +1,4 @@
-function C=mul_ApE_so_1(eqn, opts,opA,p,opE,B,opB)%#ok<INUSL>
+function C = mul_ApE_so_1(eqn, opts, opA, p, opE, B, opB)
 % function C=mul_ApE_so_1(eqn, opts,opA,p,opE,B,opB)
 %
 % Call help mess_usfs_so_1 to see the description of the second order
@@ -38,66 +38,68 @@ function C=mul_ApE_so_1(eqn, opts,opA,p,opE,B,opB)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
 %% check input parameters
-if (not(ischar(opA)) || not(ischar(opB)) || not(ischar(opE)))
-    error('MESS:error_arguments', 'opA, opB or opE is not a char');
+if not(ischar(opA)) || not(ischar(opB)) || not(ischar(opE))
+    mess_err(opts, 'error_arguments', 'opA, opB or opE is not a char');
 end
 
-opA = upper(opA); opB = upper(opB); opE = upper(opE);
+opA = upper(opA);
+opB = upper(opB);
+opE = upper(opE);
 
-if(not((opA=='N' || opA=='T')))
-    error('MESS:error_arguments','opA is not ''N'' or ''T''');
+if not(opA == 'N' || opA == 'T')
+    mess_err(opts, 'error_arguments', 'opA is not ''N'' or ''T''');
 end
 
-if(not((opB=='N' || opB=='T')))
-    error('MESS:error_arguments','opB is not ''N'' or ''T''');
+if not(opB == 'N' || opB == 'T')
+    mess_err(opts, 'error_arguments', 'opB is not ''N'' or ''T''');
 end
 
-if(not((opE=='N' || opE=='T')))
-    error('MESS:error_arguments','opE is not ''N'' or ''T''');
+if not(opE == 'N' || opE == 'T')
+    mess_err(opts, 'error_arguments', 'opE is not ''N'' or ''T''');
 end
 
-if(not(isnumeric(p)))
-    error('MESS:error_arguments','p is not numeric');
+if not(isnumeric(p))
+    mess_err(opts, 'error_arguments', 'p is not numeric');
 end
 
 if (not(isnumeric(B))) || (not(ismatrix(B)))
-    error('MESS:error_arguments','B has to ba a matrix');
+    mess_err(opts, 'error_arguments', 'B has to ba a matrix');
 end
 
 %% check data in eqn structure
 
 [rowK, colK] = size(eqn.K_);
-colA = 2*colK;
+colA = 2 * colK;
 one = 1:rowK;
-two = (rowK + 1) : colA;
+two = (rowK + 1):colA;
 
 switch opB
 
-      %implement multiplication (A+p*E)*B=C
-      case 'N'
-        if(colA~=size(B,1))
-            error('MESS:error_arguments',['number of columns of A ' ...
-                                'differs with number of rows of B']);
+    % implement multiplication (A+p*E)*B=C
+    case 'N'
+        if not(colA == size(B, 1))
+            mess_err(opts, 'error_arguments', ...
+                     ['number of columns of A differs with number ' ...
+                      'of rows of B']);
         end
-        C = -[(p*(eqn.K_*B(one, :)) + eqn.K_*B(two, :));
-              (eqn.K_*B(one, :)) - p*(eqn.M_*B(two, :)) + eqn.E_*B(two, :)];
+        C = -[(p * (eqn.K_ * B(one, :)) + eqn.K_ * B(two, :))
+              (eqn.K_ * B(one, :)) - p * (eqn.M_ * B(two, :)) + eqn.E_ * B(two, :)];
 
-      %implement multiplication (A+p*E)*B'=C
-      case 'T'
-        if(colA~=size(B,2))
-            error('MESS:error_arguments',['number of columns of A ' ...
-                                'differs with number of columns of B']);
+        % implement multiplication (A+p*E)*B'=C
+    case 'T'
+        if not(colA == size(B, 2))
+            mess_err(opts, 'error_arguments', ...
+                     ['number of columns of A differs with number ' ...
+                      'of columns of B']);
         end
-        C = -[(p*(eqn.K_*B(:,one)') + (eqn.K_*B(:,two)'));...
-              (eqn.K_*B(:,one)') - p*(eqn.M_*B(:,two)') + eqn.E_*B(:,two)'];
+        C = -[(p * (eqn.K_ * B(:, one)') + (eqn.K_ * B(:, two)')); ...
+              (eqn.K_ * B(:, one)') - p * (eqn.M_ * B(:, two)') + eqn.E_ * B(:, two)'];
 end
-
 
 end

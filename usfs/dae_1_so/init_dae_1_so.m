@@ -33,126 +33,130 @@ function [result, eqn, opts, oper] = init_dae_1_so(eqn, opts, oper, flag1, flag2
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
 %% start checking
-if(nargin<=3)
-    error('MESS:control_data','Number of input Arguments are at least 3');
+if nargin <= 3
+    mess_err(opts, 'control_data', 'Number of input Arguments are at least 3');
 
-%% result = init_dae_1_so_1(eqn, flag1);
-elseif(nargin==4)
+    %% result = init_dae_1_so_1(eqn, flag1);
+elseif nargin == 4
     switch flag1
-        case {'A','a'}
-            [eqn,result] = checkA(eqn);
-        case {'E','e'}
-            [eqn,result] = checkE(eqn);
+        case {'A', 'a'}
+            [eqn, result] = checkA(eqn);
+        case {'E', 'e'}
+            [eqn, result] = checkE(eqn);
         otherwise
-            error('MESS:control_data','flag1 has to be ''A'' or ''E''');
+            mess_err(opts, 'control_data', 'flag1 has to be ''A'' or ''E''');
     end
 
-%% result = init_dae_1_so_1(eqn,flag1,flag2);
-elseif(nargin==5)
+    %% result = init_dae_1_so_1(eqn,flag1,flag2);
+elseif nargin == 5
     switch flag1
-        case {'A','a'}
-            [eqn,result] = checkA(eqn);
+        case {'A', 'a'}
+            [eqn, result] = checkA(eqn, opts);
             switch flag2
-                case {'A','a'}
-                    [eqn,resultA] = checkA(eqn);
+                case {'A', 'a'}
+                    [eqn, resultA] = checkA(eqn, opts);
                     result = result && resultA;
-                case {'E','e'}
-                    [eqn, resultE] = checkE(eqn);
+                case {'E', 'e'}
+                    [eqn, resultE] = checkE(eqn, opts);
                     result =  result && resultE;
                 otherwise
-                    error('MESS:control_data', ...
-                        'flag2 has to be ''A'' or ''E''');
+                    mess_err(opts, 'control_data', ...
+                             'flag2 has to be ''A'' or ''E''');
             end
-        case {'E','e'}
-            [eqn,result] = checkE(eqn);
+        case {'E', 'e'}
+            [eqn, result] = checkE(eqn, opts);
             switch flag2
-                case {'A','a'}
-                    [eqn,resultA] = checkA(eqn);
+                case {'A', 'a'}
+                    [eqn, resultA] = checkA(eqn, opts);
                     result =  result && resultA;
-                case {'E','e'}
-                    [eqn,resultE] = checkE(eqn);
+                case {'E', 'e'}
+                    [eqn, resultE] = checkE(eqn, opts);
                     result = result && resultE;
                 otherwise
-                    error('MESS:control_data', ...
-                        'flag2 has to be ''A'' or ''E''');
+                    mess_err(opts, 'control_data', ...
+                             'flag2 has to be ''A'' or ''E''');
             end
         otherwise
-            error('MESS:control_data', 'flag1 has to be ''A'' or ''E''');
+            mess_err(opts, 'control_data', 'flag1 has to be ''A'' or ''E''');
     end
 end
 
-if not(isfield(eqn,'haveE')), eqn.haveE=1; end
+if not(isfield(eqn, 'haveE'))
+    eqn.haveE = true;
+end
 
 end
 
 %% checkdata for A
 
-function [eqn,result] = checkA(eqn)
-if (not(isfield(eqn,'K_')) || not(isnumeric(eqn.K_)))
-    error('MESS:equation_data',...
-        'Empty or Corrupted field K detected in equation structure.')
+function [eqn, result] = checkA(eqn, opts)
+if not(isfield(eqn, 'K_')) || not(isnumeric(eqn.K_))
+    mess_err(opts, 'equation_data', ...
+             'Empty or Corrupted field K detected in equation structure.');
 end
-if(not(issparse(eqn.K_)))
-    warning('MESS:control_data','K is not sparse');
+if not(issparse(eqn.K_))
+    mess_warn(opts, 'control_data', 'K is not sparse');
 end
 [n1k, n2k] = size(eqn.K_);
-if n1k ~= n2k
-    error('MESS:equation_data',...
-        'K has to be quadratic')
+if not(n1k == n2k)
+    mess_err(opts, 'equation_data', ...
+             'K has to be quadratic');
 end
-result = 1;
+result = true;
 
 end
 
 %% checkdata for E
-function [eqn,result] = checkE(eqn)
-if (not(isfield(eqn,'M_')) || not(isnumeric(eqn.M_)))
-    error('MESS:equation_data',...
-        'Empty or Corrupted field M detected in equation structure.')
-elseif (not(isfield(eqn,'E_')) || not(isnumeric(eqn.E_)))
-    error('MESS:equation_data',...
-        'Empty or Corrupted field D detected in equation structure.')
+function [eqn, result] = checkE(eqn, opts)
+if not(isfield(eqn, 'M_')) || not(isnumeric(eqn.M_))
+    mess_err(opts, 'equation_data', ...
+             'Empty or Corrupted field M detected in equation structure.');
+elseif not(isfield(eqn, 'E_')) || not(isnumeric(eqn.E_))
+    mess_err(opts, 'equation_data', ...
+             'Empty or Corrupted field D detected in equation structure.');
 end
-if not(isfield(eqn, 'nd'))    || not(isnumeric(eqn.nd))
-    error('MESS:nd',...
-    'Missing or Corrupted nd field detected in equation structure.');
+if not(isfield(eqn, 'manifold_dim')) || not(isnumeric(eqn.manifold_dim))
+    mess_err(opts, 'equation_data', ...
+             ['Missing or corrupted manifold_dim field detected in ' ...
+              'equation structure.']);
 end
-if(not(issparse(eqn.M_)))
-    warning('MESS:control_data','M is not sparse');
+if not(issparse(eqn.M_))
+    mess_warn(opts, 'control_data', 'M is not sparse');
 end
-if(not(issparse(eqn.E_)))
-    warning('MESS:control_data','D is not sparse');
+if not(issparse(eqn.E_))
+    mess_warn(opts, 'control_data', 'D is not sparse');
 end
-nd = eqn.nd;
+manifold_dim = eqn.manifold_dim;
 [n1m, n2m] = size(eqn.M_);
 [n1d, n2d] = size(eqn.E_);
-if n1m ~= n2m
-    error('MESS:equation_data',...
-        'M has to be quadratic')
+if not(n1m == n2m)
+    mess_err(opts, 'equation_data', ...
+             'M has to be quadratic');
 end
-if n1d ~= n2d
-    error('MESS:equation_data',...
-        'D has to be quadratic')
+if not(n1d == n2d)
+    mess_err(opts, 'equation_data', ...
+             'D has to be quadratic');
 end
-if n1m ~= n1d
-    error('MESS:equation_data',...
-        'M and D must have same size')
+if not(n1m == n1d)
+    mess_err(opts, 'equation_data', ...
+             'M and D must have same size');
 end
-if full(any([any(eqn.M_(1:nd, nd + 1:end)), any(eqn.M_(nd+1:end,:))]))
-    warning('MESS:control_data', ...
-        'M has to be non-zero only in nd x nd block');
+if full(any([any(eqn.M_(1:manifold_dim, manifold_dim + 1:manifold_dim)), ...
+             any(eqn.M_(manifold_dim + 1:end, :))]))
+    mess_warn(opts, 'control_data', ...
+              'M has to be non-zero only in manifold_dim x manifold_dim block');
 end
-if full(any([any(eqn.E_(1:nd, nd + 1:end)), any(eqn.E_(nd+1:end,:))]))
-    warning('MESS:control_data', ...
-        'D has to be non-zero only in nd x nd block');
+if full(any([any(eqn.E_(1:manifold_dim, manifold_dim + 1:end)), ...
+             any(eqn.E_(manifold_dim + 1:end, :))]))
+    mess_warn(opts, 'control_data', ...
+              'D has to be non-zero only in manifold_dim x manifold_dim block');
 end
-result = 1;
+result = true;
 
 end

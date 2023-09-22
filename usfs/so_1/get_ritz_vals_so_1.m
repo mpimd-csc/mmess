@@ -1,5 +1,5 @@
-function [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = get_ritz_vals_so_1(eqn, ...
-                                                  opts, oper, U, W, p_old)
+function [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = ...
+    get_ritz_vals_so_1(eqn, opts, oper, U, W, p_old)
 % [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = get_ritz_vals_so_1(eqn,opts,oper)
 %
 % Call help mess_usfs_so_1 to see the description of the second order
@@ -33,35 +33,41 @@ function [rw,  Hp, Hm, Vp, Vm, eqn, opts, oper] = get_ritz_vals_so_1(eqn, ...
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
 if isfield(opts.shifts, 'method') && ...
         strcmp(opts.shifts.method, 'projection')
     if isempty(W)
-        % first shifts are computed with U = eqn.G and W = A * eqn.G
+        % first shifts are computed with U = eqn.W and W = A * eqn.W
         W = oper.mul_A(eqn, opts, eqn.type, U, 'N');
+        if isfield(eqn, 'haveUV') && eqn.haveUV
+            switch eqn.type
+                case 'N'
+                    W = W + eqn.U * (eqn.V' * U);
+                case 'T'
+                    W = W + eqn.V * (eqn.U' * U);
+            end
+        end
     end
-    rw = mess_projection_shifts(eqn, opts, oper, U, ...
-        W, p_old);
+    rw = mess_projection_shifts(eqn, opts, oper, U, W, p_old);
 else
     n = oper.size(eqn, opts);
-    if (not(isfield(opts.shifts, 'b0')) || isempty(opts.shifts.b0))
-        opts.shifts.b0 = ones(n,1);
+    if not(isfield(opts.shifts, 'b0')) || isempty(opts.shifts.b0)
+        opts.shifts.b0 = ones(n, 1);
     else
-        if length(opts.shifts.b0) ~= n
-            warning('MESS:b0',...
-                'b0 has the wrong length. Switching to default.');
-            opts.shifts.b0 = ones(n,1);
+        if not(length(opts.shifts.b0) == n)
+            mess_warn(opts, 'b0', ...
+                      'b0 has the wrong length. Switching to default.');
+            opts.shifts.b0 = ones(n, 1);
         end
     end
     [rw, Hp, Hm, Vp, Vm] = mess_get_ritz_vals(eqn, opts, oper);
 end
-if isfield(opts.shifts,'truncate') && isnumeric(opts.shifts.truncate)
-    rw = rw(abs(rw)<opts.shifts.truncate);
-    rw = rw(abs(rw)>1/opts.shifts.truncate);
+if isfield(opts.shifts, 'truncate') && isnumeric(opts.shifts.truncate)
+    rw = rw(abs(rw) < opts.shifts.truncate);
+    rw = rw(abs(rw) > 1 / opts.shifts.truncate);
 end
 end

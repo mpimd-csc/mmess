@@ -1,4 +1,4 @@
-function n = size_so_1(eqn, opts)%#ok<INUSD>
+function n = size_so_1(eqn, opts, oper) %#ok<INUSD>
 % function n = size_so_1(eqn, opts)
 %
 % Call help mess_usfs_so_1 to see the description of the second order
@@ -21,15 +21,15 @@ function n = size_so_1(eqn, opts)%#ok<INUSD>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-if(not(isfield(eqn,'K_')) || not(isnumeric(eqn.K_)))
-    error('MESS:error_arguments',...
-        'A consists of K and D, field eqn.K_ is not defined or corrupted');
+if not(isfield(eqn, 'K_')) || not(isnumeric(eqn.K_))
+    mess_err(opts, 'error_arguments', ...
+             'A consists of K and D, field eqn.K_ is not defined or corrupted');
 end
-n = 2*size(eqn.K_,1);
+n = 2 * size(eqn.K_, 1);
 
 end

@@ -22,17 +22,16 @@ function [eqn, opts, oper] = ...
 %                   with A and E
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
-assert(isfield(eqn, 'Ecount'), ...
-    'MESS:error_arguments', ...
-    'field eqn.Scount is not defined.');
+mess_assert(opts, isfield(eqn, 'Ecount'), ...
+            'error_arguments', ...
+            'field eqn.Ecount is not defined.');
 
 if eqn.Ecount > 1
     eqn.Ecount = eqn.Ecount - 1;

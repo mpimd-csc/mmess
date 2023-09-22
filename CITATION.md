@@ -11,20 +11,20 @@ below.
 
 ## DOI
 
-The DOI for version 2.2 is
-[10.5281/zenodo.5938237](http://doi.org/10.5281/zenodo.5938237)
+The DOI for version 3.0 is
+[10.5281/zenodo.7701424](http://doi.org/10.5281/zenodo.7701424)
 
 ## BibTeX
 
 ```
-@Misc{SaaKB21-mmess-2.2,
+@Misc{SaaKB21-mmess-3.0,
   author =       {Saak, J. and K\"{o}hler, M. and Benner, P.},
-  title =        {{M-M.E.S.S.}-2.2 -- The Matrix Equations Sparse Solvers
+  title =        {{M-M.E.S.S.}-3.0 -- The Matrix Equations Sparse Solvers
                   library},
-  month =        feb,
-  year =         2022,
+  month =        aug,
+  year =         2023,
   note =         {see also:\url{https://www.mpi-magdeburg.mpg.de/projects/mess}},
-  doi =          {10.5281/zenodo.5938237},
+  doi =          {10.5281/zenodo.7701424},
   key =          {MMESS}
 }
 

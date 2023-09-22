@@ -1,4 +1,4 @@
-function C = mul_ApE_dae_2(eqn, opts, opA,p,opE, B, opB)%#ok<INUSL>
+function C = mul_ApE_dae_2(eqn, opts, opA, p, opE, B, opB)
 
 %% function mul_ApE_default performs operation C = (opA(A_)+p*opE(E_))*opB(B)
 %
@@ -25,94 +25,94 @@ function C = mul_ApE_dae_2(eqn, opts, opA,p,opE, B, opB)%#ok<INUSL>
 %
 % This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
-
 %% check input Parameters
-if (not(ischar(opA)) || not(ischar(opB))|| not(ischar(opE)))
-    error('MESS:error_arguments', 'opA, opE or opB is not a char');
+if not(ischar(opA)) || not(ischar(opB)) || not(ischar(opE))
+    mess_err(opts, 'error_arguments', 'opA, opE or opB is not a char');
 end
 
-opA = upper(opA); opB = upper(opB);opE = upper(opE);
-if(not((opA == 'N' || opA == 'T')))
-    error('MESS:error_arguments', 'opA is not ''N'' or ''T''');
+opA = upper(opA);
+opB = upper(opB);
+opE = upper(opE);
+if not(opA == 'N' || opA == 'T')
+    mess_err(opts, 'error_arguments', 'opA is not ''N'' or ''T''');
 end
 
-if(not((opB == 'N' || opB == 'T')))
-    error('MESS:error_arguments', 'opB is not ''N'' or ''T''');
+if not(opB == 'N' || opB == 'T')
+    mess_err(opts, 'error_arguments', 'opB is not ''N'' or ''T''');
 end
 
-if(not((opE == 'N' || opE == 'T')))
-    error('MESS:error_arguments', 'opE is not ''N'' or ''T''');
+if not(opE == 'N' || opE == 'T')
+    mess_err(opts, 'error_arguments', 'opE is not ''N'' or ''T''');
 end
 
-if(not(isnumeric(p)))
-   error('MESS:error_arguments','p is not numeric');
+if not(isnumeric(p))
+    mess_err(opts, 'error_arguments', 'p is not numeric');
 end
 
 if (not(isnumeric(B))) || (not(ismatrix(B)))
-    error('MESS:error_arguments','B has to ba a matrix');
+    mess_err(opts, 'error_arguments', 'B has to ba a matrix');
 end
 
 %% check data in eqn structure
-if(not(isfield(eqn, 'A_'))) || not(isnumeric(eqn.A_))
-    error('MESS:error_arguments', 'field eqn.A_ is not defined');
+if (not(isfield(eqn, 'A_'))) || not(isnumeric(eqn.A_))
+    mess_err(opts, 'error_arguments', 'field eqn.A_ is not defined');
 end
 
-if(not(isfield(eqn, 'E_'))) || not(isnumeric(eqn.E_))
-    error('MESS:error_arguments', 'field eqn.E_ is not defined');
+if (not(isfield(eqn, 'E_'))) || not(isnumeric(eqn.E_))
+    mess_err(opts, 'error_arguments', 'field eqn.E_ is not defined');
 end
-n = size(eqn.A_,1);
-st = eqn.st;
+n = size(eqn.A_, 1);
+n_ode = eqn.manifold_dim;
 
-[rowB,colB] = size(B);
+[rowB, colB] = size(B);
 
-if(opB == 'N')
-    if(n > rowB)
-        B = [B; zeros(n - st, colB)];
+if opB == 'N'
+    if n > rowB
+        B = [B; zeros(n - n_ode, colB)];
     elseif n < rowB
-        error('MESS:error_arguments', 'B has more rows than A');
+        mess_err(opts, 'error_arguments', 'B has more rows than A');
     end
 else
-    if(n > colB)
-        B = [B, zeros(rowB, n - st)];
+    if n > colB
+        B = [B, zeros(rowB, n - n_ode)];
     elseif n < colB
-        error('MESS:error_arguments', 'B has more columns than A');
+        mess_err(opts, 'error_arguments', 'B has more columns than A');
     end
 end
 
 %% perform multiplication
 switch opA
 
-  case 'N'
+    case 'N'
 
-    switch opB
+        switch opB
 
-      case 'N'
-        %implement operation (A_+p*E_)*B
-        C=(eqn.A_+p*eqn.E_)*B;
+            case 'N'
+                % implement operation (A_+p*E_)*B
+                C = (eqn.A_ + p * eqn.E_) * B;
 
-      case 'T'
-        %implement operation (A_+p*E_)*B'
-        C=(eqn.A_+p*eqn.E_)*B';
-    end
+            case 'T'
+                % implement operation (A_+p*E_)*B'
+                C = (eqn.A_ + p * eqn.E_) * B';
+        end
 
-  case 'T'
+    case 'T'
 
-    switch opB
+        switch opB
 
-      case 'N'
-        %implement operation (A_+p*E_)'*B
-        C=(eqn.A_+p*eqn.E_)'*B;
+            case 'N'
+                % implement operation (A_+p*E_)'*B
+                C = (eqn.A_ + p * eqn.E_)' * B;
 
-      case 'T'
-        %implement operatio (A_+p*E_)'*B'
-        C=(eqn.A_+p*eqn.E_)'*B';
-    end
+            case 'T'
+                % implement operatio (A_+p*E_)'*B'
+                C = (eqn.A_ + p * eqn.E_)' * B';
+        end
 
 end
 end

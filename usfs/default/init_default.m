@@ -1,6 +1,6 @@
 function [result, eqn, opts, oper] = init_default(eqn, opts, oper, flag1, flag2)
-
-% function [result, eqn, opts, oper] = init_default(eqn, opts, oper, flag1, flag2)
+% function [result, eqn, opts, oper] = ...
+%                                  init_default(eqn, opts, oper, flag1, flag2)
 %
 % The function returns true or false if data for A_ and E_
 % resp. flag1 and flag2  are available and corrects in structure
@@ -44,154 +44,164 @@ function [result, eqn, opts, oper] = init_default(eqn, opts, oper, flag1, flag2)
 %   quadratic field)
 
 %
-% This file is part of the M-M.E.S.S. project 
+% This file is part of the M-M.E.S.S. project
 % (http://www.mpi-magdeburg.mpg.de/projects/mess).
-% Copyright © 2009-2022 Jens Saak, Martin Koehler, Peter Benner and others.
+% Copyright (c) 2009-2023 Jens Saak, Martin Koehler, Peter Benner and others.
 % All rights reserved.
 % License: BSD 2-Clause License (see COPYING)
 %
 
-
 %% check input Parameters
 na = nargin;
-if not(isfield(eqn, 'LTV')),  eqn.LTV=0; end
-if(na<3)
-    error('MESS:control_data','Number of input Arguments are at least 4');
+if not(isfield(eqn, 'LTV'))
+    eqn.LTV = false;
+end
+if na < 3
+    mess_err(opts, 'control_data', ...
+             'Number of input Arguments are at least 4');
 
-    %result = init_default(eqn, flag1);
-elseif(nargin==4)
+    % result = init_default(eqn, flag1);
+elseif nargin == 4
     switch flag1
-      case {'A','a'}
+        case {'A', 'a'}
             if eqn.LTV
-                [eqn, result] = checkA_time(eqn,opts);
+                [eqn, result] = checkA_time(eqn, opts);
             else
-                [eqn, result] = checkA(eqn);
+                [eqn, result] = checkA(eqn, opts);
             end
-      case {'E','e'}
+        case {'E', 'e'}
             if eqn.LTV
-                [eqn, result] = checkE_time(eqn,opts);
+                [eqn, result] = checkE_time(eqn, opts);
             else
-                [eqn, result] = checkE(eqn);
+                [eqn, result] = checkE(eqn, opts);
             end
-      otherwise
-        error('MESS:control_data','flag1 has to be ''A_'' or ''E_''');
+        otherwise
+            mess_err(opts, 'control_data', ...
+                     'flag1 has to be ''A_'' or ''E_''');
     end
 
-    %result = init_default(eqn,flag1,flag2);
-elseif(nargin==5)
+    % result = init_default(eqn,flag1,flag2);
+elseif nargin == 5
     switch flag1
-      case {'A','a'}
+        case {'A', 'a'}
             if eqn.LTV
-                [eqn, result] = checkA_time(eqn,opts);
+                [eqn, result] = checkA_time(eqn, opts);
             else
-                [eqn, result] = checkA(eqn);
+                [eqn, result] = checkA(eqn, opts);
             end
-        switch flag2
-          case {'A','a'}
+            switch flag2
+                case {'A', 'a'}
                     if eqn.LTV
-                        [eqn, resultA] = checkA_time(eqn,opts);
+                        [eqn, resultA] = checkA_time(eqn, opts);
                     else
-                        [eqn, resultA] = checkA(eqn);
+                        [eqn, resultA] = checkA(eqn, opts);
                     end
                     result = result && resultA;
-          case {'E','e'}
+                case {'E', 'e'}
                     if eqn.LTV
-                        [eqn, resultE] = checkE_time(eqn,opts);
+                        [eqn, resultE] = checkE_time(eqn, opts);
                     else
-                        [eqn, resultE]= checkE(eqn);
+                        [eqn, resultE] = checkE(eqn, opts);
                     end
                     result = result && resultE;
-          otherwise
-            error('MESS:control_data','flag2 has to be ''A'' or ''E''');
-        end
-      case {'E','e'}
-            if eqn.LTV
-                [eqn, result] = checkE_time(eqn,opts);
-            else
-                [eqn, result] = checkE(eqn);
+                otherwise
+                    mess_err(opts, 'control_data', ...
+                             'flag2 has to be ''A'' or ''E''');
             end
-        switch flag2
-          case {'A','a'}
+        case {'E', 'e'}
+            if eqn.LTV
+                [eqn, result] = checkE_time(eqn, opts);
+            else
+                [eqn, result] = checkE(eqn, opts);
+            end
+            switch flag2
+                case {'A', 'a'}
                     if eqn.LTV
-                        [eqn, resultA] = checkA_time(eqn,opts);
+                        [eqn, resultA] = checkA_time(eqn, opts);
                     else
-                        [eqn, resultA] = checkA(eqn);
+                        [eqn, resultA] = checkA(eqn, opts);
                     end
                     result = result && resultA;
-          case {'E','e'}
+                case {'E', 'e'}
                     if eqn.LTV
-                        [eqn,resultE] = checkE_time(eqn,opts);
+                        [eqn, resultE] = checkE_time(eqn, opts);
                     else
-                        [eqn, resultE]= checkE(eqn);
+                        [eqn, resultE] = checkE(eqn, opts);
                     end
                     result = result && resultE;
-          otherwise
-            error('MESS:control_data','flag2 has to be ''A'' or ''E''');
-        end
-      otherwise
-        error('MESS:control_data','flag1 has to be ''A'' or ''E''');
+                otherwise
+                    mess_err(opts, 'control_data', ...
+                             'flag2 has to be ''A'' or ''E''');
+            end
+        otherwise
+            mess_err(opts, 'control_data', ...
+                     'flag1 has to be ''A'' or ''E''');
     end
 end
 end
 
-%checkdata for A_
-function [eqn, result] = checkA(eqn)
-result = isfield(eqn,'A_');
-if(result)
+% checkdata for A_
+function [eqn, result] = checkA(eqn, ~)
+result = isfield(eqn, 'A_');
+if result
     result = isnumeric(eqn.A_);
 end
-result=result&&(size(eqn.A_,1)==size(eqn.A_,2));
+result = result && (size(eqn.A_, 1) == size(eqn.A_, 2));
 end
 
-%checkdata for E_
-function [eqn, result] = checkE(eqn)
-if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
+% checkdata for E_
+function [eqn, result] = checkE(eqn, opts)
+if not(isfield(eqn, 'haveE'))
+    eqn.haveE = false;
+end
 
 if not(eqn.haveE)
     if isfield(eqn, 'E_')
-        error('MESS:equation_data', ['Detected eqn.E_ where eqn.haveE ' ...
-                            'is 0. You need to set haveE=1 or ' ...
-                            'delete E_.']);
+        mess_err(opts, 'equation_data', ...
+                 ['Detected eqn.E_ where eqn.haveE ' ...
+                  'is 0. You need to set haveE = true or delete E_.']);
     else
-        result = 1;
+        result = true;
     end
 else
-    result = isfield(eqn,'E_');
-    if(result)
+    result = isfield(eqn, 'E_');
+    if result
         result = isnumeric(eqn.E_);
     end
-    result=result&&(size(eqn.E_,1)==size(eqn.E_,2));
+    result = result && (size(eqn.E_, 1) == size(eqn.E_, 2));
 end
 end
 
-%checkdata for A_time
-function [eqn, result] = checkA_time(eqn,opts)
-result = isa(eqn.A_time,'function_handle');
+% checkdata for A_time
+function [eqn, result] = checkA_time(eqn, opts)
+result = isa(eqn.A_time, 'function_handle');
 A = eqn.A_time(opts.t0);
-if(result)
+if result
     result = isnumeric(A);
 end
-result=result&&(size(A,1)==size(A,2));
+result = result && (size(A, 1) == size(A, 2));
 end
 
-%checkdata for E_time
-function [eqn, result] = checkE_time(eqn,opts)
-if not(isfield(eqn, 'haveE')), eqn.haveE = 0; end
+% checkdata for E_time
+function [eqn, result] = checkE_time(eqn, opts)
+if not(isfield(eqn, 'haveE'))
+    eqn.haveE = false;
+end
 if not(eqn.haveE)
     if isfield(eqn, 'E_time')
-        error('MESS:equation_data', ['Detected eqn.E_time where eqn.haveE ' ...
-                            'is 0. You need to set haveE=1 or ' ...
-                            'delete E_']);
+        mess_err(opts, 'equation_data', ...
+                 ['Detected eqn.E_time where eqn.haveE ' ...
+                  'is 0. You need to set haveE = true or delete E_']);
     else
-        result = 1;
+        result = true;
     end
 else
-    result = isa(eqn.E_time,'function_handle') ...
-        && isa(eqn.dt_E_time,'function_handle');
+    result = isa(eqn.E_time, 'function_handle') && ...
+             isa(eqn.dt_E_time, 'function_handle');
     E = eqn.E_time(opts.t0);
-    if(result)
+    if result
         result = isnumeric(E);
     end
-    result=result&&(size(E,1)==size(E,2));
+    result = result && (size(E, 1) == size(E, 2));
 end
 end

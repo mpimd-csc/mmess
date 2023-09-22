@@ -7,7 +7,7 @@
   toolbox. Otherwise conflicts are almost guaranteed.
 * The octave dense Riccati solvers can not handle indefinite
   right-hand-sides. These can occur in the
-  `mess_galerkin_projection_acceleration` routine.
+  `mess_solve_projected_eqn` routine.
 * The `mess_care` has been observed to work less accurate in
   octave, when octave is compiled with GCC before version 5. That
   means, on RHEL/CentOS/ScientificLinux 6/7, Ubuntu 14.04, SLES 11/12
@@ -30,8 +30,18 @@
 * `mess_splitting_dre` works for the LTV case only if
    `A(t)*A(s)=A(s)*A(t)`. This is not checked in the code and has to
    be ensured by the user.
+* BDF solvers can currently not be used with line-search activated in
+  the inner Newton-Kleinman solves.
+* `mess_lrnm`in LDL_T mode with line-search is sometimes unstable in Octave.
 * `mess_tangential_irka` was observed to converge exceptionally slow
   using MATLAB R2019b on certain Intel Sandy bridge processors.
+* `mess_lrradi` can crash in rare cases inside
+  `mess_RADI_get_shifts_hamOpti_generalized`, probably due to an
+  economy size QR with incompatible dimensions.
+* `mess_res2_norms` was observed to be less accurate
+  using MATLAB R2019b on certain Intel Westmere processors.
+* `exp_action` in the splitting methods does not work with its
+  'Krylov' method when `dae_2` usfs are used.
 
 ## Compatibility with other Software
 
